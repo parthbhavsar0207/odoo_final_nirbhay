@@ -11,12 +11,11 @@ from django.contrib.staticfiles import finders
 from django.core.exceptions import ValidationError
 from django.db import connection
 from django.template.loader import get_template
-from django.test import Client, SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from commerce.models import Product, Sale
 from commerce.services import cancel_sale, complete_sale, create_guest_sale
-from frontend.tests.helpers import login_test_staff
 
 
 class FormMarkup(HTMLParser):
@@ -75,10 +74,6 @@ class FrontendOriginTests(SimpleTestCase):
 
 @skipUnless(connection.vendor == "postgresql", "Requires actual PostgreSQL counter sales")
 class GuestCounterRenderedTests(TestCase):
-    def setUp(self):
-        super().setUp()
-        login_test_staff(self.client)
-
     @classmethod
     def setUpTestData(cls):
         cls.product = Product.objects.create(
@@ -125,7 +120,7 @@ class GuestCounterRenderedTests(TestCase):
         self.assertContains(response, "Shop &amp; Bar POS")
         self.assertContains(response, "New Sale")
 
-    def test_existing_catalog_entry_points_use_real_counter_for_authenticated_staff(self):
+    def test_existing_catalog_entry_points_use_real_counter_without_login(self):
         for name in ["commerce:index", "commerce:shop"]:
             with self.subTest(route=name):
                 response = self.client.get(reverse(name))
@@ -134,7 +129,7 @@ class GuestCounterRenderedTests(TestCase):
 
     def test_product_admin_still_requires_login(self):
         admin_url = reverse("admin:commerce_product_changelist")
-        response = Client().get(admin_url)
+        response = self.client.get(admin_url)
         self.assertRedirects(
             response, reverse("admin:login") + "?next=" + admin_url,
             fetch_redirect_response=False,

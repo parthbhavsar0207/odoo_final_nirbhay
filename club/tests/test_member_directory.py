@@ -7,14 +7,9 @@ from django.urls import reverse
 from django.utils import timezone
 
 from club.models import Member, MemberPlanChange, MembershipPlan
-from frontend.tests.helpers import login_test_staff
 
 
 class MemberDirectoryTests(TestCase):
-    def setUp(self):
-        super().setUp()
-        login_test_staff(self.client)
-
     def test_active_filter_and_count_match_current_plan_eligibility(self):
         today = timezone.localdate()
         active = MembershipPlan.objects.create(tier="silver", name="Active Silver")

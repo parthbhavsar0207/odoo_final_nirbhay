@@ -13,7 +13,6 @@ from django.urls import reverse
 from commerce.counter_forms import GuestSaleForm
 from commerce.models import Product, Sale
 from commerce.services import create_guest_sale
-from frontend.tests.helpers import login_test_staff
 
 
 @skipUnless(connection.vendor == "postgresql", "Requires actual PostgreSQL counter sales")
@@ -75,10 +74,6 @@ class GuestCounterFormTests(TestCase):
 
 @skipUnless(connection.vendor == "postgresql", "Requires actual PostgreSQL counter sales")
 class GuestCounterViewTests(TestCase):
-    def setUp(self):
-        super().setUp()
-        login_test_staff(self.client)
-
     @classmethod
     def setUpTestData(cls):
         user_model = get_user_model()
@@ -107,34 +102,30 @@ class GuestCounterViewTests(TestCase):
         values.update(overrides)
         return values
 
-    def test_counter_operations_require_active_authorized_staff(self):
-        blocked = [None, self.nonstaff, self.inactive_staff, self.staff]
-        for user in blocked:
+    def test_all_counter_operations_work_without_staff_authentication(self):
+        for user in [None, self.nonstaff, self.inactive_staff, self.staff]:
             with self.subTest(user=user):
                 client = Client()
                 if user is not None:
                     client.force_login(user)
                 response = client.get(reverse("commerce:guest_counter"))
-                self.assertEqual(response.status_code, 403 if user is not None and user.is_active else 302)
+                self.assertEqual(response.status_code, 200)
                 response = client.post(reverse("commerce:sale_create"), self.create_data())
-                self.assertEqual(response.status_code, 403 if user is not None and user.is_active else 302)
-        self.assertEqual(Sale.objects.count(), 0)
-        client = Client()
-        login_test_staff(client)
-        self.assertEqual(client.get(reverse("commerce:guest_counter")).status_code, 200)
-        response = client.post(reverse("commerce:sale_create"), self.create_data())
-        sale = Sale.objects.get()
-        detail_url = reverse("commerce:sale_detail", args=[sale.pk])
-        self.assertRedirects(response, detail_url, fetch_redirect_response=False)
-        self.assertEqual(client.get(detail_url).status_code, 200)
-        self.assertEqual(client.post(reverse("commerce:sale_complete", args=[sale.pk])).status_code, 302)
-        self.product.refresh_from_db()
-        self.assertEqual(self.product.stock_quantity, 8)
-        self.assertEqual(client.post(reverse("commerce:sale_cancel", args=[sale.pk])).status_code, 302)
-        sale.refresh_from_db()
-        self.product.refresh_from_db()
-        self.assertEqual(sale.status, Sale.Status.CANCELLED)
-        self.assertEqual(self.product.stock_quantity, 10)
+                sale = Sale.objects.latest("pk")
+                detail_url = reverse("commerce:sale_detail", args=[sale.pk])
+                self.assertRedirects(response, detail_url, fetch_redirect_response=False)
+                self.assertEqual(client.get(detail_url).status_code, 200)
+                response = client.post(reverse("commerce:sale_complete", args=[sale.pk]))
+                self.assertRedirects(response, detail_url, fetch_redirect_response=False)
+                self.product.refresh_from_db()
+                self.assertEqual(self.product.stock_quantity, 8)
+                response = client.post(reverse("commerce:sale_cancel", args=[sale.pk]))
+                self.assertRedirects(response, detail_url, fetch_redirect_response=False)
+                sale.refresh_from_db()
+                self.product.refresh_from_db()
+                self.assertEqual(sale.status, Sale.Status.CANCELLED)
+                self.assertEqual(self.product.stock_quantity, 10)
+        self.assertEqual(Sale.objects.count(), 4)
 
     def test_counter_get_reuses_existing_template_and_supplies_form_context(self):
         response = self.client.get(reverse("commerce:guest_counter"))
@@ -327,7 +318,6 @@ class GuestCounterCsrfTests(TestCase):
 
     def setUp(self):
         self.client = Client(enforce_csrf_checks=True)
-        login_test_staff(self.client)
 
     def test_all_state_changes_reject_requests_without_csrf_tokens(self):
         sale = create_guest_sale(quantities={self.product.pk: 2}, payment_method="cash")
