@@ -184,8 +184,38 @@
             <div style="padding-top: 0.75rem; border-top: 1px solid var(--border-stitch); margin-top: 0.25rem;">
                 <a href="{% url 'club:booking_create' %}" class="btn-accent" style="width: 100%; justify-content: center; padding: 0.6rem 1rem;">
                     <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
+
                     <span>Reserve Court</span>
                 </a>
+
+                <!-- Staff Profile / Operations Dropdown -->
+                <div x-data="{ open: false }" @click.outside="open = false" style="position: relative;">
+                    <button type="button" @click="open = !open" class="btn-secondary-low" style="padding: 0.45rem 0.65rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">account_circle</span>
+                        <span style="font-size: 0.8rem; font-weight: 600;">Admin</span>
+                        <span class="material-symbols-outlined" style="font-size: 16px; transition: transform 0.2s ease;" :style="open ? 'transform: rotate(180deg)' : ''">expand_more</span>
+                    </button>
+                    <div x-show="open" x-cloak class="club-dropdown-menu" style="position: absolute; top: 100%; right: 0; margin-top: 0.4rem; z-index: 1000; min-width: 220px;">
+                        <div style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-stitch); background-color: var(--surface-container-low); border-top-left-radius: 10px; border-top-right-radius: 10px;">
+                            <div style="font-size: 0.78rem; font-weight: 700; color: var(--on-surface);">Terminal #1 &middot; Front Desk</div>
+                            <div style="font-size: 0.7rem; color: #166534; display: flex; align-items: center; gap: 0.35rem; margin-top: 2px;">
+                                <span class="pulse-indicator"></span> Session Active
+                            </div>
+                        </div>
+                        <a href="{% url 'dashboard' %}" class="club-dropdown-item">
+                            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">dashboard</span>
+                            <span>Executive Dashboard</span>
+                        </a>
+                        <a href="{% url 'club:booking_export_csv' %}" class="club-dropdown-item">
+                            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">download</span>
+                            <span>Export Bookings CSV</span>
+                        </a>
+                        <a href="{% url 'club:public_availability' %}" class="club-dropdown-item">
+                            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">grid_view</span>
+                            <span>Live Court Schedule</span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>

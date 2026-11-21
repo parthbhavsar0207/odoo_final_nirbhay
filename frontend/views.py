@@ -7,10 +7,11 @@ Coordinates owner dashboard presentation and live aggregations.
 from decimal import Decimal
 from datetime import datetime, time
 from django.shortcuts import render
-from django.db.models import Sum
+from django.db.models import Sum, F
 from django.utils import timezone
 
 from club.models import Member, Court, Booking, MembershipPlan
+from commerce.models import Sale, Product
 
 
 def dashboard_view(request):
@@ -51,6 +52,18 @@ def dashboard_view(request):
     total_bookable_hours_today = total_courts * 16 if total_courts > 0 else 1
     utilization_rate = round((today_bookings_count / total_bookable_hours_today) * 100, 1)
 
+    # Commerce stats from completed sales
+    completed_sales = Sale.objects.filter(status='completed')
+    commerce_rev_agg = completed_sales.aggregate(total=Sum('total'))
+    commerce_revenue = commerce_rev_agg['total'] if commerce_rev_agg['total'] is not None else Decimal('0.00')
+    completed_sales_count = completed_sales.count()
+
+    # Low stock alerts (products where stock <= threshold)
+    low_stock_products = Product.objects.filter(
+        is_active=True,
+        stock_quantity__lte=F('low_stock_threshold')
+    ).order_by('stock_quantity')[:4]
+
     plans = MembershipPlan.objects.filter(active=True)
 
     context = {
@@ -61,6 +74,9 @@ def dashboard_view(request):
         'total_confirmed_count': total_confirmed_count,
         'total_bookings_count': total_bookings_count,
         'court_revenue': court_revenue,
+        'commerce_revenue': commerce_revenue,
+        'completed_sales_count': completed_sales_count,
+        'low_stock_products': low_stock_products,
         'today_bookings_count': today_bookings_count,
         'total_bookable_hours_today': total_bookable_hours_today,
         'utilization_rate': utilization_rate,

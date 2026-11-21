@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Live Court Availability · Champions Club{% endblock %}
 
@@ -28,80 +29,89 @@
                 <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1rem 1.25rem; width: 100%; max-width: 260px;">
                     <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch);">Today's Confirmed Slots</div>
                     <div class="tabular-nums" style="font-size: 1.75rem; font-weight: 700; color: var(--on-surface); margin: 0.2rem 0;">
-                        {{ total_confirmed_today }}
+                        <span id="total-confirmed-counter">{{ total_confirmed_today }}</span>
                     </div>
-                    <div style="font-size: 0.75rem; color: var(--secondary-stitch);">Across {{ courts|length }} active courts</div>
+                    <div style="font-size: 0.75rem; color: var(--secondary-stitch); display: flex; align-items: center; gap: 0.4rem;">
+                        <span class="pulse-indicator"></span>
+                        <span>Across {{ courts|length }} active courts &middot; Live</span>
+                    </div>
                 </div>
 
-                <a href="{% url 'club:booking_create' %}" class="btn-accent" style="width: 100%; max-width: 260px; justify-content: center; padding: 0.65rem 1rem;">
+                <button type="button" onclick="openBookingModal()" class="btn-accent" style="width: 100%; max-width: 260px; justify-content: center; padding: 0.65rem 1rem; border: none; cursor: pointer; text-decoration: none;">
                     <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
                     <span>Reserve a Slot</span>
-                </a>
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Live Court Availability Matrix Section -->
-    <div style="margin-bottom: 2.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+    <div id="matrix-wrapper" style="margin-bottom: 2.5rem; transition: opacity 0.2s ease;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.01em;">
-                    Live Court Availability Matrix &mdash; {{ selected_date|date:"l, F j, Y" }}
-                </h2>
-                <p style="font-size: 0.85rem; color: var(--secondary-stitch);">
-                    Real-time slot availability across all facility surfaces &middot; 60-minute duration per session
+                <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.25rem;">
+                    <h2 id="matrix-heading-date" style="font-size: 1.35rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.01em; margin: 0;">
+                        Live Court Availability Matrix &mdash; {{ selected_date|date:"l, F j, Y" }}
+                    </h2>
+                    <span style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 600; color: #166534; background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.15rem 0.55rem; border-radius: 9999px;">
+                        <span class="pulse-indicator"></span> Real-time Sync
+                    </span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--secondary-stitch); margin: 0;">
+                    Real-time slot availability &middot; 60-minute duration per session &middot; Click any slot to reserve in-place
+
                 </p>
             </div>
         </div>
 
-        <!-- Filter Control Bar (Sport, Court, Date) -->
-        <div class="filter-control-bar" style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); position: relative; z-index: 20;">
-            <form method="get" style="display: flex; gap: 0.85rem; align-items: center; flex-wrap: wrap; flex: 1;">
-                <!-- Sport Filter -->
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                    <label for="avail-sport" style="font-size: 0.8rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Sport:</label>
-                    <select name="sport" id="avail-sport" class="form-select filter-select" onchange="this.form.submit()">
-                        <option value="">All Sports</option>
-                        {% for sp in all_sports %}
-                            <option value="{{ sp.slug }}" {% if selected_sport == sp.slug %}selected{% endif %}>
-                                {{ sp.icon }} {{ sp.name }} ({{ sp.facility_count }})
-                            </option>
-                        {% endfor %}
-                    </select>
+            <!-- Date Scrubber & Jump Controls (Zero Refresh) -->
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="date-jump" style="font-size: 0.82rem; font-weight: 600; color: var(--secondary-stitch);">Date:</label>
+                    <input type="date" name="date" id="date-jump" value="{{ selected_date|date:'Y-m-d' }}" class="form-input" style="padding: 0.35rem 0.65rem; font-size: 0.85rem; border-radius: 8px;" onchange="handleDateChange(this.value)">
                 </div>
-
-                <!-- Date Scrubber -->
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                    <label for="date-jump" style="font-size: 0.8rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Date:</label>
-                    <input type="date" name="date" id="date-jump" value="{{ selected_date|date:'Y-m-d' }}" class="form-input" style="padding: 0.35rem 0.65rem; font-size: 0.85rem; border-radius: 8px;" onchange="this.form.submit()">
-                </div>
-
-                {% if selected_sport or selected_court or selected_date != today %}
-                    <a href="{% url 'club:public_availability' %}" class="btn-secondary-low" style="padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--secondary-stitch); text-decoration: none;">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">restart_alt</span>
-                        <span>Reset Filters</span>
-                    </a>
-                {% endif %}
-            </form>
-
-            <span class="badge-pill">
-                Showing {{ courts|length }} Active Court{{ courts|length|pluralize }}
-            </span>
+                <button type="button" onclick="handleDateChange('{{ today|date:'Y-m-d' }}')" class="btn-secondary-low" style="font-size: 0.82rem; cursor: pointer;">
+                    Today
+                </button>
+            </div>
         </div>
 
-        <!-- Matrix Visual Legend -->
-        <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1rem; font-size: 0.8rem; color: var(--secondary-stitch);">
-            <div style="display: flex; align-items: center; gap: 0.4rem;">
-                <span style="width: 14px; height: 14px; border-radius: 4px; background-color: #f0fdf4; border: 1px solid #bbf7d0;"></span>
-                <span>Free / Available Slot (Click to reserve)</span>
+        <!-- Matrix Visual Legend & Perspective Controls -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; padding: 0.75rem 1rem; background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 10px;">
+            <!-- Left: Legend -->
+            <div style="display: flex; align-items: center; gap: 1.25rem; font-size: 0.8rem; color: var(--secondary-stitch); flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; background-color: #f0fdf4; border: 1px solid #bbf7d0; font-size: 0.65rem; font-weight: 800; color: #166534;">₹</span>
+                    <span><strong>Open Slot</strong> (Displays Price &middot; Click to Reserve In-Place)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; background-color: #f1f5f9; border: 1px solid #cbd5e1; font-size: 0.65rem; font-weight: 700; color: #475569;">₹</span>
+                    <span><strong>Booked Slot</strong> (Snapshot Rate)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="material-symbols-outlined" style="font-size: 16px; color: var(--primary);">schedule</span>
+                    <span><strong>Difference of Times:</strong> 60-min intervals</span>
+                </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.4rem;">
-                <span style="width: 14px; height: 14px; border-radius: 4px; background-color: #f1f5f9; border: 1px solid #cbd5e1;"></span>
-                <span>Reserved Slot</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.4rem;">
-                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--primary);">verified</span>
-                <span>GiST Overlap Exclusion Protected</span>
+
+            <!-- Right: Tier Rate Perspective Switcher -->
+            <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); letter-spacing: 0.04em; margin-right: 0.25rem;">
+                    View Rates For:
+                </span>
+                <button type="button" class="tier-perspective-btn" onclick="setMatrixPerspective('standard', this)" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--primary); background-color: var(--primary); color: var(--on-primary); cursor: pointer; transition: all 0.15s ease;">
+                    Standard / Walk-in
+                </button>
+                <button type="button" class="tier-perspective-btn" onclick="setMatrixPerspective('gold', this)" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 500; border-radius: 6px; border: 1px solid var(--border-stitch); background-color: var(--surface-container-low); color: var(--secondary-stitch); cursor: pointer; transition: all 0.15s ease;">
+                    Gold Plan (Free)
+                </button>
+                <button type="button" class="tier-perspective-btn" onclick="setMatrixPerspective('silver', this)" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 500; border-radius: 6px; border: 1px solid var(--border-stitch); background-color: var(--surface-container-low); color: var(--secondary-stitch); cursor: pointer; transition: all 0.15s ease;">
+                    Silver Plan (₹200)
+                </button>
+                <button type="button" class="tier-perspective-btn" onclick="setMatrixPerspective('junior', this)" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 500; border-radius: 6px; border: 1px solid var(--border-stitch); background-color: var(--surface-container-low); color: var(--secondary-stitch); cursor: pointer; transition: all 0.15s ease;">
+                    Junior Plan (₹150)
+                </button>
+
             </div>
         </div>
 
@@ -109,33 +119,61 @@
         <div class="matrix-container">
             <div class="matrix-grid">
                 <!-- Header: Court Column -->
-                <div class="matrix-header-cell" style="text-align: left; padding-left: 0.5rem;">
-                    COURT / SURFACE
+                <div class="matrix-header-cell" style="text-align: left; padding: 0.5rem 0.75rem; align-items: flex-start; justify-content: center;">
+                    <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch);">FACILITY</div>
+                    <div style="font-size: 0.85rem; font-weight: 800; color: var(--on-surface);">COURT / SURFACE</div>
                 </div>
-                <!-- Header: Hour Columns -->
-                {% for hour in operating_hours %}
+                <!-- Header: Hour Columns with Difference of Times -->
+                {% for s in operating_slots %}
                     <div class="matrix-header-cell">
-                        {{ hour }}
+                        <div style="font-size: 0.62rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); letter-spacing: 0.04em;">{{ s.time_band }}</div>
+                        <div style="font-size: 0.76rem; font-weight: 700; color: var(--on-surface); font-family: monospace; white-space: nowrap;">{{ s.start }} &rarr; {{ s.end }}</div>
+                        <div style="font-size: 0.62rem; color: var(--secondary-stitch);">(60 min)</div>
                     </div>
                 {% endfor %}
 
                 <!-- Rows for each Court -->
                 {% for row in court_grid %}
-                    <div class="matrix-court-name">
-                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--on-surface);">{{ row.court.name }}</div>
-                        <div style="font-size: 0.7rem; color: var(--secondary-stitch); text-transform: uppercase;">
-                            {{ row.court.get_sport_display }} &middot; ₹{{ row.court.hourly_rate }}/hr
+                    <div class="matrix-court-name" style="display: flex; align-items: center; gap: 0.65rem;">
+                        <img src="{% static row.court.image_filename %}" alt="{{ row.court.name }}" style="width: 38px; height: 38px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-stitch); flex-shrink: 0;" loading="lazy">
+                        <div>
+                            <div style="font-weight: 700; font-size: 0.85rem; color: var(--on-surface);">{{ row.court.name }}</div>
+                            <div style="font-size: 0.7rem; color: var(--secondary-stitch); text-transform: uppercase;">
+                                {{ row.court.get_sport_display }} &middot; ₹{{ row.court.hourly_rate }}/hr
+                            </div>
                         </div>
                     </div>
 
                     {% for hour, slot in row.slots %}
                         {% if slot.status == 'free' %}
-                            <a href="{% url 'club:booking_create' %}?court={{ row.court.id }}&start={{ selected_date|date:'Y-m-d' }}T{{ hour }}" class="matrix-slot-cell matrix-slot-free" title="Court {{ row.court.name }} is FREE at {{ hour }}. Click to reserve." style="text-decoration: none;">
-                                Free
+                            <a href="{% url 'club:booking_create' %}?court={{ row.court.id }}&start={{ selected_date|date:'Y-m-d' }}T{{ hour }}"
+                               onclick="event.preventDefault(); openBookingModal('{{ row.court.id }}', '{{ selected_date|date:'Y-m-d' }}T{{ hour }}');"
+                               class="matrix-slot-cell matrix-slot-free"
+                               id="slot-cell-{{ row.court.id }}-{{ hour|cut:':' }}"
+                               title="Reserve {{ row.court.name }}: {{ slot.time_diff }} (60 mins) &middot; Standard Rate: ₹{{ slot.standard_price|floatformat:0 }} &middot; Click to Reserve"
+                               data-slot-cell="free"
+                               data-court-id="{{ row.court.id }}"
+                               data-slot-hour="{{ hour }}"
+                               data-court="{{ row.court.name }}"
+                               data-standard="{{ slot.standard_price|floatformat:0 }}"
+                               data-gold="{{ slot.gold_price|floatformat:0 }}"
+                               data-silver="{{ slot.silver_price|floatformat:0 }}"
+                               data-junior="{{ slot.junior_price|floatformat:0 }}">
+                                <span class="matrix-slot-price" style="font-size: 0.85rem; font-weight: 800; color: #166534; line-height: 1.1;">₹{{ slot.standard_price|floatformat:0 }}</span>
+                                <span class="matrix-slot-status" style="font-size: 0.62rem; font-weight: 700; text-transform: uppercase; color: #15803d; letter-spacing: 0.03em;">Open</span>
                             </a>
                         {% else %}
-                            <div class="matrix-slot-cell matrix-slot-booked" title="Reserved for confirmed match play">
-                                Reserved
+                            <div class="matrix-slot-cell matrix-slot-booked"
+                                 id="slot-cell-{{ row.court.id }}-{{ hour|cut:':' }}"
+                                 data-court-id="{{ row.court.id }}"
+                                 data-slot-hour="{{ hour }}"
+                                 data-booking-id="{{ slot.booking_id }}"
+                                 onclick="inspectBookedSlot('{{ slot.booking_id }}')"
+                                 style="cursor: pointer;"
+                                 title="Booked: {{ slot.player_display }} ({{ slot.booking_type }}) &middot; {{ slot.time_diff }} &middot; Price: ₹{{ slot.price|floatformat:0 }} &middot; Click to View / Cancel Slot">
+                                <span class="matrix-slot-price" style="font-size: 0.8rem; font-weight: 700; color: #475569; line-height: 1.1;">₹{{ slot.price|floatformat:0 }}</span>
+                                <span class="matrix-slot-status" style="font-size: 0.62rem; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.03em;">Booked</span>
+
                             </div>
                         {% endif %}
                     {% endfor %}
@@ -202,4 +240,930 @@
         </div>
     </div>
 </div>
+
+<!-- In-Web Booking Pop-Up Modal -->
+<div id="booking-modal-backdrop" class="club-modal-backdrop">
+    <div class="club-modal-dialog">
+        <!-- Modal Header -->
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-stitch); display: flex; justify-content: space-between; align-items: center; background-color: var(--surface-container-low); border-top-left-radius: 16px; border-top-right-radius: 16px;">
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background-color: var(--primary-container); display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: var(--on-primary-fixed);">event_available</span>
+                </div>
+                <div>
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--on-surface); margin: 0; line-height: 1.2;">Reserve Court Slot</h3>
+                    <div style="font-size: 0.72rem; color: var(--secondary-stitch); text-transform: uppercase; letter-spacing: 0.04em;">Real-time In-Page Booking &middot; Instant Confirmation</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeBookingModal()" style="background: transparent; border: none; cursor: pointer; color: var(--secondary-stitch); padding: 4px; border-radius: 6px; display: flex; align-items: center;" title="Close (Esc)">
+                <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+            </button>
+        </div>
+
+        <!-- Modal Form Body -->
+        <form id="modal-booking-form" onsubmit="handleModalSubmit(event)" style="padding: 1.5rem;">
+            <!-- Modal In-Web Alert Box -->
+            <div id="modal-error-alert" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.85rem; background-color: #fef2f2; border: 1px solid #fca5a5; color: #991b1b;"></div>
+
+            <div style="display: flex; flex-direction: column; gap: 1.15rem;">
+                <!-- Court Selection -->
+                <div>
+                    <label for="modal-court-select" style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.35rem;">
+                        Court / Surface *
+                    </label>
+                    <select id="modal-court-select" name="court" class="form-select" required onchange="updateModalLiveRate()">
+                        <option value="">-- Choose Court --</option>
+                        {% for c in courts %}
+                            <option value="{{ c.id }}" data-rate="{{ c.hourly_rate }}" data-sport="{{ c.get_sport_display }}">{{ c.name }} ({{ c.get_sport_display }}) &middot; ₹{{ c.hourly_rate }}/hr</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Schedule & Session Settings -->
+                <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 0.85rem;">
+                    <div>
+                        <label for="modal-start-input" style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.35rem;">
+                            Date &amp; Start Time *
+                        </label>
+                        <input type="datetime-local" id="modal-start-input" name="start_datetime" class="form-input" required onchange="updateModalLiveRate()" oninput="updateModalLiveRate()">
+                        <small style="color: var(--secondary-stitch); font-size: 0.72rem; display: block; margin-top: 0.2rem;">Duration: exactly 60 minutes.</small>
+                    </div>
+
+                    <div>
+                        <label for="modal-play-type" style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.35rem;">
+                            Play Type *
+                        </label>
+                        <select id="modal-play-type" name="booking_type" class="form-select">
+                            <option value="standard">Standard Play</option>
+                            <option value="social">Social Play</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Player Identity -->
+                <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 8px; padding: 0.85rem;">
+                    <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--on-surface); margin-bottom: 0.65rem;">
+                        Player Identity (Member or Walk-in Guest)
+                    </div>
+
+                    <div style="margin-bottom: 0.65rem;">
+                        <label for="modal-member-select" style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
+                            Registered Club Member
+                        </label>
+                        <select id="modal-member-select" name="booked_by_member" class="form-select" onchange="updateModalLiveRate()">
+                            <option value="">-- Or Walk-in Guest (No Member Plan) --</option>
+                        </select>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                        <div>
+                            <label for="modal-walkin-name" style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
+                                Walk-in Guest Name
+                            </label>
+                            <input type="text" id="modal-walkin-name" name="walkin_name" class="form-input" placeholder="Guest name" oninput="updateModalLiveRate()">
+                        </div>
+                        <div>
+                            <label for="modal-walkin-contact" style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
+                                Contact Phone
+                            </label>
+                            <input type="text" id="modal-walkin-contact" name="walkin_contact" class="form-input" placeholder="+91 9876543210">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Reactive Rate & Timeslot Calculator Card -->
+                <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.65rem;">
+                        <div>
+                            <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.35rem;">
+                                <span class="material-symbols-outlined" style="font-size: 15px; color: var(--primary);">calculate</span>
+                                <span>Live Rate &amp; Timeslot Calculator</span>
+                            </div>
+                            <div id="modal-live-court-name" style="font-size: 0.98rem; font-weight: 700; color: var(--on-surface); margin-top: 0.1rem;">
+                                Select Court
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch);">
+                                Snapshot Price
+                            </div>
+                            <div id="modal-live-total-price" class="tabular-nums" style="font-size: 1.5rem; font-weight: 800; color: #166534; line-height: 1.1;">
+                                ₹0.00
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.65rem; padding-top: 0.65rem; border-top: 1px dashed var(--border-stitch); font-size: 0.78rem;">
+                        <div>
+                            <div style="color: var(--secondary-stitch); font-size: 0.68rem; text-transform: uppercase; font-weight: 600;">Time Difference (60 min)</div>
+                            <div id="modal-live-timeslot" style="font-weight: 700; color: var(--on-surface); font-family: monospace; font-size: 0.82rem; margin-top: 0.1rem;">
+                                --:-- &rarr; --:--
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color: var(--secondary-stitch); font-size: 0.68rem; text-transform: uppercase; font-weight: 600;">Rate Basis</div>
+                            <div id="modal-live-rate-basis" style="font-weight: 600; color: var(--on-surface); margin-top: 0.1rem;">
+                                Standard Walk-in Rate
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color: var(--secondary-stitch); font-size: 0.68rem; text-transform: uppercase; font-weight: 600;">Member Benefit</div>
+                            <div id="modal-live-savings-badge" style="font-weight: 700; color: #166534; margin-top: 0.1rem;">
+                                Standard Rate Applied
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="modal-live-savings-banner" style="display: none; margin-top: 0.65rem; padding: 0.4rem 0.65rem; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 0.75rem; color: #166534;"></div>
+
+                    <div id="modal-live-conflict-banner" style="display: none; margin-top: 0.65rem; padding: 0.4rem 0.65rem; background-color: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; font-size: 0.75rem; color: #991b1b; font-weight: 600;"></div>
+                </div>
+
+                <!-- Payment Options & Settlement -->
+                <div style="background-color: var(--surface-container-low); border: 1.5px solid var(--border-stitch); border-radius: 10px; padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--on-surface); display: flex; align-items: center; gap: 0.35rem;">
+                            <span class="material-symbols-outlined" style="font-size: 17px; color: var(--primary);">payments</span>
+                            <span>Payment Options *</span>
+                        </div>
+                        <div id="modal-payment-due-badge" style="font-size: 0.75rem; font-weight: 700; color: #166534; background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.15rem 0.55rem; border-radius: 6px;">
+                            Payable: ₹0.00
+                        </div>
+                    </div>
+
+                    <!-- Payment Options Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;" id="modal-payment-grid">
+                        <!-- UPI -->
+                        <label class="modal-pay-tile" id="modal-pay-tile-upi" onclick="selectModalPayment('upi')" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; padding: 0.65rem 0.35rem; border-radius: 8px; border: 2px solid var(--primary); background-color: #f0fdf4; cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                            <input type="radio" name="payment_method" value="upi" checked style="display: none;">
+                            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--primary);">qr_code_scanner</span>
+                            <span style="font-size: 0.75rem; font-weight: 700; color: var(--on-surface);">UPI / QR</span>
+                            <span style="font-size: 0.62rem; color: var(--secondary-stitch);">Instant App</span>
+                        </label>
+
+                        <!-- Card -->
+                        <label class="modal-pay-tile" id="modal-pay-tile-card" onclick="selectModalPayment('card')" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; padding: 0.65rem 0.35rem; border-radius: 8px; border: 1px solid var(--border-stitch); background-color: var(--surface-container-lowest); cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                            <input type="radio" name="payment_method" value="card" style="display: none;">
+                            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--secondary-stitch);">credit_card</span>
+                            <span style="font-size: 0.75rem; font-weight: 700; color: var(--on-surface);">Card</span>
+                            <span style="font-size: 0.62rem; color: var(--secondary-stitch);">POS Machine</span>
+                        </label>
+
+                        <!-- Cash -->
+                        <label class="modal-pay-tile" id="modal-pay-tile-cash" onclick="selectModalPayment('cash')" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; padding: 0.65rem 0.35rem; border-radius: 8px; border: 1px solid var(--border-stitch); background-color: var(--surface-container-lowest); cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                            <input type="radio" name="payment_method" value="cash" style="display: none;">
+                            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--secondary-stitch);">payments</span>
+                            <span style="font-size: 0.75rem; font-weight: 700; color: var(--on-surface);">Cash</span>
+                            <span style="font-size: 0.62rem; color: var(--secondary-stitch);">Front Desk</span>
+                        </label>
+
+                        <!-- Member Account / Tab -->
+                        <label class="modal-pay-tile" id="modal-pay-tile-member_tab" onclick="selectModalPayment('member_tab')" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; padding: 0.65rem 0.35rem; border-radius: 8px; border: 1px solid var(--border-stitch); background-color: var(--surface-container-lowest); cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                            <input type="radio" name="payment_method" value="member_tab" style="display: none;">
+                            <span class="material-symbols-outlined" style="font-size: 22px; color: var(--secondary-stitch);">account_balance_wallet</span>
+                            <span style="font-size: 0.75rem; font-weight: 700; color: var(--on-surface);">Member Tab</span>
+                            <span style="font-size: 0.62rem; color: var(--secondary-stitch);">Account / Free</span>
+                        </label>
+                    </div>
+
+                    <!-- Dynamic Payment Interactive Box -->
+                    <div id="modal-payment-interactive-panel" style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 8px; padding: 0.75rem; font-size: 0.75rem;">
+                        <!-- UPI View -->
+                        <div id="pay-view-upi" style="display: flex; gap: 0.75rem; align-items: center;">
+                            <div style="background: white; border: 1px solid var(--border-stitch); border-radius: 6px; padding: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <svg width="56" height="56" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="33" height="33" fill="white"/>
+                                    <rect x="2" y="2" width="7" height="7" fill="#15803d"/>
+                                    <rect x="3" y="3" width="5" height="5" fill="white"/>
+                                    <rect x="4" y="4" width="3" height="3" fill="#15803d"/>
+                                    <rect x="24" y="2" width="7" height="7" fill="#15803d"/>
+                                    <rect x="25" y="3" width="5" height="5" fill="white"/>
+                                    <rect x="26" y="4" width="3" height="3" fill="#15803d"/>
+                                    <rect x="2" y="24" width="7" height="7" fill="#15803d"/>
+                                    <rect x="3" y="25" width="5" height="5" fill="white"/>
+                                    <rect x="4" y="26" width="3" height="3" fill="#15803d"/>
+                                    <rect x="11" y="4" width="2" height="2" fill="#15803d"/>
+                                    <rect x="15" y="4" width="2" height="2" fill="#15803d"/>
+                                    <rect x="19" y="4" width="2" height="2" fill="#15803d"/>
+                                    <rect x="11" y="8" width="2" height="2" fill="#15803d"/>
+                                    <rect x="17" y="8" width="2" height="2" fill="#15803d"/>
+                                    <rect x="20" y="8" width="2" height="2" fill="#15803d"/>
+                                    <rect x="4" y="11" width="2" height="2" fill="#15803d"/>
+                                    <rect x="8" y="11" width="2" height="2" fill="#15803d"/>
+                                    <rect x="14" y="14" width="5" height="5" fill="#15803d"/>
+                                    <rect x="21" y="15" width="2" height="2" fill="#15803d"/>
+                                    <rect x="11" y="24" width="2" height="2" fill="#15803d"/>
+                                    <rect x="15" y="24" width="3" height="2" fill="#15803d"/>
+                                    <rect x="20" y="24" width="2" height="2" fill="#15803d"/>
+                                    <rect x="25" y="24" width="3" height="2" fill="#15803d"/>
+                                </svg>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 700; color: var(--on-surface); font-size: 0.8rem;">Champions Club Fast UPI</div>
+                                <div style="color: var(--secondary-stitch); font-family: monospace; font-size: 0.72rem; margin: 0.15rem 0;">VPA: championsclub@okaxis</div>
+                                <div style="color: #166534; font-size: 0.7rem; display: flex; align-items: center; gap: 0.25rem;">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
+                                    <span>Instant payment webhook verification active</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card View -->
+                        <div id="pay-view-card" style="display: none;">
+                            <div style="font-weight: 700; color: var(--on-surface); margin-bottom: 0.35rem;">POS Card Terminal Simulation</div>
+                            <div style="display: flex; gap: 0.45rem;">
+                                <input type="text" value="•••• •••• •••• 4242" readonly style="flex: 2; padding: 0.35rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--border-stitch); border-radius: 6px; background: white; font-family: monospace;">
+                                <input type="text" value="12/28" readonly style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--border-stitch); border-radius: 6px; background: white; font-family: monospace; text-align: center;">
+                                <input type="text" value="•••" readonly style="width: 50px; padding: 0.35rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--border-stitch); border-radius: 6px; background: white; font-family: monospace; text-align: center;">
+                            </div>
+                            <div style="font-size: 0.68rem; color: var(--secondary-stitch); margin-top: 0.35rem;">Swipe / Tap member Visa, Mastercard, or RuPay card at the reception counter.</div>
+                        </div>
+
+                        <!-- Cash View -->
+                        <div id="pay-view-cash" style="display: none;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                <span style="font-weight: 700; color: var(--on-surface);">Cash Tendered at Desk:</span>
+                                <span id="cash-change-display" style="font-weight: 700; color: #166534; font-size: 0.75rem;">Change Due: ₹0.00</span>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <span style="font-weight: 700; font-size: 0.85rem; color: var(--secondary-stitch);">₹</span>
+                                <input type="number" id="cash-tendered-input" placeholder="e.g. 500" oninput="calculateCashChange()" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.8rem; border: 1px solid var(--border-stitch); border-radius: 6px; background: white; font-family: monospace;">
+                            </div>
+                        </div>
+
+                        <!-- Member Tab View -->
+                        <div id="pay-view-member_tab" style="display: none;">
+                            <div style="display: flex; align-items: center; gap: 0.35rem; color: #166534; font-weight: 700; margin-bottom: 0.2rem;">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">account_balance_wallet</span>
+                                <span>Member Account Billing</span>
+                            </div>
+                            <div style="color: var(--secondary-stitch); font-size: 0.7rem; line-height: 1.4;">
+                                Fee will be settled against active plan privileges (Free for Gold Tier) or debited to the member's monthly statement ledger.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Actions -->
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.65rem; padding-top: 0.75rem; border-top: 1px solid var(--border-stitch);">
+                    <button type="button" onclick="closeBookingModal()" class="btn-secondary-low" style="font-size: 0.85rem; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="modal-submit-btn" class="btn-accent" style="font-size: 0.88rem; padding: 0.5rem 1.25rem; border: none; cursor: pointer;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">check</span>
+                        <span id="modal-submit-btn-text">Confirm Court Reservation</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- In-Web Booking Inspection & Quick Slot Release Modal -->
+<div id="booking-inspect-modal" class="club-modal-backdrop">
+    <div class="club-modal-dialog" style="max-width: 520px;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-stitch); display: flex; justify-content: space-between; align-items: center; background-color: var(--surface-container-low); border-top-left-radius: 16px; border-top-right-radius: 16px;">
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background-color: var(--primary-container); display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: var(--on-primary-fixed);">event_seat</span>
+                </div>
+                <div>
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--on-surface); margin: 0; line-height: 1.2;">Court Reservation Inspection</h3>
+                    <div style="font-size: 0.72rem; color: var(--secondary-stitch); text-transform: uppercase; letter-spacing: 0.04em;" id="inspect-booking-ref">Loading...</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeInspectModal()" style="background: transparent; border: none; cursor: pointer; color: var(--secondary-stitch); padding: 4px; border-radius: 6px; display: flex; align-items: center;" title="Close (Esc)">
+                <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+            </button>
+        </div>
+
+        <div style="padding: 1.5rem;">
+            <div id="inspect-loading" style="text-align: center; padding: 2rem 0;">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: var(--secondary-stitch); animation: spin 1s linear infinite;">sync</span>
+                <div style="font-size: 0.85rem; color: var(--secondary-stitch); margin-top: 0.5rem;">Fetching reservation details...</div>
+            </div>
+
+            <div id="inspect-content" style="display: none;">
+                <!-- Facility & Slot Box -->
+                <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 10px; padding: 1rem 1.15rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span id="inspect-court-name" style="font-size: 1.05rem; font-weight: 800; color: var(--on-surface);">Court</span>
+                        <span id="inspect-sport" style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; background: #e2e8f0; color: #334155;">SPORT</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.3rem;">
+                        <span style="color: var(--secondary-stitch);">Reserved Slot:</span>
+                        <strong id="inspect-time-diff" style="font-family: monospace; color: var(--primary);">--</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.82rem;">
+                        <span style="color: var(--secondary-stitch);">Date:</span>
+                        <span id="inspect-date" style="font-weight: 600;">--</span>
+                    </div>
+                </div>
+
+                <!-- Player Box -->
+                <div style="border: 1px solid var(--border-stitch); border-radius: 10px; padding: 0.9rem 1.15rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                        <span style="font-size: 0.75rem; color: var(--secondary-stitch); text-transform: uppercase; font-weight: 700;">Player Name</span>
+                        <span id="inspect-tier-badge" class="pill-tier" style="font-size: 0.7rem;">Member</span>
+                    </div>
+                    <div id="inspect-player-name" style="font-size: 1rem; font-weight: 800; color: var(--on-surface); margin-bottom: 0.25rem;">Player</div>
+                    <div style="display: flex; gap: 0.4rem; align-items: center; font-size: 0.78rem; color: var(--secondary-stitch);">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">call</span>
+                        <span id="inspect-player-contact">--</span>
+                    </div>
+                </div>
+
+                <!-- Payment Settlement Box -->
+                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 0.9rem 1.15rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #166534; letter-spacing: 0.04em;">Payment Settlement</div>
+                        <div id="inspect-pay-detail" style="font-size: 0.85rem; font-weight: 600; color: #15803d; margin-top: 0.15rem;">Settled via UPI</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div id="inspect-price" style="font-size: 1.25rem; font-weight: 800; color: #166534;">₹0.00</div>
+                        <span id="inspect-pay-status-pill" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: #dcfce7; color: #166534;">PAID</span>
+                    </div>
+                </div>
+
+                <!-- Modal Actions -->
+                <div style="display: flex; gap: 0.65rem; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-stitch); padding-top: 1rem;">
+                    <a id="inspect-receipt-btn" href="#" target="_blank" class="btn-secondary-low" style="font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">receipt_long</span>
+                        <span>View Voucher</span>
+                    </a>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button type="button" onclick="closeInspectModal()" class="btn-secondary-low" style="font-size: 0.85rem; cursor: pointer;">
+                            Close
+                        </button>
+                        <button type="button" id="inspect-cancel-btn" onclick="executeCancelFromInspect()" style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid #fecaca; background-color: #fef2f2; color: #b91c1c; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">event_busy</span>
+                            <span>Release Slot</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Parse data serialized from Django backend
+const courtsData = JSON.parse('{{ courts_json|default:"{}"|escapejs }}');
+const membersData = JSON.parse('{{ members_json|default:"{}"|escapejs }}');
+
+// Initialize member select options in modal
+function populateModalMembers() {
+    const memberSelect = document.getElementById('modal-member-select');
+    if (!memberSelect) return;
+    memberSelect.innerHTML = '<option value="">-- Or Walk-in Guest (No Member Plan) --</option>';
+
+    Object.values(membersData).forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        const statusText = m.is_active ? `Active · ${m.plan_name}` : 'Inactive / Expired';
+        opt.innerText = `${m.name} (${statusText})`;
+        memberSelect.appendChild(opt);
+    });
+}
+
+// Modal Open / Close Handlers
+function openBookingModal(courtId = null, startIso = null) {
+    const backdrop = document.getElementById('booking-modal-backdrop');
+    if (!backdrop) return;
+
+    populateModalMembers();
+    document.getElementById('modal-error-alert').style.display = 'none';
+
+    // Set court if provided
+    if (courtId) {
+        const courtSelect = document.getElementById('modal-court-select');
+        if (courtSelect) courtSelect.value = courtId;
+    }
+
+    // Set start time if provided, or default to current date at 08:00
+    const startInput = document.getElementById('modal-start-input');
+    if (startInput) {
+        if (startIso) {
+            startInput.value = startIso;
+        } else {
+            const dateJump = document.getElementById('date-jump');
+            const dStr = dateJump ? dateJump.value : new Date().toISOString().split('T')[0];
+            startInput.value = `${dStr}T08:00`;
+        }
+    }
+
+    updateModalLiveRate();
+    backdrop.classList.add('active');
+}
+
+function closeBookingModal() {
+    const backdrop = document.getElementById('booking-modal-backdrop');
+    if (backdrop) backdrop.classList.remove('active');
+}
+
+// ESC Key listener to close modal
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeBookingModal();
+});
+
+// Real-Time Reactive Rate Calculator (Zero Page Refresh)
+function updateModalLiveRate() {
+    const courtId = document.getElementById('modal-court-select')?.value;
+    const memberId = document.getElementById('modal-member-select')?.value;
+    const startVal = document.getElementById('modal-start-input')?.value;
+    const court = courtId && courtsData[courtId] ? courtsData[courtId] : null;
+    const member = memberId && membersData[memberId] ? membersData[memberId] : null;
+
+    // 1. Time Difference calculation (Start -> End + 60 min)
+    let diffStr = '--:-- → --:-- (60 min)';
+    let startD = null;
+    let endD = null;
+    if (startVal) {
+        startD = new Date(startVal);
+        if (!isNaN(startD.getTime())) {
+            endD = new Date(startD.getTime() + 60 * 60 * 1000);
+            const formatTime = (d) => {
+                let hrs = d.getHours();
+                let mins = d.getMinutes();
+                const ampm = hrs >= 12 ? 'PM' : 'AM';
+                hrs = hrs % 12;
+                hrs = hrs ? hrs : 12;
+                return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')} ${ampm}`;
+            };
+            diffStr = `${formatTime(startD)} → ${formatTime(endD)} (60 min)`;
+        }
+    }
+    const timeslotEl = document.getElementById('modal-live-timeslot');
+    if (timeslotEl) timeslotEl.innerText = diffStr;
+
+    // 2. Price calculation
+    const conflictBanner = document.getElementById('modal-live-conflict-banner');
+    if (conflictBanner) conflictBanner.style.display = 'none';
+
+    if (court) {
+        document.getElementById('modal-live-court-name').innerText = `${court.name} · ${court.sport}`;
+        const standardRate = parseFloat(court.hourly_rate);
+        let finalPrice = standardRate;
+        let basisText = `Standard Rate (₹${standardRate.toFixed(2)}/hr)`;
+        let benefitText = 'Standard Rate Applied';
+        let savings = 0;
+
+        if (member && member.is_active && member.plan_court_rate !== null) {
+            finalPrice = parseFloat(member.plan_court_rate);
+            savings = Math.max(0, standardRate - finalPrice);
+            basisText = `${member.plan_name} Court Entitlement`;
+            benefitText = finalPrice === 0 ? `100% Free · ${member.plan_name}` : `₹${finalPrice.toFixed(2)}/hr · ${member.plan_name}`;
+        } else if (member && !member.is_active) {
+            basisText = `Standard Rate (Member Inactive)`;
+            benefitText = `Inactive: No Plan Benefit`;
+        }
+
+        document.getElementById('modal-live-total-price').innerText = `₹${finalPrice.toFixed(2)}`;
+        document.getElementById('modal-live-rate-basis').innerText = basisText;
+        document.getElementById('modal-live-savings-badge').innerText = benefitText;
+
+        const banner = document.getElementById('modal-live-savings-banner');
+        if (banner) {
+            if (savings > 0) {
+                banner.style.display = 'block';
+                banner.innerHTML = `<span class="material-symbols-outlined" style="font-size:15px; vertical-align:middle; margin-right:3px;">loyalty</span> Member Savings: You save <strong>₹${savings.toFixed(2)}</strong> with <strong>${member.plan_name}</strong>!`;
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        // Check if selected court & slot already booked on this matrix
+        if (startD && !isNaN(startD.getTime())) {
+            const hourStr = `${startD.getHours().toString().padStart(2, '0')}:00`;
+            const bookedCell = document.querySelector(`.matrix-slot-booked[data-court-id="${court.id}"][data-slot-hour="${hourStr}"]`);
+            if (bookedCell && conflictBanner) {
+                conflictBanner.style.display = 'block';
+                conflictBanner.innerHTML = `<span class="material-symbols-outlined" style="font-size:15px; vertical-align:middle; margin-right:3px;">warning</span> Notice: ${court.name} at ${hourStr} is already marked as booked for today!`;
+            }
+        }
+
+        // Update payment due badge and submit button text
+        const payBadge = document.getElementById('modal-payment-due-badge');
+        const submitBtnText = document.getElementById('modal-submit-btn-text');
+        if (finalPrice === 0) {
+            if (payBadge) {
+                payBadge.innerText = '₹0.00 · Free Included';
+                payBadge.style.backgroundColor = '#f0fdf4';
+                payBadge.style.color = '#166534';
+                payBadge.style.borderColor = '#bbf7d0';
+            }
+            if (submitBtnText) submitBtnText.innerText = 'Confirm Reservation (Free · ₹0)';
+            selectModalPayment('member_tab');
+        } else {
+            if (payBadge) {
+                payBadge.innerText = `Payable: ₹${finalPrice.toFixed(2)}`;
+                payBadge.style.backgroundColor = '#fefce8';
+                payBadge.style.color = '#854d0e';
+                payBadge.style.borderColor = '#fef08a';
+            }
+            if (submitBtnText) submitBtnText.innerText = `Confirm & Pay ₹${finalPrice.toFixed(2)}`;
+        }
+    } else {
+        document.getElementById('modal-live-court-name').innerText = 'Select Court';
+        document.getElementById('modal-live-total-price').innerText = '₹0.00';
+        document.getElementById('modal-live-rate-basis').innerText = 'Standard Walk-in Rate';
+        document.getElementById('modal-live-savings-badge').innerText = 'Select a court to calculate';
+        const banner = document.getElementById('modal-live-savings-banner');
+        if (banner) banner.style.display = 'none';
+
+        const payBadge = document.getElementById('modal-payment-due-badge');
+        if (payBadge) {
+            payBadge.innerText = 'Payable: ₹0.00';
+            payBadge.style.backgroundColor = '#f0fdf4';
+            payBadge.style.color = '#166534';
+            payBadge.style.borderColor = '#bbf7d0';
+        }
+        const submitBtnText = document.getElementById('modal-submit-btn-text');
+        if (submitBtnText) submitBtnText.innerText = 'Confirm Court Reservation';
+    }
+}
+
+// Payment Option Selection Helper
+function selectModalPayment(method) {
+    const tiles = ['upi', 'card', 'cash', 'member_tab'];
+    tiles.forEach(t => {
+        const tile = document.getElementById(`modal-pay-tile-${t}`);
+        const input = tile ? tile.querySelector('input') : null;
+        const icon = tile ? tile.querySelector('.material-symbols-outlined') : null;
+        if (tile && input) {
+            if (t === method) {
+                input.checked = true;
+                tile.style.borderColor = 'var(--primary)';
+                tile.style.borderWidth = '2px';
+                tile.style.backgroundColor = '#f0fdf4';
+                if (icon) icon.style.color = 'var(--primary)';
+            } else {
+                input.checked = false;
+                tile.style.borderColor = 'var(--border-stitch)';
+                tile.style.borderWidth = '1px';
+                tile.style.backgroundColor = 'var(--surface-container-lowest)';
+                if (icon) icon.style.color = 'var(--secondary-stitch)';
+            }
+        }
+
+        const panel = document.getElementById(`pay-view-${t}`);
+        if (panel) {
+            panel.style.display = (t === method) ? (t === 'upi' ? 'flex' : 'block') : 'none';
+        }
+    });
+
+    if (method === 'cash') {
+        calculateCashChange();
+    }
+}
+
+function calculateCashChange() {
+    const input = document.getElementById('cash-tendered-input');
+    const display = document.getElementById('cash-change-display');
+    const priceText = document.getElementById('modal-live-total-price').innerText.replace('₹', '');
+    const price = parseFloat(priceText) || 0;
+    const tendered = parseFloat(input ? input.value : 0) || 0;
+    const change = Math.max(0, tendered - price);
+    if (display) {
+        display.innerText = `Change Due: ₹${change.toFixed(2)}`;
+    }
+}
+
+// In-Web AJAX Form Submission Handler (Zero Page Refresh)
+async function handleModalSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const submitBtn = document.getElementById('modal-submit-btn');
+    const submitText = document.getElementById('modal-submit-btn-text');
+    const errorAlert = document.getElementById('modal-error-alert');
+
+    errorAlert.style.display = 'none';
+    submitBtn.disabled = true;
+    submitText.innerText = 'Confirming Reservation...';
+
+    const formData = new FormData(form);
+    const csrfToken = window.getCsrfToken ? window.getCsrfToken() : '';
+
+    try {
+        const response = await fetch('{% url "club:booking_create" %}', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            closeBookingModal();
+
+            // 1. Prioritize In-Web Pop-up Toast
+            if (window.showClubToast) {
+                const toastTitle = data.price > 0 ? '🎉 Court Reserved & Payment Recorded!' : '🎉 Court Reserved (Plan Entitlement)!';
+                window.showClubToast(toastTitle, data.message, 'success', 6500);
+            }
+
+            // 2. Real-time in-place mutation of the matrix slot cell
+            const cellId = `slot-cell-${data.court_id}-${data.slot_hour.replace(':', '')}`;
+            const cell = document.getElementById(cellId) || document.querySelector(`[data-court-id="${data.court_id}"][data-slot-hour="${data.slot_hour}"]`);
+
+            if (cell) {
+                cell.className = 'matrix-slot-cell matrix-slot-booked slot-pulse-highlight';
+                cell.setAttribute('onclick', `inspectBookedSlot('${data.booking_id}')`);
+                cell.setAttribute('data-booking-id', data.booking_id);
+                cell.style.cursor = 'pointer';
+                cell.removeAttribute('href');
+                cell.removeAttribute('data-slot-cell');
+                cell.title = `Booked: ${data.player_display} (${data.booking_type}) · ${data.time_diff} · Price: ₹${data.price.toFixed(0)} · Click to View / Cancel Slot`;
+                cell.innerHTML = `
+                    <span class="matrix-slot-price" style="font-size: 0.8rem; font-weight: 700; color: #475569; line-height: 1.1;">₹${data.price.toFixed(0)}</span>
+                    <span class="matrix-slot-status" style="font-size: 0.62rem; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.03em;">Booked</span>
+                `;
+            }
+
+            // 3. Real-time increment of Today's Confirmed Slots counter
+            const counterEl = document.getElementById('total-confirmed-counter');
+            if (counterEl) {
+                const cur = parseInt(counterEl.innerText.trim()) || 0;
+                counterEl.innerText = cur + 1;
+            }
+
+            // Reset form
+            form.reset();
+        } else {
+            const errMsg = data.message || (data.errors ? data.errors.join(' ') : 'Reservation validation failed.');
+            errorAlert.innerText = errMsg;
+            errorAlert.style.display = 'block';
+            if (window.showClubToast) {
+                window.showClubToast('Reservation Alert', errMsg, 'error', 6000);
+            }
+        }
+    } catch (err) {
+        errorAlert.innerText = `Network or submission error: ${err.message}`;
+        errorAlert.style.display = 'block';
+        if (window.showClubToast) {
+            window.showClubToast('Connection Error', 'Failed to reach server. Please try again.', 'error');
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitText.innerText = 'Confirm Court Reservation';
+    }
+}
+
+// Seamless Date Switching (Zero Page Refresh)
+async function handleDateChange(newDate) {
+    if (!newDate) return;
+    const wrapper = document.getElementById('matrix-wrapper');
+    if (!wrapper) return;
+
+    wrapper.style.opacity = '0.4';
+    try {
+        const response = await fetch(`{% url 'club:public_availability' %}?date=${newDate}`);
+        if (response.ok) {
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newMatrix = doc.getElementById('matrix-wrapper');
+
+            if (newMatrix) {
+                wrapper.innerHTML = newMatrix.innerHTML;
+                window.history.pushState(null, '', `?date=${newDate}`);
+                const dateJump = document.getElementById('date-jump');
+                if (dateJump) dateJump.value = newDate;
+
+                if (window.showClubToast) {
+                    window.showClubToast('Availability Updated', `Loaded live court schedule for ${newDate}`, 'info', 3000);
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Error fetching date schedule:', err);
+    } finally {
+        wrapper.style.opacity = '1';
+    }
+}
+
+// Tier Rate Perspective Switcher
+function setMatrixPerspective(tier, activeBtn) {
+    document.querySelectorAll('.tier-perspective-btn').forEach(b => {
+        b.style.backgroundColor = 'var(--surface-container-low)';
+        b.style.color = 'var(--secondary-stitch)';
+        b.style.borderColor = 'var(--border-stitch)';
+        b.style.fontWeight = '500';
+    });
+    if (activeBtn) {
+        activeBtn.style.backgroundColor = 'var(--primary)';
+        activeBtn.style.color = 'var(--on-primary)';
+        activeBtn.style.borderColor = 'var(--primary)';
+        activeBtn.style.fontWeight = '700';
+    }
+
+    document.querySelectorAll('[data-slot-cell="free"]').forEach(cell => {
+        const price = cell.getAttribute(`data-${tier}`);
+        const priceEl = cell.querySelector('.matrix-slot-price');
+        const statusEl = cell.querySelector('.matrix-slot-status');
+
+        if (price !== null && priceEl) {
+            const num = parseFloat(price);
+            if (num === 0) {
+                priceEl.innerText = 'FREE';
+                priceEl.style.color = '#15803d';
+                if (statusEl) {
+                    statusEl.innerText = '100% Off';
+                    statusEl.style.color = '#15803d';
+                }
+            } else {
+                priceEl.innerText = `₹${num.toFixed(0)}`;
+                priceEl.style.color = '#166534';
+                if (statusEl) {
+                    statusEl.innerText = 'Open';
+                    statusEl.style.color = '#15803d';
+                }
+            }
+        }
+    });
+}
+
+// In-Web Booking Inspection & Live Slot Cancellation
+let currentInspectBookingId = null;
+
+async function inspectBookedSlot(bookingId) {
+    if (!bookingId) return;
+    currentInspectBookingId = bookingId;
+    const modal = document.getElementById('booking-inspect-modal');
+    const loading = document.getElementById('inspect-loading');
+    const content = document.getElementById('inspect-content');
+
+    if (modal) modal.style.display = 'flex';
+    if (loading) loading.style.display = 'block';
+    if (content) content.style.display = 'none';
+
+    try {
+        const response = await fetch(`/club/bookings/${bookingId}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('inspect-booking-ref').innerText = `Ref: CC-BKG-${data.id.toString().padStart(5, '0')} · ${data.booking_type}`;
+            document.getElementById('inspect-court-name').innerText = data.court_name;
+            document.getElementById('inspect-sport').innerText = data.sport;
+            document.getElementById('inspect-time-diff').innerText = data.time_diff;
+            document.getElementById('inspect-date').innerText = data.date_display;
+            document.getElementById('inspect-player-name').innerText = data.player_name;
+            document.getElementById('inspect-player-contact').innerText = data.player_contact;
+
+            const tierBadge = document.getElementById('inspect-tier-badge');
+            if (tierBadge) {
+                tierBadge.innerText = data.tier_name;
+                tierBadge.className = `pill-tier tier-${data.tier_code}`;
+            }
+
+            document.getElementById('inspect-price').innerText = `₹${data.price.toFixed(2)}`;
+            document.getElementById('inspect-pay-detail').innerText = `Settled via ${data.payment_method_display}`;
+            document.getElementById('inspect-pay-status-pill').innerText = data.payment_status_display.toUpperCase();
+
+            const receiptBtn = document.getElementById('inspect-receipt-btn');
+            if (receiptBtn && data.receipt_url) {
+                receiptBtn.href = data.receipt_url;
+            }
+
+            loading.style.display = 'none';
+            content.style.display = 'block';
+        } else {
+            if (window.showClubToast) window.showClubToast('Inspection Notice', 'Could not load booking details.', 'error');
+            closeInspectModal();
+        }
+    } catch (e) {
+        if (window.showClubToast) window.showClubToast('Connection Error', e.message, 'error');
+        closeInspectModal();
+    }
+}
+
+function closeInspectModal() {
+    const modal = document.getElementById('booking-inspect-modal');
+    if (modal) modal.style.display = 'none';
+    currentInspectBookingId = null;
+}
+
+async function executeCancelFromInspect() {
+    if (!currentInspectBookingId) return;
+    if (!confirm('Cancel this court reservation? This will immediately free the slot on the matrix for other members.')) {
+        return;
+    }
+
+    const cancelBtn = document.getElementById('inspect-cancel-btn');
+    cancelBtn.disabled = true;
+    cancelBtn.innerText = 'Releasing...';
+
+    const csrfToken = window.getCsrfToken ? window.getCsrfToken() : '';
+    try {
+        const response = await fetch(`/club/bookings/${currentInspectBookingId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+            closeInspectModal();
+
+            // Transform matrix slot cell back to open/free in-place
+            const cellId = `slot-cell-${data.court_id}-${data.slot_hour.replace(':', '')}`;
+            const cell = document.getElementById(cellId) || document.querySelector(`[data-court-id="${data.court_id}"][data-slot-hour="${data.slot_hour}"]`);
+            if (cell) {
+                const dateJump = document.getElementById('date-jump');
+                const selectedDate = dateJump ? dateJump.value : '';
+                cell.className = 'matrix-slot-cell matrix-slot-free slot-pulse-highlight';
+                cell.setAttribute('data-slot-cell', 'free');
+                cell.setAttribute('onclick', `event.preventDefault(); openBookingModal('${data.court_id}', '${selectedDate}T${data.slot_hour}');`);
+                cell.setAttribute('href', `/club/bookings/new/?court=${data.court_id}&start=${selectedDate}T${data.slot_hour}`);
+                cell.removeAttribute('data-booking-id');
+                cell.style.cursor = '';
+                cell.title = `Reserve ${data.court_name} (${data.slot_hour}) · Standard Rate: ₹${data.standard_price.toFixed(0)} · Click to Reserve`;
+                cell.innerHTML = `
+                    <span class="matrix-slot-price" style="font-size: 0.85rem; font-weight: 800; color: #166534; line-height: 1.1;">₹${data.standard_price.toFixed(0)}</span>
+                    <span class="matrix-slot-status" style="font-size: 0.62rem; font-weight: 700; text-transform: uppercase; color: #15803d; letter-spacing: 0.03em;">Open</span>
+                `;
+            }
+
+            // Decrement active confirmed counter
+            const counterEl = document.getElementById('total-confirmed-counter');
+            if (counterEl) {
+                const cur = parseInt(counterEl.innerText.trim()) || 0;
+                counterEl.innerText = Math.max(0, cur - 1);
+            }
+
+            if (window.showClubToast) {
+                window.showClubToast('Slot Released & Free', data.message, 'success', 5000);
+            }
+        } else {
+            alert(data.message || 'Failed to cancel reservation.');
+        }
+    } catch (e) {
+        alert(`Cancellation error: ${e.message}`);
+    } finally {
+        cancelBtn.disabled = false;
+        cancelBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">event_busy</span><span>Release Slot</span>';
+    }
+}
+
+// Background Live Sync (Polls every 25 seconds for real-time updates)
+function initLiveSync() {
+    setInterval(async () => {
+        const dateJump = document.getElementById('date-jump');
+        const currentDate = dateJump ? dateJump.value : '';
+        if (!currentDate) return;
+
+        try {
+            const response = await fetch(`{% url 'club:public_availability' %}?date=${currentDate}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (response.ok) {
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Update counter
+                const newCounter = doc.getElementById('total-confirmed-counter');
+                const curCounter = document.getElementById('total-confirmed-counter');
+                if (newCounter && curCounter && newCounter.innerText !== curCounter.innerText) {
+                    curCounter.innerText = newCounter.innerText;
+                }
+
+                // Check for newly booked cells
+                doc.querySelectorAll('.matrix-slot-booked').forEach(remoteCell => {
+                    const cId = remoteCell.getAttribute('data-court-id');
+                    const sHour = remoteCell.getAttribute('data-slot-hour');
+                    if (cId && sHour) {
+                        const localCell = document.querySelector(`[data-court-id="${cId}"][data-slot-hour="${sHour}"]`);
+                        if (localCell && localCell.classList.contains('matrix-slot-free')) {
+                            localCell.className = 'matrix-slot-cell matrix-slot-booked slot-pulse-highlight';
+                            localCell.removeAttribute('onclick');
+                            localCell.removeAttribute('href');
+                            localCell.title = remoteCell.title;
+                            localCell.innerHTML = remoteCell.innerHTML;
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            // Silently ignore background poll errors
+        }
+    }, 25000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    populateModalMembers();
+    initLiveSync();
+});
+</script>
 {% endblock %}

@@ -20,13 +20,9 @@
 
         <!-- Quick Action / Operational Indicators -->
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <a href="{% url 'club:public_availability' %}" class="btn-secondary-low">
-                <span class="material-symbols-outlined" style="font-size: 18px;">grid_view</span>
-                <span>Live Court Matrix</span>
-            </a>
-            <a href="{% url 'club:booking_create' %}" class="btn-accent">
-                <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
-                <span>New Reservation</span>
+            <a href="{% url 'club:public_availability' %}" class="btn-accent">
+                <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span>
+                <span>Reserve Court</span>
             </a>
         </div>
     </div>
@@ -48,18 +44,17 @@
             </div>
         </div>
 
-        <!-- Metric 2: Outstanding Dues -->
+        <!-- Metric 2: Pro Shop & Bar Revenue -->
         <div class="metric-card">
             <div class="metric-header">
-                <span>Outstanding Dues</span>
-                <span class="material-symbols-outlined" style="font-size: 18px;">account_balance_wallet</span>
+                <span>Pro Shop &amp; Bar Revenue</span>
+                <span class="material-symbols-outlined" style="font-size: 18px;">point_of_sale</span>
             </div>
             <div>
-                <div class="metric-value" style="color: var(--secondary-stitch);">₹0.00</div>
+                <div class="metric-value">₹{{ commerce_revenue }}</div>
                 <div class="metric-footer">
-                    <span class="pill-status" style="background-color: #f1f5f9; color: #64748b; font-size: 0.7rem; padding: 0.15rem 0.5rem;">
-                        No pending dues
-                    </span>
+                    <span style="color: var(--success); font-weight: 600;">{{ completed_sales_count }}</span>
+                    <span>&middot; completed counter sales</span>
                 </div>
             </div>
         </div>
@@ -171,7 +166,7 @@
                                 <div style="font-size: 2rem; margin-bottom: 0.5rem;">📅</div>
                                 <div style="font-weight: 600; margin-bottom: 0.25rem;">No Bookings Recorded Yet</div>
                                 <p style="font-size: 0.85rem; margin-bottom: 1rem;">Reserve a court to see live activity appear on this ledger.</p>
-                                <a href="{% url 'club:booking_create' %}" class="btn-accent">+ Reserve First Court</a>
+                                <a href="{% url 'club:public_availability' %}" class="btn-accent">+ Reserve First Court</a>
                             </td>
                         </tr>
                     {% endif %}
@@ -205,6 +200,27 @@
                     {% endfor %}
                 </div>
             </div>
+
+            <!-- Low Stock Warnings Card -->
+            {% if low_stock_products %}
+            <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: var(--error);">inventory_2</span>
+                        <h3 style="font-size: 0.95rem; font-weight: 700;">Low Inventory Alerts</h3>
+                    </div>
+                    <a href="{% url 'commerce:guest_counter' %}" style="font-size: 0.75rem; color: var(--primary); text-decoration: none; font-weight: 600;">Restock &rarr;</a>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    {% for item in low_stock_products %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.65rem; background-color: #fff1f2; border: 1px solid #ffe4e6; border-radius: 6px;">
+                            <span style="font-size: 0.82rem; font-weight: 600; color: #9f1239;">{{ item.name }}</span>
+                            <span class="pill-status pill-status-expired" style="font-size: 0.7rem;">{{ item.stock_quantity }} left (min: {{ item.low_stock_threshold }})</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

@@ -112,6 +112,21 @@ def sale_detail(request, pk):
     return _counter_response(request, sale=sale)
 
 
+@require_safe
+def sale_receipt(request, pk):
+    """Clean printable thermal / standard POS receipt for completed or past counter sales."""
+    sale = get_object_or_404(
+        Sale.objects.select_related('member', 'member__plan').prefetch_related('items__product'),
+        pk=pk
+    )
+    context = {
+        'page_title': f"Receipt #{sale.pk} · Champions Club",
+        'sale': sale,
+        'items': sale.items.all(),
+    }
+    return render(request, "commerce/receipt.html", context)
+
+
 def _sale_action(request, pk, operation):
     try:
         sale = operation(pk)
