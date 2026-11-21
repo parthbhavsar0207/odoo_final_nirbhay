@@ -12,10 +12,15 @@ from club.forms import MembershipPlanForm
 from commerce.counter_forms import GuestSaleForm, MemberSaleForm
 from commerce.models import Product, Sale
 from commerce.services import create_sale, complete_sale, cancel_sale
+from frontend.tests.helpers import login_test_staff
 
 
 @skipUnless(connection.vendor == "postgresql", "Requires actual PostgreSQL catalogue integration")
 class ProductSearchCounterTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        login_test_staff(self.client)
+
     @classmethod
     def setUpTestData(cls):
         cls.product = Product.objects.create(
@@ -45,7 +50,7 @@ class ProductSearchCounterTests(TestCase):
             reverse("commerce:guest_counter") + f"?product={self.product.pk}#guest-sale-form",
         )
 
-    def test_header_product_suggestions_include_real_price_stock_and_specific_links(self):
+    def test_header_product_suggestions_include_price_and_link_without_inventory(self):
         response = self.client.get(reverse("club:search_suggestions"), {"q": "Searchable"})
         self.assertEqual(response.status_code, 200)
         products = [
@@ -58,7 +63,7 @@ class ProductSearchCounterTests(TestCase):
         product_result = next(item for item in products if item["title"] == self.product.name)
         self.assertEqual(product_result["url"], self.product.get_absolute_url())
         self.assertIn("1499.50", product_result["subtitle"])
-        self.assertIn("12", product_result["subtitle"])
+        self.assertNotIn("in stock", product_result["subtitle"])
         self.assertFalse(any(item["title"] == self.inactive_product.name for item in products))
 
     def test_following_suggestion_selects_actual_product_without_creating_a_sale(self):
@@ -76,7 +81,7 @@ class ProductSearchCounterTests(TestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock_quantity, 12)
 
-    def test_catalog_aliases_accept_product_selection_without_login(self):
+    def test_catalog_aliases_accept_product_selection_for_authenticated_staff(self):
         for route in ["commerce:index", "commerce:shop", "commerce:guest_counter"]:
             with self.subTest(route=route):
                 response = self.client.get(reverse(route), {"product": self.product.pk})
@@ -142,6 +147,7 @@ class ProductSearchCounterTests(TestCase):
 
     def test_preselected_counter_still_requires_csrf_on_creation(self):
         client = Client(enforce_csrf_checks=True)
+        login_test_staff(client)
         response = client.get(
             reverse("commerce:guest_counter"), {"product": self.product.pk},
         )

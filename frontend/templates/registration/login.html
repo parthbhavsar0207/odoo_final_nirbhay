@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Staff sign in · Champions Club{% endblock %}
+
+{% block extra_head %}
+<style>
+    .staff-login-card input[type="text"], .staff-login-card input[type="password"] { width: 100%; min-height: 44px; padding: 0.65rem 0.75rem; border: 1px solid var(--border-stitch); border-radius: 8px; background: var(--surface-container-lowest); color: var(--on-surface); font: inherit; }
+    .staff-login-card input:focus { outline: 2px solid var(--primary-container); outline-offset: 2px; }
+    .staff-login-card .errorlist { margin: 0; list-style: none; color: var(--danger); font-size: 0.85rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-container" style="max-width: 480px;">
+    <div class="staff-login-card" style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 14px; padding: 1.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background-color: var(--primary-container); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+            <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+        </div>
+        <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.02em;">Staff sign in</h1>
+        <p style="font-size: 0.88rem; color: var(--secondary-stitch); margin: 0.5rem 0 1.5rem;">Use your assigned staff account to access club operations.</p>
+
+        <form method="post" action="{% url 'staff_login' %}" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            {% if form.non_field_errors %}
+                <div role="alert" style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-left: 4px solid var(--danger); border-radius: 8px; padding: 0.75rem; margin-bottom: 1.25rem;">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--on-surface); margin-bottom: 0.4rem;">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}<div role="alert" style="margin-top: 0.35rem;">{{ field.errors }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn-accent" style="width: 100%; justify-content: center; min-height: 44px;">Sign in</button>
+            </div>
+        </form>
+        <p style="font-size: 0.8rem; color: var(--secondary-stitch); margin-top: 1.25rem;">Need an account or password reset? Contact your club administrator.</p>
+        <a href="{% url 'club:sports_directory' %}" class="btn-secondary-low" style="margin-top: 1rem;">Browse public club pages</a>
+    </div>
+</div>
+{% endblock %}

@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from club.models import Booking, BookingParticipant, Court, Member
+from frontend.tests.helpers import login_test_staff
 
 
 class DailyLimitFixtures:
@@ -44,6 +45,10 @@ class DailyLimitFixtures:
 
 @skipUnless(connection.vendor == "postgresql", "Requires PostgreSQL booking constraints and row locks")
 class BookingDailyLimitTests(DailyLimitFixtures, TestCase):
+    def setUp(self):
+        super().setUp()
+        login_test_staff(self.client)
+
     def test_primary_third_booking_is_rejected_without_partial_record(self):
         self.booking(9, member=self.member)
         self.booking(11, member=self.member)
