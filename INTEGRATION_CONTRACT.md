@@ -27,6 +27,7 @@ Set the Django timezone to `Asia/Kolkata`. Use decimal fields for money. Keep se
 - A confirmed booking blocks the same court for its full time range. Enforce no-overlap in PostgreSQL with a GiST exclusion constraint and `btree_gist`; the screen's availability check is only a convenience.
 - A member can participate in at most two confirmed bookings per club-local date. Count each member once per booking, including social bookings. Guests without a member record do not count against a member's limit.
 - Store the booking price and sale item price/discount when confirmed/completed; later plan changes must not rewrite history.
+- Membership status and booking pricing rule: A member receives their plan's court rate only when their membership dates include the booking date and they are not suspended. An expired or suspended profile may still be used to book at the normal walk-in court rate (retaining the member link for club history, but without member pricing or plan benefits). A booking without a member profile also uses the normal walk-in court rate. The booking form does not accept a user-submitted price; the backend calculates and snapshots it upon confirmation.
 - Complete a sale and decrement stock in one database transaction, once only. Cancelled sales must not leave stock deducted.
 - Owner summaries read booking and sale records; do not save manually typed totals. Label confirmed booking value separately from completed shop/bar sales.
 

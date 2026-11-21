@@ -10,13 +10,35 @@
             <p class="section-subtitle">Court Reservation Schedule &amp; Overlap Management (Module owned by Nayan)</p>
         </div>
         <div>
-            <button class="btn btn-primary" disabled title="Feature implementation in progress by Nayan">+ Reserve Court</button>
+            <a href="{% url 'club:booking_create' %}" class="btn btn-primary">+ Reserve Court</a>
         </div>
     </div>
 
-    <div class="info-banner">
-        <strong>📋 Backend Contract Handoff (Nayan &rarr; Pratik):</strong>
-        <p>Sessions last 60 minutes and start every 30 minutes. PostgreSQL GiST exclusion constraint (<code>btree_gist</code> enabled) prevents overlapping bookings. Members are limited to at most 2 confirmed bookings per local club date.</p>
+    <!-- Court Filter & Legend -->
+    <div class="card" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <form method="get" style="display: flex; gap: 1rem; align-items: center;">
+            <label for="court-filter" style="font-weight: 600; font-size: 0.9rem;">Court:</label>
+            <select name="court" id="court-filter" class="form-select" onchange="this.form.submit()">
+                <option value="">All Courts</option>
+                {% for court in courts %}
+                    <option value="{{ court.id }}" {% if selected_court == court.id|stringformat:"s" %}selected{% endif %}>
+                        {{ court.name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <label for="status-filter" style="font-weight: 600; font-size: 0.9rem; margin-left: 0.5rem;">Status:</label>
+            <select name="status" id="status-filter" class="form-select" onchange="this.form.submit()">
+                <option value="">All Statuses</option>
+                <option value="confirmed" {% if selected_status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                <option value="draft" {% if selected_status == 'draft' %}selected{% endif %}>Draft</option>
+                <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+        </form>
+
+        <div style="font-size: 0.85rem; color: var(--text-muted);">
+            <span>⚡ 60-min slots | 30-min start intervals | Max 2 plays/day/member</span>
+        </div>
     </div>
 
     <div class="table-container">
@@ -25,11 +47,12 @@
                 <tr>
                     <th>Booking ID</th>
                     <th>Court</th>
-                    <th>Booked By</th>
-                    <th>Time Slot</th>
-                    <th>Type</th>
-                    <th>Price</th>
+                    <th>Player / Contact</th>
+                    <th>Time Slot (Asia/Kolkata)</th>
+                    <th>Play Type</th>
+                    <th>Snapshotted Price</th>
                     <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -37,18 +60,56 @@
                     {% for booking in bookings %}
                         <tr>
                             <td>#{{ booking.id }}</td>
-                            <td>{{ booking.court.name }}</td>
-                            <td>{{ booking.member.name|default:"Walk-in" }}</td>
-                            <td>{{ booking.start_datetime|date:"Y-m-d H:i" }} - {{ booking.end_datetime|date:"H:i" }}</td>
-                            <td>{{ booking.booking_type }}</td>
-                            <td>₹{{ booking.price }}</td>
-                            <td><span class="badge">{{ booking.status }}</span></td>
+                            <td><strong>{{ booking.court.name }}</strong></td>
+                            <td>
+                                {% if booking.booked_by_member %}
+                                    <a href="{% url 'club:member_edit' booking.booked_by_member.id %}" style="text-decoration: none; color: var(--primary); font-weight: 600;">
+                                        {{ booking.booked_by_member.name }}
+                                    </a>
+                                    {% if booking.booked_by_member.plan %}
+                                        <span class="badge badge-gold" style="font-size: 0.7rem; margin-left: 0.25rem;">{{ booking.booked_by_member.plan.name }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="color: var(--text-muted);">Walk-in: {{ booking.walkin_name|default:"Guest" }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ booking.start_datetime|date:"Y-m-d H:i" }} &ndash; {{ booking.end_datetime|date:"H:i" }}</div>
+                            </td>
+                            <td>
+                                <span class="badge {% if booking.booking_type == 'social' %}badge-info{% else %}badge{% endif %}">
+                                    {{ booking.get_booking_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <strong>₹{{ booking.price }}</strong>
+                            </td>
+                            <td>
+                                {% if booking.status == 'confirmed' %}
+                                    <span class="badge badge-success">Confirmed</span>
+                                {% elif booking.status == 'cancelled' %}
+                                    <span class="badge badge-warning">Cancelled (Slot Free)</span>
+                                {% else %}
+                                    <span class="badge">Draft</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <a href="{% url 'club:booking_detail' booking.id %}" class="btn btn-sm btn-outline">Details</a>
+                                    {% if booking.status != 'cancelled' %}
+                                        <form method="post" action="{% url 'club:booking_cancel' booking.id %}" onsubmit="return confirm('Cancel this court reservation? This will free the slot immediately.');" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm" style="color: var(--danger); border-color: #fecaca; background: #fff5f5;">Cancel</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
                         </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="text-center empty-state">
-                            <p>No court bookings scheduled. Nayan will connect the booking flow with overlap validation.</p>
+                        <td colspan="8" class="text-center empty-state">
+                            <p>No court bookings found. Click "+ Reserve Court" to schedule one.</p>
                         </td>
                     </tr>
                 {% endif %}
