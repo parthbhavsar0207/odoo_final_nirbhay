@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Court Bookings - Champions Club{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="section-header">
+        <div>
+            <h1>{{ page_title }}</h1>
+            <p class="section-subtitle">Court Reservation Schedule &amp; Overlap Management (Module owned by Nayan)</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" disabled title="Feature implementation in progress by Nayan">+ Reserve Court</button>
+        </div>
+    </div>
+
+    <div class="info-banner">
+        <strong>📋 Backend Contract Handoff (Nayan &rarr; Pratik):</strong>
+        <p>Sessions last 60 minutes and start every 30 minutes. PostgreSQL GiST exclusion constraint (<code>btree_gist</code> enabled) prevents overlapping bookings. Members are limited to at most 2 confirmed bookings per local club date.</p>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>Court</th>
+                    <th>Booked By</th>
+                    <th>Time Slot</th>
+                    <th>Type</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if bookings %}
+                    {% for booking in bookings %}
+                        <tr>
+                            <td>#{{ booking.id }}</td>
+                            <td>{{ booking.court.name }}</td>
+                            <td>{{ booking.member.name|default:"Walk-in" }}</td>
+                            <td>{{ booking.start_datetime|date:"Y-m-d H:i" }} - {{ booking.end_datetime|date:"H:i" }}</td>
+                            <td>{{ booking.booking_type }}</td>
+                            <td>₹{{ booking.price }}</td>
+                            <td><span class="badge">{{ booking.status }}</span></td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center empty-state">
+                            <p>No court bookings scheduled. Nayan will connect the booking flow with overlap validation.</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
