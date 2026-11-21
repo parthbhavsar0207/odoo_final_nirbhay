@@ -4,7 +4,6 @@ Tests for court booking payment options, snapshot rates, and settlement workflow
 from decimal import Decimal
 from datetime import timedelta
 from django.test import TestCase, Client
-from frontend.tests.helpers import login_test_staff
 from django.utils import timezone
 from django.urls import reverse
 from club.models import Member, MembershipPlan, Court, Booking
@@ -13,7 +12,6 @@ from club.models import Member, MembershipPlan, Court, Booking
 class BookingPaymentTests(TestCase):
     def setUp(self):
         self.client = Client()
-        login_test_staff(self.client)
         self.gold_plan = MembershipPlan.objects.create(
             tier='gold',
             name='Gold Plan',

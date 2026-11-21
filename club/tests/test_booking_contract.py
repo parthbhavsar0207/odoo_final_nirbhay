@@ -12,15 +12,10 @@ from django.utils import timezone
 
 from club.models import Booking, Court, Member, MembershipPlan
 from club.plan_changes import change_membership_plan
-from frontend.tests.helpers import login_test_staff
 
 
 @skipUnless(connection.vendor == "postgresql", "Requires shared booking records")
 class BookingContractRegressionTests(TestCase):
-    def setUp(self):
-        super().setUp()
-        login_test_staff(self.client)
-
     @classmethod
     def setUpTestData(cls):
         cls.day = timezone.localdate() + timedelta(days=1)
