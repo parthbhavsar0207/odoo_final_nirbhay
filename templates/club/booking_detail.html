@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - Champions Club{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px;">
+    <div class="section-header">
+        <div>
+            <h1>{{ page_title }}</h1>
+            <p class="section-subtitle">Court reservation details, price snapshot, and player participant roster</p>
+        </div>
+        <div>
+            <a href="{% url 'club:booking_list' %}" class="btn btn-outline">&larr; Back to Bookings</a>
+        </div>
+    </div>
+
+    <!-- Booking Summary Card -->
+    <div class="card" style="padding: 1.5rem; margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+            <div>
+                <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Court</span>
+                <div style="font-size: 1.15rem; font-weight: 700; margin-top: 0.25rem;">{{ booking.court.name }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Sport: {{ booking.court.get_sport_display }} | Capacity: {{ booking.court.capacity }}</div>
+            </div>
+
+            <div>
+                <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Schedule</span>
+                <div style="font-size: 1.05rem; font-weight: 600; margin-top: 0.25rem;">{{ booking.start_datetime|date:"l, d M Y" }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">{{ booking.start_datetime|date:"H:i" }} &ndash; {{ booking.end_datetime|date:"H:i" }} (60 mins)</div>
+            </div>
+
+            <div>
+                <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Primary Booker</span>
+                <div style="font-size: 1.05rem; font-weight: 600; margin-top: 0.25rem;">
+                    {% if booking.booked_by_member %}
+                        {{ booking.booked_by_member.name }}
+                        {% if booking.booked_by_member.plan %}
+                            <span class="badge badge-gold" style="font-size: 0.75rem;">{{ booking.booked_by_member.plan.name }}</span>
+                        {% endif %}
+                    {% else %}
+                        Walk-in: {{ booking.walkin_name|default:"Guest" }}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Snapshotted Price</span>
+                <div style="font-size: 1.35rem; font-weight: 800; color: var(--primary); margin-top: 0.25rem;">₹{{ booking.price }}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Immutable historical record</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <span style="margin-right: 0.5rem; font-size: 0.9rem;">Status:</span>
+                {% if booking.status == 'confirmed' %}
+                    <span class="badge badge-success">Confirmed</span>
+                {% elif booking.status == 'cancelled' %}
+                    <span class="badge badge-warning">Cancelled (Slot Free)</span>
+                {% else %}
+                    <span class="badge">Draft</span>
+                {% endif %}
+
+                <span style="margin-left: 1rem; margin-right: 0.5rem; font-size: 0.9rem;">Type:</span>
+                <span class="badge {% if booking.booking_type == 'social' %}badge-info{% else %}badge{% endif %}">
+                    {{ booking.get_booking_type_display }}
+                </span>
+            </div>
+
+            {% if booking.status != 'cancelled' %}
+                <form method="post" action="{% url 'club:booking_cancel' booking.id %}" onsubmit="return confirm('Cancel this booking and release court slot?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm" style="color: var(--danger); border-color: #fecaca; background: #fff5f5;">Cancel Booking</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Booking Participants (Social Play Roster) -->
+    <div class="card" style="padding: 1.5rem;">
+        <h3 style="margin-bottom: 0.5rem;">👥 Playing Participants</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+            Every playing member is recorded here. Each member's participation (standard or social) counts toward their max 2 bookings per local club date limit.
+        </p>
+
+        <table class="data-table" style="margin-bottom: 1.5rem;">
+            <thead>
+                <tr>
+                    <th>Participant</th>
+                    <th>Role / Type</th>
+                    <th>Membership Plan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for participant in participants %}
+                    <tr>
+                        <td>
+                            {% if participant.member %}
+                                <strong>{{ participant.member.name }}</strong>
+                            {% else %}
+                                <span>{{ participant.guest_name|default:"Guest Player" }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if participant.member == booking.booked_by_member %}
+                                <span class="badge badge-success">Primary Booker</span>
+                            {% elif participant.member %}
+                                <span class="badge badge-info">Playing Member</span>
+                            {% else %}
+                                <span class="badge">Guest</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if participant.member and participant.member.plan %}
+                                <span class="badge badge-gold">{{ participant.member.plan.name }}</span>
+                            {% else %}
+                                <span style="color: var(--text-muted);">&ndash;</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center empty-state">No participants recorded.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Add Participant Form (for Social Play) -->
+        {% if booking.status != 'cancelled' %}
+            <div style="background-color: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem;">
+                <h4 style="margin-bottom: 0.75rem; font-size: 0.95rem;">+ Add Participant to this Session</h4>
+                <form method="post" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+                    {% csrf_token %}
+                    <div style="flex: 1; min-width: 200px;">
+                        <label for="{{ participant_form.member.id_for_label }}" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Member</label>
+                        {{ participant_form.member }}
+                    </div>
+                    <div style="flex: 1; min-width: 180px;">
+                        <label for="{{ participant_form.guest_name.id_for_label }}" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">Or Guest Name</label>
+                        {{ participant_form.guest_name }}
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">Add Player</button>
+                    </div>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

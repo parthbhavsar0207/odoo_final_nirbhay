@@ -10,13 +10,28 @@
             <p class="section-subtitle">Membership Directory and Plan Assignments (Module owned by Nayan)</p>
         </div>
         <div>
-            <button class="btn btn-primary" disabled title="Feature implementation in progress by Nayan">+ New Member</button>
+            <a href="{% url 'club:member_create' %}" class="btn btn-primary">+ Register New Member</a>
         </div>
     </div>
 
-    <div class="info-banner">
-        <strong>📋 Backend Contract Handoff (Nayan &rarr; Pratik):</strong>
-        <p>This page will render member records containing <code>name</code>, <code>contact</code>, <code>plan</code> (Gold/Silver/Junior), <code>membership_start</code>, and <code>membership_end</code>. Commerce transactions will link directly to this member ID.</p>
+    <!-- Active Membership Plans Summary -->
+    <div class="card-grid" style="margin-bottom: 2rem;">
+        {% for plan in plans %}
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ plan.name }}</h3>
+                    <span class="badge {% if plan.tier == 'gold' %}badge-gold{% elif plan.tier == 'silver' %}badge-info{% else %}badge-success{% endif %}">
+                        {{ plan.get_tier_display }}
+                    </span>
+                </div>
+                <div style="font-size: 0.88rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.35rem;">
+                    <div><strong>Annual Fee:</strong> ₹{{ plan.membership_fee }}</div>
+                    <div><strong>Court Rate:</strong> {% if plan.court_hourly_rate == 0 %}Free (Included){% else %}₹{{ plan.court_hourly_rate }}/hr{% endif %}</div>
+                    <div><strong>Shop Discount:</strong> {{ plan.shop_discount_percent }}%</div>
+                    <div><strong>Bar Discount:</strong> {{ plan.bar_discount_percent }}%</div>
+                </div>
+            </div>
+        {% endfor %}
     </div>
 
     <div class="table-container">
@@ -26,6 +41,7 @@
                     <th>Member ID</th>
                     <th>Full Name</th>
                     <th>Plan Tier</th>
+                    <th>Email / Phone</th>
                     <th>Validity Start</th>
                     <th>Validity End</th>
                     <th>Status</th>
@@ -36,19 +52,43 @@
                 {% if members %}
                     {% for member in members %}
                         <tr>
-                            <td>{{ member.id }}</td>
-                            <td>{{ member.name }}</td>
-                            <td><span class="badge badge-gold">{{ member.plan.tier }}</span></td>
-                            <td>{{ member.membership_start }}</td>
-                            <td>{{ member.membership_end }}</td>
-                            <td>{{ member.status }}</td>
-                            <td><a href="#" class="btn-link">View</a></td>
+                            <td>#{{ member.id }}</td>
+                            <td><strong>{{ member.name }}</strong></td>
+                            <td>
+                                {% if member.plan %}
+                                    <span class="badge {% if member.plan.tier == 'gold' %}badge-gold{% elif member.plan.tier == 'silver' %}badge-info{% else %}badge-success{% endif %}">
+                                        {{ member.plan.name }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge">No Plan</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ member.email|default:"-" }}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">{{ member.phone|default:"" }}</div>
+                            </td>
+                            <td>{{ member.membership_start|default:"-" }}</td>
+                            <td>{{ member.membership_end|default:"-" }}</td>
+                            <td>
+                                {% if member.status_label == 'Active' %}
+                                    <span class="badge badge-success">Active</span>
+                                {% elif member.status_label == 'Expired' %}
+                                    <span class="badge badge-warning">Expired</span>
+                                {% elif member.status_label == 'Suspended' %}
+                                    <span class="badge badge-danger">Suspended</span>
+                                {% else %}
+                                    <span class="badge">{{ member.status_label }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'club:member_edit' member.id %}" class="btn btn-sm btn-outline">Edit</a>
+                            </td>
                         </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="text-center empty-state">
-                            <p>No members registered yet. Nayan will seed initial members once the Member model is migrated.</p>
+                        <td colspan="8" class="text-center empty-state">
+                            <p>No members registered yet. Click "+ Register New Member" to add one.</p>
                         </td>
                     </tr>
                 {% endif %}
