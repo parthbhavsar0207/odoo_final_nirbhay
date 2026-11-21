@@ -57,7 +57,7 @@
                         </label>
                         {{ form.booked_by_member }}
                         <small style="color: var(--secondary-stitch); font-size: 0.75rem;">
-                            Only active, non-suspended members are listed. Rates and tier discounts snapshot automatically.
+                            Registered profiles remain available for history. Eligible members receive their date-effective plan rate; other profiles use the walk-in rate.
                         </small>
                         {% if form.booked_by_member.errors %}
                             <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.booked_by_member.errors }}</div>

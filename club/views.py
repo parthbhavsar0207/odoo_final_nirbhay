@@ -22,6 +22,7 @@ from .sports_catalog import (
     SPORTS_CATALOG, get_sport_data, get_all_sports_with_facilities
 )
 from commerce.models import Product
+from .availability import availability_date, availability_grid
 
 
 def member_list(request):
@@ -45,15 +46,20 @@ def member_list(request):
             Q(phone__icontains=search_query)
         )
     if tier_filter:
-        members = members.filter(plan__tier=tier_filter)
+        members = [m for m in members if m.current_plan and m.current_plan.tier == tier_filter]
 
     all_members = list(Member.objects.select_related('plan').all())
-    active_count = sum(1 for m in all_members if m.is_active_member)
+    eligible_member_ids = set()
+    for member in all_members:
+        plan = member.current_plan
+        if member.is_club_member and member.is_active_member and plan is not None and plan.active:
+            eligible_member_ids.add(member.pk)
+    active_count = len(eligible_member_ids)
     suspended_count = sum(1 for m in all_members if m.is_suspended)
     expired_count = sum(1 for m in all_members if m.status_label == 'Expired')
 
     if status_filter == 'active':
-        members = [m for m in members if m.is_active_member]
+        members = [m for m in members if m.pk in eligible_member_ids]
     elif status_filter == 'suspended':
         members = [m for m in members if m.is_suspended]
     elif status_filter == 'expired':
@@ -69,6 +75,7 @@ def member_list(request):
         'form': form,
         'search_query': search_query,
         'tier_filter': tier_filter,
+        'tier_choices': MembershipPlan.TIER_CHOICES,
         'status_filter': status_filter,
         'active_count': active_count,
         'suspended_count': suspended_count,
@@ -223,9 +230,12 @@ def booking_create(request):
                 )
                 return redirect('club:booking_list')
             except ValidationError as err:
-                for field, errors in err.message_dict.items():
-                    for error in errors:
-                        form.add_error(field if field != '__all__' else None, error)
+                if hasattr(err, 'message_dict'):
+                    for field, errors in err.message_dict.items():
+                        for error in errors:
+                            form.add_error(field if field in form.fields else None, error)
+                else:
+                    form.add_error(None, err)
                 messages.error(request, "Booking validation failed. See errors below.")
             except Exception as exc:
                 messages.error(request, f"Database constraint violation: {exc}")
@@ -312,30 +322,9 @@ def booking_detail(request, pk):
 
 
 def public_availability(request):
-    """
-    Public Live Court Availability Screen.
-    Allows prospective players, members, and guests to view live court status.
-    Privacy protection: Player names and member identities are never exposed on public screens.
-    Filters:
-    - sport: filters courts by sport
-    - court: filters to specific court
-    - date: filters to specific date (default today)
-    - time: highlights or focuses on specific time
-    """
-    tz = timezone.get_current_timezone()
-    today = timezone.localtime(timezone.now(), tz).date()
-    date_str = request.GET.get('date')
-    selected_date = today
-
-    if date_str:
-        try:
-            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            selected_date = today
-
-    day_start = timezone.make_aware(datetime.combine(selected_date, time.min), tz)
-    day_end = timezone.make_aware(datetime.combine(selected_date, time.max), tz)
-
+    """Show honest public availability for 60-minute, half-hour-start sessions."""
+    today = timezone.localdate()
+    selected_date = availability_date(request.GET.get('date'), fallback=today)
     selected_sport = request.GET.get('sport', '').strip().lower()
     selected_court = request.GET.get('court', '').strip()
     selected_time = request.GET.get('time', '').strip()
@@ -344,42 +333,16 @@ def public_availability(request):
     if selected_sport:
         courts = courts.filter(sport=selected_sport)
     if selected_court:
-        courts = courts.filter(id=selected_court)
-
-    confirmed_bookings = Booking.objects.filter(
-        status='confirmed',
-        court__in=courts,
-        start_datetime__gte=day_start,
-        start_datetime__lte=day_end
-    ).select_related('court')
-
-    # Operating hours: 06:00 to 22:00 (1-hour slots)
-    operating_hours = [f"{h:02d}:00" for h in range(6, 22)]
-
-    # Map bookings by court_id and starting hour
-    grid = {c.id: {} for c in courts}
-    for b in confirmed_bookings:
-        local_start = timezone.localtime(b.start_datetime, tz)
-        slot_key = local_start.strftime('%H:00')
-        if b.court_id in grid:
-            # Privacy: never show private member identity or contact on public screens
-            grid[b.court_id][slot_key] = {
-                'status': 'booked',
-                'booking_id': b.id,
-                'booking_type': b.get_booking_type_display(),
-                'player_display': 'Reserved Slot',
-            }
-
-    court_grid = []
-    for c in courts:
-        court_grid.append({
-            'court': c,
-            'slots': [(hour, grid[c.id].get(hour, {'status': 'free'})) for hour in operating_hours]
-        })
-
-    plans = MembershipPlan.objects.filter(active=True).order_by('id')
-    all_sports = get_all_sports_with_facilities()
-
+        if (
+            not selected_court.isascii()
+            or not selected_court.isdigit()
+            or len(selected_court) > 19
+            or not 1 <= int(selected_court) <= 9223372036854775807
+        ):
+            raise Http404("Court does not exist.")
+        courts = courts.filter(id=int(selected_court))
+    courts = list(courts)
+    operating_hours, court_grid, total_confirmed = availability_grid(courts, selected_date)
     context = {
         'page_title': 'Champions Club Live Court Availability',
         'courts': courts,
@@ -387,9 +350,9 @@ def public_availability(request):
         'court_grid': court_grid,
         'selected_date': selected_date,
         'today': today,
-        'plans': plans,
-        'total_confirmed_today': confirmed_bookings.count(),
-        'all_sports': all_sports,
+        'plans': MembershipPlan.objects.filter(active=True).order_by('id'),
+        'total_confirmed_today': total_confirmed,
+        'all_sports': get_all_sports_with_facilities(),
         'selected_sport': selected_sport,
         'selected_court': selected_court,
         'selected_time': selected_time,
@@ -432,59 +395,20 @@ def sports_directory(request):
 
 
 def sport_detail(request, sport_slug):
-    """
-    Shared Sport Detail & Availability Page.
-    Renders real facility information, bookable times, or a clear
-    'No facilities or availability configured' state if no active facility exists.
-    """
+    """Show active facilities and full-session availability for one activity."""
     sport_info = get_sport_data(sport_slug)
     if not sport_info:
         raise Http404(f"Sport '{sport_slug}' is not recognized in the Champions Club catalog.")
-
-    courts = Court.objects.filter(sport=sport_slug, active=True).order_by('name')
-    has_facilities = courts.exists()
-
-    tz = timezone.get_current_timezone()
-    today = timezone.localtime(timezone.now(), tz).date()
-    date_str = request.GET.get('date')
-    selected_date = today
-
-    if date_str:
-        try:
-            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            selected_date = today
-
-    day_start = timezone.make_aware(datetime.combine(selected_date, time.min), tz)
-    day_end = timezone.make_aware(datetime.combine(selected_date, time.max), tz)
-
-    court_slots = []
-    operating_hours = [f"{h:02d}:00" for h in range(6, 22)]
-
-    if has_facilities:
-        confirmed_bookings = Booking.objects.filter(
-            status='confirmed',
-            court__in=courts,
-            start_datetime__gte=day_start,
-            start_datetime__lte=day_end
-        )
-        grid = {c.id: {} for c in courts}
-        for b in confirmed_bookings:
-            local_start = timezone.localtime(b.start_datetime, tz)
-            slot_key = local_start.strftime('%H:00')
-            if b.court_id in grid:
-                grid[b.court_id][slot_key] = {'status': 'booked'}
-
-        for c in courts:
-            court_slots.append({
-                'court': c,
-                'slots': [(hour, grid[c.id].get(hour, {'status': 'free'})) for hour in operating_hours]
-            })
-
+    courts = list(Court.objects.filter(
+        sport=sport_info['slug'], active=True,
+    ).order_by('name'))
+    today = timezone.localdate()
+    selected_date = availability_date(request.GET.get('date'), fallback=today)
+    operating_hours, court_slots, _ = availability_grid(courts, selected_date)
     context = {
-        'page_title': f"{sport_info['name']} Facilities &amp; Availability · Champions Club",
+        'page_title': f"{sport_info['name']} Facilities & Availability · Champions Club",
         'sport': sport_info,
-        'has_facilities': has_facilities,
+        'has_facilities': bool(courts),
         'courts': courts,
         'court_slots': court_slots,
         'operating_hours': operating_hours,
@@ -503,9 +427,14 @@ def plan_list(request):
     Staff-facing membership plans list.
     Displays all plans (active & inactive) with member counts and plan benefits.
     """
-    plans = MembershipPlan.objects.annotate(
-        member_count=Count('members')
-    ).order_by('-active', 'membership_fee')
+    plans = list(MembershipPlan.objects.order_by('-active', 'membership_fee'))
+    counts = {plan.pk: 0 for plan in plans}
+    for member in Member.objects.select_related('plan').all():
+        plan = member.current_plan
+        if plan is not None:
+            counts[plan.pk] = counts.get(plan.pk, 0) + 1
+    for plan in plans:
+        plan.member_count = counts[plan.pk]
 
     context = {
         'page_title': 'Membership Plans Management · Champions Club',
@@ -592,6 +521,8 @@ def member_change_plan(request, pk):
     Requires explicit effective date and confirmation.
     Preserves all past historical price snapshots on past bookings and sales.
     """
+    from .plan_changes import change_membership_plan
+
     member = get_object_or_404(Member.objects.select_related('plan'), pk=pk)
 
     if request.method == 'POST':
@@ -601,30 +532,23 @@ def member_change_plan(request, pk):
             effective_date = form.cleaned_data['effective_date']
             notes = form.cleaned_data.get('notes', '')
 
-            old_plan_name = member.plan.name if member.plan else "No Plan"
-
-            # Determine transition type
-            old_fee = member.plan.membership_fee if member.plan else Decimal('0.00')
-            new_fee = new_plan.membership_fee
-            transition_type = "Upgrade" if new_fee >= old_fee else "Downgrade"
-
-            # Apply change to member profile
-            member.plan = new_plan
-            member.membership_start = effective_date
-            if notes:
-                existing_notes = member.contact_details or ""
-                log_entry = f"\n[{effective_date}] Plan {transition_type}: {old_plan_name} -> {new_plan.name}. Note: {notes}"
-                member.contact_details = (existing_notes + log_entry).strip()
-
-            member.save()
-
-            messages.success(
-                request,
-                f"Member '{member.name}' plan was successfully changed from {old_plan_name} "
-                f"to '{new_plan.name}' ({transition_type}) effective {effective_date}. "
-                f"Historical booking and sales records remain preserved."
-            )
-            return redirect('club:member_list')
+            try:
+                change_membership_plan(
+                    member_id=member.pk, plan_id=new_plan.pk,
+                    effective_date=effective_date, notes=notes,
+                )
+            except ValidationError as error:
+                for field, errors in error.message_dict.items():
+                    for message in errors:
+                        form.add_error(field if field in form.fields else None, message)
+            else:
+                verb = 'scheduled' if effective_date > timezone.localdate() else 'applied'
+                messages.success(
+                    request,
+                    f"Plan change to '{new_plan.name}' {verb} for {member.name}, effective {effective_date}. "
+                    f"Membership dates and historical booking/sale amounts remain unchanged."
+                )
+                return redirect('club:member_list')
         else:
             messages.error(request, "Please confirm the plan change and correct any errors below.")
     else:
@@ -726,13 +650,37 @@ def help_bot_faq_api(request):
     """
     q = request.GET.get('q', '').strip().lower()
 
+    active_plans = list(MembershipPlan.objects.filter(active=True).order_by('membership_fee', 'pk'))
+    if active_plans:
+        plan_answer = "Current active membership plans: " + "; ".join(
+            f"{plan.name}: fee ₹{plan.membership_fee}, court ₹{plan.court_hourly_rate}/hour, "
+            f"shop {plan.shop_discount_percent}% and bar {plan.bar_discount_percent}%"
+            for plan in active_plans
+        ) + ". Benefits require an eligible membership and active plan. Members may play in up to two confirmed bookings per local day."
+    else:
+        plan_answer = "No active membership plans are currently configured. Check with reception before purchasing a membership."
+    configured = sorted(set(Court.objects.filter(active=True).values_list('sport', flat=True)))
+    configured_names = [SPORTS_CATALOG[slug]['name'] for slug in configured if slug in SPORTS_CATALOG]
+    sports_answer = (
+        "Our Activities directory describes the club's sports. Currently configured active facilities: "
+        + (", ".join(configured_names) if configured_names else "none")
+        + ". Open an activity or the live schedule to check its actual availability."
+    )
+    shop_count = Product.objects.filter(is_active=True, category='shop').count()
+    bar_count = Product.objects.filter(is_active=True, category='bar').count()
+    commerce_answer = (
+        f"The live Pro Shop has {shop_count} active products and the Bar has {bar_count}. "
+        "Product cards show current prices and stock. Select Member sale to apply eligible plan benefits; "
+        "prices, discounts and inventory are checked when completing the sale."
+    )
+
     FAQS = [
         {
             'id': 'sports',
             'topic': 'Sports & Facilities',
             'keywords': ['sport', 'sports', 'court', 'courts', 'tennis', 'badminton', 'squash', 'cricket', 'football', 'basketball', 'volleyball', 'table tennis', 'pickleball', 'swimming', 'facility', 'pool'],
             'question': 'What sports and athletic facilities are available at Champions Club?',
-            'answer': 'Champions Club features 10 world-class sports: Tennis (French Red Clay & Hardcourt), Badminton (BWF Mat), Squash (WSF Glass Back), Cricket practice nets, Football turf, Basketball, Volleyball, Table Tennis, Pickleball, and a 25-meter heated Lap Pool.',
+            'answer': sports_answer,
             'action_label': 'Explore Activities',
             'action_url': '/club/sports/',
         },
@@ -757,9 +705,9 @@ def help_bot_faq_api(request):
         {
             'id': 'plans',
             'topic': 'Membership Tiers',
-            'keywords': ['membership', 'plan', 'plans', 'tier', 'gold', 'silver', 'junior', 'subscription', 'perks', 'benefits', 'discount'],
+            'keywords': ['membership', 'plan', 'plans', 'tier', 'gold', 'silver', 'junior', 'subscription', 'perks', 'benefits', 'discount'] + [plan.tier for plan in active_plans],
             'question': 'What are the membership plans and what discounts do they offer?',
-            'answer': 'We offer Gold (Free court access, 20% shop / 15% bar discount), Silver (₹150/hr court rate, 10% shop / 5% bar discount), and Junior (for aspiring athletes) tiers. Members can participate in up to two daily confirmed plays.',
+            'answer': plan_answer,
             'action_label': 'View Membership Plans',
             'action_url': '/club/plans/public/',
         },
@@ -768,7 +716,7 @@ def help_bot_faq_api(request):
             'topic': 'Pro Shop & Bar',
             'keywords': ['commerce', 'shop', 'bar', 'cafe', 'cafeteria', 'drink', 'water', 'racquet', 'racket', 'equipment', 'refreshment', 'pos', 'balls', 'food'],
             'question': 'What equipment and refreshments are sold on site?',
-            'answer': 'Our Pro Shop stocks premium racquets, tour balls, grip tape, and accessories. The Clubhouse Bar provides electrolyte hydration, fresh juices, and specialty espresso. Member discounts apply automatically at checkout.',
+            'answer': commerce_answer,
             'action_label': 'Visit Club Pro Shop & Bar',
             'action_url': '/commerce/',
         },

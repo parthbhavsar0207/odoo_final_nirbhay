@@ -9,6 +9,7 @@ import zoneinfo
 
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.contrib.postgres.fields import DateTimeRangeField, RangeOperators
 from django.contrib.postgres.constraints import ExclusionConstraint
@@ -35,24 +36,28 @@ class MembershipPlan(models.Model):
         max_digits=10,
         decimal_places=2,
         default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00'))],
         help_text="Membership enrollment/annual fee"
     )
     court_hourly_rate = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00'))],
         help_text="Plan-specific hourly rate for court bookings (0.00 if included/free)"
     )
     shop_discount_percent = models.DecimalField(
         max_digits=5,
         decimal_places=2,
         default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00')), MaxValueValidator(Decimal('100.00'))],
         help_text="Discount percentage applicable in Club Shop"
     )
     bar_discount_percent = models.DecimalField(
         max_digits=5,
         decimal_places=2,
         default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00')), MaxValueValidator(Decimal('100.00'))],
         help_text="Discount percentage applicable in Club Bar"
     )
     active = models.BooleanField(default=True)
@@ -95,8 +100,25 @@ class Member(models.Model):
         verbose_name_plural = 'Members'
 
     def __str__(self):
-        tier_label = self.plan.get_tier_display() if self.plan else 'No Plan'
+        plan = self.current_plan
+        tier_label = plan.get_tier_display() if plan else 'No Plan'
         return f"{self.name} [{tier_label}]"
+
+    def effective_plan_on_date(self, target_date):
+        """Resolve recorded plan changes without rewriting membership dates."""
+        if self.pk:
+            change = self.plan_changes.filter(effective_date__lte=target_date).select_related('plan').order_by('-effective_date', '-pk').first()
+            if change is not None:
+                return change.plan
+        return self.plan
+
+    @property
+    def current_plan(self):
+        return self.effective_plan_on_date(timezone.localdate())
+
+    @property
+    def pending_plan_changes(self):
+        return self.plan_changes.filter(effective_date__gt=timezone.localdate()).select_related('plan').order_by('effective_date', 'pk')
 
     def is_active_on_date(self, target_date):
         """
@@ -163,6 +185,21 @@ class Court(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_sport_display()})"
+
+
+class MemberPlanChange(models.Model):
+    """A dated plan assignment; transaction amounts remain their own snapshots."""
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='plan_changes')
+    plan = models.ForeignKey(MembershipPlan, on_delete=models.PROTECT, related_name='member_changes')
+    effective_date = models.DateField()
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['effective_date', 'pk']
+        constraints = [
+            models.UniqueConstraint(fields=['member', 'effective_date'], name='club_member_plan_change_date_unique'),
+        ]
 
 
 class Booking(models.Model):
@@ -272,13 +309,16 @@ class Booking(models.Model):
             else timezone.localdate()
         )
 
-        # Apply plan rate only if member is active on the booking date
+        plan = self.booked_by_member.effective_plan_on_date(booking_date) if self.booked_by_member else None
+        # Apply the plan effective for this date only for eligible members.
         if (
             self.booked_by_member
-            and self.booked_by_member.plan
+            and self.booked_by_member.is_club_member
+            and plan
+            and plan.active
             and self.booked_by_member.is_active_on_date(booking_date)
         ):
-            return self.booked_by_member.plan.court_hourly_rate
+            return plan.court_hourly_rate
         elif self.court:
             return self.court.hourly_rate
         return Decimal('0.00')
@@ -301,6 +341,11 @@ class Booking(models.Model):
         4. Members can participate in at most two confirmed bookings per club-local date.
         """
         tz = timezone.get_current_timezone()
+
+        if self.start_datetime:
+            local_start = timezone.localtime(self.start_datetime, tz)
+            if local_start.minute not in (0, 30) or local_start.second or local_start.microsecond:
+                raise ValidationError({'start_datetime': 'Sessions must start on the hour or half-hour.'})
 
         # Auto-compute 60-minute duration if end_datetime is not explicitly supplied
         if self.start_datetime and not self.end_datetime:
@@ -355,8 +400,9 @@ class Booking(models.Model):
         if self.start_datetime and self.end_datetime:
             self.slot_range = Range(self.start_datetime, self.end_datetime, bounds='[)')
 
-        # Snapshot price when confirmed
-        if self.status == 'confirmed' and self.price == Decimal('0.00'):
+        # A zero-price confirmed booking is still a saved historical snapshot.
+        was_confirmed = bool(self.pk and type(self).objects.filter(pk=self.pk, status='confirmed').exists())
+        if self.status == 'confirmed' and not was_confirmed:
             self.snapshot_price()
 
         self.full_clean()

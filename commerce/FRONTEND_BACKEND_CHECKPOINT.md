@@ -1,5 +1,10 @@
 # New frontend/backend checkpoint — 2026-11-22
 
+> The user subsequently authorized completing the gaps listed below. See
+> [BACKEND_COMPLETION.md](BACKEND_COMPLETION.md) for the implemented dated plan
+> changes, availability, live FAQ, dashboard, applied club.0004 and executed
+> 226-test/Edge verification. This checkpoint preserves the earlier PR #12 state.
+
 Base main b463606f76c52418adc0c5df39b550b6e41df882. Active worktree:
 C:\Users\utkarsh\Desktop\odoo hackathon nirbhay\.commerce-frontend-backend-b463606
 Branch feature/utkarsh-frontend-backend.
