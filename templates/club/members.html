@@ -1,94 +1,153 @@
 {% extends 'base.html' %}
 
-{% block title %}Members - Champions Club{% endblock %}
+{% block title %}Members Directory &amp; Ledger · Champions Club{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="section-header">
+<div class="app-container">
+    <!-- Section Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h1>{{ page_title }}</h1>
-            <p class="section-subtitle">Membership Directory and Plan Assignments (Module owned by Nayan)</p>
+            <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
+                Membership Operations / Directory
+            </div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.02em;">
+                Members Directory &amp; Ledger
+            </h1>
+            <p style="color: var(--secondary-stitch); font-size: 0.88rem; margin-top: 0.2rem;">
+                Unified Member profiles referenced across Court Bookings and Commerce Point-of-Sale
+            </p>
         </div>
+
         <div>
-            <a href="{% url 'club:member_create' %}" class="btn btn-primary">+ Register New Member</a>
+            <a href="{% url 'club:member_create' %}" class="btn-accent">
+                <span class="material-symbols-outlined" style="font-size: 18px;">person_add</span>
+                <span>Register New Member</span>
+            </a>
         </div>
     </div>
 
-    <!-- Active Membership Plans Summary -->
-    <div class="card-grid" style="margin-bottom: 2rem;">
+    <!-- Active Membership Plans Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 1.75rem;">
         {% for plan in plans %}
-            <div class="card">
-                <div class="card-header">
-                    <h3>{{ plan.name }}</h3>
-                    <span class="badge {% if plan.tier == 'gold' %}badge-gold{% elif plan.tier == 'silver' %}badge-info{% else %}badge-success{% endif %}">
+            <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--on-surface);">{{ plan.name }}</h3>
+                    <span class="pill-tier tier-{{ plan.tier }}">
                         {{ plan.get_tier_display }}
                     </span>
                 </div>
-                <div style="font-size: 0.88rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.35rem;">
-                    <div><strong>Annual Fee:</strong> ₹{{ plan.membership_fee }}</div>
-                    <div><strong>Court Rate:</strong> {% if plan.court_hourly_rate == 0 %}Free (Included){% else %}₹{{ plan.court_hourly_rate }}/hr{% endif %}</div>
-                    <div><strong>Shop Discount:</strong> {{ plan.shop_discount_percent }}%</div>
-                    <div><strong>Bar Discount:</strong> {{ plan.bar_discount_percent }}%</div>
+                <div style="font-size: 0.82rem; color: var(--secondary-stitch); display: flex; flex-direction: column; gap: 0.35rem;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Annual Fee:</span>
+                        <strong class="tabular-nums" style="color: var(--on-surface);">₹{{ plan.membership_fee }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Court Hourly Rate:</span>
+                        <strong class="tabular-nums" style="color: var(--on-surface);">
+                            {% if plan.court_hourly_rate == 0 %}Free (Included){% else %}₹{{ plan.court_hourly_rate }}/hr{% endif %}
+                        </strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Pro Shop Discount:</span>
+                        <strong class="tabular-nums" style="color: var(--on-surface);">{{ plan.shop_discount_percent }}%</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Clubhouse Bar Discount:</span>
+                        <strong class="tabular-nums" style="color: var(--on-surface);">{{ plan.bar_discount_percent }}%</strong>
+                    </div>
                 </div>
             </div>
         {% endfor %}
     </div>
 
-    <div class="table-container">
-        <table class="data-table">
+    <!-- Members Ledger Table -->
+    <div class="modern-table-container">
+        <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-stitch); display: flex; justify-content: space-between; align-items: center; background-color: var(--surface-container-lowest);">
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--on-surface);">
+                Registered Profiles ({{ members|length }})
+            </div>
+            <div style="font-size: 0.8rem; color: var(--secondary-stitch);">
+                Active members receive plan court pricing; expired profiles revert to standard walk-in rates.
+            </div>
+        </div>
+
+        <table class="modern-table">
             <thead>
                 <tr>
                     <th>Member ID</th>
-                    <th>Full Name</th>
+                    <th>Member Name</th>
                     <th>Plan Tier</th>
-                    <th>Email / Phone</th>
-                    <th>Validity Start</th>
-                    <th>Validity End</th>
+                    <th>Contact Info</th>
+                    <th>Membership Period</th>
                     <th>Status</th>
-                    <th>Actions</th>
+                    <th style="text-align: right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% if members %}
                     {% for member in members %}
                         <tr>
-                            <td>#{{ member.id }}</td>
-                            <td><strong>{{ member.name }}</strong></td>
+                            <td class="tabular-nums" style="font-weight: 600;">
+                                #{{ member.id }}
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <div class="avatar-box">
+                                        {{ member.name|slice:":1" }}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600; color: var(--on-surface);">{{ member.name }}</div>
+                                        <div style="font-size: 0.75rem; color: var(--secondary-stitch);">
+                                            {% if member.is_club_member %}Verified Member{% else %}Guest Contact{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
                             <td>
                                 {% if member.plan %}
-                                    <span class="badge {% if member.plan.tier == 'gold' %}badge-gold{% elif member.plan.tier == 'silver' %}badge-info{% else %}badge-success{% endif %}">
+                                    <span class="pill-tier tier-{{ member.plan.tier }}">
                                         {{ member.plan.name }}
                                     </span>
                                 {% else %}
-                                    <span class="badge">No Plan</span>
+                                    <span style="color: var(--secondary-stitch); font-size: 0.8rem;">No Plan</span>
                                 {% endif %}
                             </td>
                             <td>
-                                <div>{{ member.email|default:"-" }}</div>
-                                <div style="font-size: 0.8rem; color: var(--text-muted);">{{ member.phone|default:"" }}</div>
+                                <div style="font-size: 0.82rem;">{{ member.email|default:"&mdash;" }}</div>
+                                <div class="tabular-nums" style="font-size: 0.75rem; color: var(--secondary-stitch);">{{ member.phone|default:"" }}</div>
                             </td>
-                            <td>{{ member.membership_start|default:"-" }}</td>
-                            <td>{{ member.membership_end|default:"-" }}</td>
+                            <td class="tabular-nums" style="font-size: 0.82rem;">
+                                {% if member.membership_start or member.membership_end %}
+                                    {{ member.membership_start|default:"Start" }} &ndash; {{ member.membership_end|default:"Open" }}
+                                {% else %}
+                                    <span style="color: var(--secondary-stitch);">&mdash;</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if member.status_label == 'Active' %}
-                                    <span class="badge badge-success">Active</span>
+                                    <span class="pill-status pill-status-active">Active</span>
                                 {% elif member.status_label == 'Expired' %}
-                                    <span class="badge badge-warning">Expired</span>
+                                    <span class="pill-status pill-status-expired">Expired</span>
                                 {% elif member.status_label == 'Suspended' %}
-                                    <span class="badge badge-danger">Suspended</span>
+                                    <span class="pill-status pill-status-suspended">Suspended</span>
                                 {% else %}
-                                    <span class="badge">{{ member.status_label }}</span>
+                                    <span class="pill-status" style="background-color: var(--surface-container-low); color: var(--secondary-stitch);">{{ member.status_label }}</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                <a href="{% url 'club:member_edit' member.id %}" class="btn btn-sm btn-outline">Edit</a>
+                            <td style="text-align: right;">
+                                <a href="{% url 'club:member_edit' member.id %}" class="btn-secondary-low" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;">
+                                    Edit
+                                </a>
                             </td>
                         </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="8" class="text-center empty-state">
-                            <p>No members registered yet. Click "+ Register New Member" to add one.</p>
+                        <td colspan="7" style="padding: 3rem 1rem; text-align: center; color: var(--secondary-stitch);">
+                            <div style="font-size: 2.25rem; margin-bottom: 0.5rem;">👥</div>
+                            <div style="font-weight: 600; font-size: 1.05rem; margin-bottom: 0.25rem;">No Members Registered Yet</div>
+                            <p style="font-size: 0.85rem; margin-bottom: 1.25rem;">Register a new member to assign a tier and track court bookings.</p>
+                            <a href="{% url 'club:member_create' %}" class="btn-accent">+ Register Member</a>
                         </td>
                     </tr>
                 {% endif %}

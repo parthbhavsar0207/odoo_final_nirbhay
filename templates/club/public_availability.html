@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Live Court Availability · Champions Club{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Hero Banner -->
+    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 16px; padding: 2.5rem 2rem; margin-bottom: 2rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <span class="pulse-indicator"></span>
+            <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--secondary-stitch);">
+                North Lawn &middot; Est. 1928 &middot; Master Surface Circuit
+            </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: center;">
+            <div>
+                <h1 style="font-size: 2.25rem; font-weight: 800; color: var(--on-surface); line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 0.75rem;">
+                    Championship Play.<br>
+                    <span style="color: var(--secondary-stitch); font-weight: 400;">Unrivaled Clubhouse</span> Heritage.
+                </h1>
+                <p style="font-size: 0.95rem; color: var(--secondary-stitch); line-height: 1.6; max-width: 620px;">
+                    Welcome to Champions Club live facility portal. View real-time court availability across our French Red Clay, Hardcourt, Indoor Badminton, Squash, and Cricket practice turf.
+                </p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-end;">
+                <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1rem 1.25rem; width: 100%; max-width: 260px;">
+                    <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch);">Today's Confirmed Slots</div>
+                    <div class="tabular-nums" style="font-size: 1.75rem; font-weight: 700; color: var(--on-surface); margin: 0.2rem 0;">
+                        {{ total_confirmed_today }}
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--secondary-stitch);">Across {{ courts|length }} active courts</div>
+                </div>
+
+                <a href="{% url 'club:booking_create' %}" class="btn-accent" style="width: 100%; max-width: 260px; justify-content: center; padding: 0.65rem 1rem;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
+                    <span>Reserve a Slot</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Court Availability Matrix Section -->
+    <div style="margin-bottom: 2.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.01em;">
+                    Live Court Availability Matrix &mdash; {{ selected_date|date:"l, F j, Y" }}
+                </h2>
+                <p style="font-size: 0.85rem; color: var(--secondary-stitch);">
+                    Real-time slot availability from PostgreSQL 16 &middot; 60-minute duration per session
+                </p>
+            </div>
+
+            <!-- Date Scrubber & Jump Controls -->
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <form method="get" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="date-jump" style="font-size: 0.82rem; font-weight: 600; color: var(--secondary-stitch);">Date:</label>
+                    <input type="date" name="date" id="date-jump" value="{{ selected_date|date:'Y-m-d' }}" class="form-input" style="padding: 0.35rem 0.65rem; font-size: 0.85rem; border-radius: 8px;" onchange="this.form.submit()">
+                </form>
+                {% if selected_date != today %}
+                    <a href="{% url 'club:public_availability' %}" class="btn-secondary-low" style="font-size: 0.82rem;">Today</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Matrix Visual Legend -->
+        <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1rem; font-size: 0.8rem; color: var(--secondary-stitch);">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span style="width: 14px; height: 14px; border-radius: 4px; background-color: #f0fdf4; border: 1px solid #bbf7d0;"></span>
+                <span>Free / Available Slot</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span style="width: 14px; height: 14px; border-radius: 4px; background-color: #f1f5f9; border: 1px solid #cbd5e1;"></span>
+                <span>Reserved / Confirmed</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--primary);">info</span>
+                <span>Local Facility Schedule</span>
+            </div>
+        </div>
+
+        <!-- Responsive Matrix Grid -->
+        <div class="matrix-container">
+            <div class="matrix-grid">
+                <!-- Header: Court Column -->
+                <div class="matrix-header-cell" style="text-align: left; padding-left: 0.5rem;">
+                    COURT / SURFACE
+                </div>
+                <!-- Header: Hour Columns -->
+                {% for hour in operating_hours %}
+                    <div class="matrix-header-cell">
+                        {{ hour }}
+                    </div>
+                {% endfor %}
+
+                <!-- Rows for each Court -->
+                {% for row in court_grid %}
+                    <div class="matrix-court-name">
+                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--on-surface);">{{ row.court.name }}</div>
+                        <div style="font-size: 0.7rem; color: var(--secondary-stitch); text-transform: uppercase;">
+                            {{ row.court.get_sport_display }} &middot; ₹{{ row.court.hourly_rate }}/hr
+                        </div>
+                    </div>
+
+                    {% for hour, slot in row.slots %}
+                        {% if slot.status == 'free' %}
+                            <a href="{% url 'club:booking_create' %}?court={{ row.court.id }}&start={{ selected_date|date:'Y-m-d' }}T{{ hour }}" class="matrix-slot-cell matrix-slot-free" title="Court {{ row.court.name }} is FREE at {{ hour }}. Click to reserve." style="text-decoration: none;">
+                                Free
+                            </a>
+                        {% else %}
+                            <div class="matrix-slot-cell matrix-slot-booked" title="Booked: {{ slot.player_display }} ({{ slot.booking_type }})">
+                                Booked
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Membership Plans Overview -->
+    <div style="margin-bottom: 2rem;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
+                Membership Plans &amp; Court Privileges
+            </div>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--on-surface);">
+                Select Your Playing Membership
+            </h2>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+            {% for plan in plans %}
+                <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--on-surface);">{{ plan.name }}</h3>
+                            <span class="pill-tier tier-{{ plan.tier }}">
+                                {{ plan.get_tier_display }}
+                            </span>
+                        </div>
+                        <div class="tabular-nums" style="font-size: 1.85rem; font-weight: 800; color: var(--on-surface); margin-bottom: 0.25rem;">
+                            ₹{{ plan.membership_fee }}<span style="font-size: 0.85rem; font-weight: 400; color: var(--secondary-stitch);"> / year</span>
+                        </div>
+                        <p style="font-size: 0.82rem; color: var(--secondary-stitch); margin-bottom: 1rem;">
+                            Official tier benefits configured in the Champions Club integration contract.
+                        </p>
+
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem; border-top: 1px solid var(--border-stitch); padding-top: 0.85rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--primary);">check_circle</span>
+                                <span>Court Rate: <strong>{% if plan.court_hourly_rate == 0 %}Free (Included){% else %}₹{{ plan.court_hourly_rate }}/hr{% endif %}</strong></span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--primary);">check_circle</span>
+                                <span>Pro Shop Discount: <strong>{{ plan.shop_discount_percent }}%</strong></span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--primary);">check_circle</span>
+                                <span>Clubhouse Bar Discount: <strong>{{ plan.bar_discount_percent }}%</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem;">
+                        <a href="{% url 'club:member_create' %}" class="btn-secondary-low" style="width: 100%; justify-content: center;">
+                            Apply for {{ plan.name }}
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

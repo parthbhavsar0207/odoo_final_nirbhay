@@ -67,7 +67,7 @@ class BookingForm(forms.ModelForm):
                 attrs={
                     'class': 'form-input',
                     'type': 'datetime-local',
-                    'step': '1800',  # 30-minute intervals
+                    'step': '60',  # 1-minute intervals (allows selecting any minute 0-59)
                 },
                 format='%Y-%m-%dT%H:%M'
             ),

@@ -160,7 +160,18 @@ def booking_create(request):
         else:
             messages.error(request, "Please correct the errors in the booking form.")
     else:
-        form = BookingForm()
+        initial = {}
+        court_id = request.GET.get('court')
+        start_param = request.GET.get('start')
+        if court_id:
+            initial['court'] = court_id
+        if start_param:
+            initial['start_datetime'] = start_param
+        else:
+            tz = timezone.get_current_timezone()
+            now_local = timezone.localtime(timezone.now(), tz)
+            initial['start_datetime'] = now_local.replace(minute=0, second=0).strftime('%Y-%m-%dT%H:%M')
+        form = BookingForm(initial=initial)
 
     context = {
         'page_title': 'Reserve Court',
@@ -223,3 +234,75 @@ def booking_detail(request, pk):
         'participant_form': participant_form,
     }
     return render(request, 'club/booking_detail.html', context)
+
+
+def public_availability(request):
+    """
+    Public Live Court Availability Screen.
+    Allows prospective players, members, and guests to view live court status.
+    Handoff to Pratik:
+    - Route name: 'club:public_availability'
+    - Template path: 'club/public_availability.html'
+    - Context keys: 'courts', 'court_grid', 'operating_hours', 'selected_date', 'plans'
+    """
+    tz = timezone.get_current_timezone()
+    today = timezone.localtime(timezone.now(), tz).date()
+    date_str = request.GET.get('date')
+    selected_date = today
+
+    if date_str:
+        try:
+            from datetime import datetime
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = today
+
+    from datetime import datetime, time
+    day_start = timezone.make_aware(datetime.combine(selected_date, time.min), tz)
+    day_end = timezone.make_aware(datetime.combine(selected_date, time.max), tz)
+
+    courts = Court.objects.filter(active=True).order_by('id')
+    confirmed_bookings = Booking.objects.filter(
+        status='confirmed',
+        start_datetime__gte=day_start,
+        start_datetime__lte=day_end
+    ).select_related('court', 'booked_by_member')
+
+    # Operating hours: 06:00 to 22:00 (1-hour slots)
+    operating_hours = [f"{h:02d}:00" for h in range(6, 22)]
+
+    # Map bookings by court_id and starting hour
+    grid = {c.id: {} for c in courts}
+    for b in confirmed_bookings:
+        local_start = timezone.localtime(b.start_datetime, tz)
+        slot_key = local_start.strftime('%H:00')
+        if b.court_id in grid:
+            player_label = b.booked_by_member.name if b.booked_by_member else (b.walkin_name or "Walk-in Guest")
+            grid[b.court_id][slot_key] = {
+                'status': 'booked',
+                'booking_id': b.id,
+                'booking_type': b.get_booking_type_display(),
+                'player_display': player_label,
+            }
+
+    court_grid = []
+    for c in courts:
+        court_grid.append({
+            'court': c,
+            'slots': [(hour, grid[c.id].get(hour, {'status': 'free'})) for hour in operating_hours]
+        })
+
+    plans = MembershipPlan.objects.filter(active=True).order_by('id')
+
+    context = {
+        'page_title': 'Champions Club Live Court Availability',
+        'courts': courts,
+        'operating_hours': operating_hours,
+        'court_grid': court_grid,
+        'selected_date': selected_date,
+        'today': today,
+        'plans': plans,
+        'total_confirmed_today': confirmed_bookings.count(),
+    }
+    return render(request, 'club/public_availability.html', context)
+

@@ -1,88 +1,133 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ page_title }} - Champions Club{% endblock %}
+{% block title %}{{ page_title }} · Champions Club{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 650px;">
-    <div class="section-header">
-        <div>
-            <h1>{{ page_title }}</h1>
-            <p class="section-subtitle">Manage member registration and membership plan assignments</p>
+<div class="app-container" style="max-width: 680px;">
+    <!-- Breadcrumb & Header -->
+    <div style="margin-bottom: 1.5rem;">
+        <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
+            Membership Operations &middot; Profile Management
         </div>
-        <div>
-            <a href="{% url 'club:member_list' %}" class="btn btn-outline">&larr; Back to Members</a>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.02em;">
+                {{ page_title }}
+            </h1>
+            <a href="{% url 'club:member_list' %}" class="btn-secondary-low" style="font-size: 0.82rem;">
+                &larr; Back to Members
+            </a>
         </div>
     </div>
 
-    <div class="card" style="padding: 2rem;">
+    <!-- Member Form Card -->
+    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
         <form method="post" novalidate>
             {% csrf_token %}
 
             {% if form.non_field_errors %}
-                <div class="alert alert-danger" style="margin-bottom: 1.5rem;">
+                <div class="alert alert-danger" style="padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.88rem;">
                     {{ form.non_field_errors }}
                 </div>
             {% endif %}
 
             <div style="display: flex; flex-direction: column; gap: 1.25rem;">
                 <div>
-                    <label for="{{ form.name.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.35rem;">Full Name *</label>
+                    <label for="{{ form.name.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                        Full Member Name *
+                    </label>
                     {{ form.name }}
-                    {% if form.name.errors %}<div style="color: var(--danger); font-size: 0.85rem; margin-top: 0.25rem;">{{ form.name.errors }}</div>{% endif %}
+                    {% if form.name.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.name.errors }}</div>
+                    {% endif %}
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div>
-                        <label for="{{ form.email.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.35rem;">Email Address</label>
+                        <label for="{{ form.email.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                            Email Address
+                        </label>
                         {{ form.email }}
-                        {% if form.email.errors %}<div style="color: var(--danger); font-size: 0.85rem; margin-top: 0.25rem;">{{ form.email.errors }}</div>{% endif %}
+                        {% if form.email.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.email.errors }}</div>
+                        {% endif %}
                     </div>
+
                     <div>
-                        <label for="{{ form.phone.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.35rem;">Phone Number</label>
+                        <label for="{{ form.phone.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                            Phone Number
+                        </label>
                         {{ form.phone }}
-                        {% if form.phone.errors %}<div style="color: var(--danger); font-size: 0.85rem; margin-top: 0.25rem;">{{ form.phone.errors }}</div>{% endif %}
+                        {% if form.phone.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.phone.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
 
                 <div>
-                    <label for="{{ form.plan.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.35rem;">Membership Plan</label>
+                    <label for="{{ form.plan.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                        Membership Plan Tier
+                    </label>
                     {{ form.plan }}
-                    {% if form.plan.errors %}<div style="color: var(--danger); font-size: 0.85rem; margin-top: 0.25rem;">{{ form.plan.errors }}</div>{% endif %}
+                    <small style="color: var(--secondary-stitch); font-size: 0.78rem; display: block; margin-top: 0.25rem;">
+                        Determines court hourly rates (Free for Gold, ₹200 for Silver, ₹150 for Junior) and POS discounts.
+                    </small>
+                    {% if form.plan.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.plan.errors }}</div>
+                    {% endif %}
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div>
-                        <label for="{{ form.membership_start.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.35rem;">Membership Start Date</label>
+                        <label for="{{ form.membership_start.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                            Membership Start Date
+                        </label>
                         {{ form.membership_start }}
-                        {% if form.membership_start.errors %}<div style="color: var(--danger); font-size: 0.85rem; margin-top: 0.25rem;">{{ form.membership_start.errors }}</div>{% endif %}
+                        {% if form.membership_start.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.membership_start.errors }}</div>
+                        {% endif %}
                     </div>
+
                     <div>
-                        <label for="{{ form.membership_end.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.35rem;">Membership End Date</label>
+                        <label for="{{ form.membership_end.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                            Membership End Date
+                        </label>
                         {{ form.membership_end }}
-                        {% if form.membership_end.errors %}<div style="color: var(--danger); font-size: 0.85rem; margin-top: 0.25rem;">{{ form.membership_end.errors }}</div>{% endif %}
+                        {% if form.membership_end.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.membership_end.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
 
                 <div>
-                    <label for="{{ form.contact_details.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.35rem;">Additional Notes / Address</label>
+                    <label for="{{ form.contact_details.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                        Additional Notes / Address
+                    </label>
                     {{ form.contact_details }}
-                    {% if form.contact_details.errors %}<div style="color: var(--danger); font-size: 0.85rem; margin-top: 0.25rem;">{{ form.contact_details.errors }}</div>{% endif %}
+                    {% if form.contact_details.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.contact_details.errors }}</div>
+                    {% endif %}
                 </div>
 
-                <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 8px; padding: 0.85rem 1rem; display: flex; gap: 2rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 500;">
                         {{ form.is_club_member }}
-                        <span>Is Club Member</span>
+                        <span>Verified Club Member</span>
                     </label>
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: var(--danger);">
                         {{ form.is_suspended }}
-                        <span>Suspended</span>
+                        <span>Suspended (Reverts to walk-in rates)</span>
                     </label>
                 </div>
 
-                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn-primary">Save Member</button>
-                    <a href="{% url 'club:member_list' %}" class="btn btn-outline">Cancel</a>
+                <!-- Form Actions -->
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; margin-top: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border-stitch);">
+                    <a href="{% url 'club:member_list' %}" class="btn-secondary-low">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn-accent" style="font-size: 0.92rem; padding: 0.55rem 1.4rem;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+                        <span>Save Member Record</span>
+                    </button>
                 </div>
             </div>
         </form>
