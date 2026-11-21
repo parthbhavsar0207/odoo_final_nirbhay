@@ -7,7 +7,6 @@ from unittest import skipUnless
 from unittest.mock import patch
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ValidationError
 from django.db import connection
@@ -77,7 +76,6 @@ class FrontendOriginTests(SimpleTestCase):
 class GuestCounterRenderedTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.staff = get_user_model().objects.create_user(username="new-ui-counter-staff", is_staff=True)
         cls.product = Product.objects.create(
             name="Tennis ball", category="shop", price=Decimal("12.50"), stock_quantity=10,
         )
@@ -88,9 +86,6 @@ class GuestCounterRenderedTests(TestCase):
             name="Retired racket", category="shop", price=Decimal("50.00"),
             stock_quantity=2, is_active=False,
         )
-
-    def setUp(self):
-        self.client.force_login(self.staff)
 
     def draft(self, quantity=2):
         return create_guest_sale(
@@ -125,20 +120,20 @@ class GuestCounterRenderedTests(TestCase):
         self.assertContains(response, "Shop &amp; Bar POS")
         self.assertContains(response, "New Sale")
 
-    def test_existing_catalog_entry_points_use_real_staff_only_counter(self):
+    def test_existing_catalog_entry_points_use_real_counter_without_login(self):
         for name in ["commerce:index", "commerce:shop"]:
             with self.subTest(route=name):
                 response = self.client.get(reverse(name))
                 self.assertContains(response, "Tennis ball")
                 self.assertTemplateUsed(response, "commerce/index.html")
-        self.client.logout()
-        for name in ["commerce:index", "commerce:shop"]:
-            with self.subTest(anonymous_route=name):
-                response = self.client.get(reverse(name))
-                self.assertRedirects(
-                    response, reverse("admin:login") + "?next=" + reverse(name),
-                    fetch_redirect_response=False,
-                )
+
+    def test_product_admin_still_requires_login(self):
+        admin_url = reverse("admin:commerce_product_changelist")
+        response = self.client.get(admin_url)
+        self.assertRedirects(
+            response, reverse("admin:login") + "?next=" + admin_url,
+            fetch_redirect_response=False,
+        )
 
     def test_catalog_cards_show_real_products_and_enabled_sell_links(self):
         response = self.client.get(reverse("commerce:guest_counter"))

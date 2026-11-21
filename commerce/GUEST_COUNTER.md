@@ -5,6 +5,11 @@
 > routes/form as documented in [MEMBER_SALES.md](MEMBER_SALES.md).
 > Earlier checkout/testing status is historical.
 
+> Current access: the user requested counter operation without login. All
+> guest/member counter pages and sale actions now permit anonymous use.
+> POST-only writes, CSRF, validation and inventory services remain enforced.
+> Product admin still requires its existing staff login and permissions.
+
 ## Scope
 
 This milestone adds one active Product line per guest draft: select a product,
@@ -36,17 +41,15 @@ Parth's existing root URL configuration mounts `commerce` at `/commerce/`.
 `pk` is the existing positive Sale primary key, supplied in the URL. Mutating
 routes do not accept a caller-supplied status or Sale ID in the POST body. Success
 uses Django's named redirect (302) to `commerce:sale_detail`; arbitrary `next`
-values are ignored. The existing `commerce:index` and `commerce:shop` placeholders
-are retained; they are not sale mutation endpoints.
+values are ignored. Existing `commerce:index` and `commerce:shop` names alias
+the real guest-counter view and accept GET/HEAD without login.
 
-All five new routes use `staff_member_required(login_url="admin:login")`:
-authenticated, active staff are allowed; anonymous, nonstaff and inactive users
-are redirected to `/admin/login/?next=...`. This reuses the installed Django admin
-login and session middleware; no second authentication flow or new permissions
-model is created. All active staff can operate any guest Sale in this MVP.
-Unchanged legacy shop/index access is outside these new counter operations.
+All counter routes allow access without login, including creating, viewing,
+completing and cancelling existing guest/member sales. A CSRF token validates
+the submission; it is not a staff permission check. Member selection and sale
+details are available to visitors who can reach the counter.
 
-For authenticated staff, inappropriate methods return 405. Global CSRF middleware
+Inappropriate methods return 405. Global CSRF middleware
 and explicit `csrf_protect` protect all writes. Missing/invalid CSRF tokens return
 403 before mutations. Display routes ensure a CSRF cookie is available.
 

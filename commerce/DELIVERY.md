@@ -1,5 +1,37 @@
 # Commerce delivery — 2026-11-21
 
+> Update: PRs #6–#9 are merged into main at c5cd79a. The user subsequently
+> requested counter access without login. The follow-up removes authentication
+> checks from counter pages/actions while retaining CSRF and POST restrictions.
+> Product admin still requires staff login. Earlier delivery results follow.
+
+## Counter access update
+
+The user's explicit request supersedes the earlier staff-only counter policy.
+No login is required to view products, select a shared member, create a sale,
+view saved sale details, complete a sale or cancel it. Anyone who can reach the
+counter can operate these actions; CSRF is submission protection, not staff
+authorization. Product admin retains its existing authentication/permissions.
+
+The follow-up changes commerce/views.py, the three counter test modules and
+this access documentation only. Prices, discount eligibility, stock services,
+models, migrations, shared settings and frontend files are unchanged. The
+existing staff account/password is retained for Product admin; no credential
+is embedded in the code.
+
+Executed for this follow-up on PostgreSQL16.16/Django5.2.19:
+- System check: no issues; migration consistency: no changes detected.
+- Focused guest/UI/member tests:74 passed.
+- Complete project suite:152 passed,0failures/errors/skips.
+- Anonymous Edge audit:1 passed; no session cookie created; guest total25.00,
+  member bar total2.28, stock10->8->10, mobile390x844 with no overflow.
+- Missing CSRF:403 without mutation; GET completion:405.
+- Product admin: login retained.
+
+All original commerce PRs6–9 were merged into main c5cd79a before this change.
+The login-removal follow-up is a separate branch/PR; it is not an automatic
+merge into main. No development migration or database record change is needed.
+
 The user authorized finishing member integration, committing, pushing and
 opening separate commerce PRs. No direct-main push or automatic merge occurred.
 

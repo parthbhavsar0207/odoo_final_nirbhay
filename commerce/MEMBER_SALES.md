@@ -32,8 +32,8 @@ creates a draft. create_guest_sale delegates to the same function with no member
 
 | Name | Method | Path |
 | --- | --- | --- |
-| commerce:member_counter | GET/HEAD, staff | /commerce/counter/member/ |
-| commerce:member_sale_create | POST, staff/CSRF | /commerce/sales/member/create/ |
+| commerce:member_counter | GET/HEAD, no login | /commerce/counter/member/ |
+| commerce:member_sale_create | POST, CSRF, no login | /commerce/sales/member/create/ |
 
 MemberSaleForm extends GuestSaleForm with required member (existing Member ID).
 All member profiles may be selected; eligibility is checked at completion.
@@ -47,8 +47,11 @@ profile attributes, not a customer-name snapshot.
 
 Invalid submissions return HTTP400 with bound errors. Invalid applied plan
 discount/state or insufficient stock at completion returns HTTP409; stock and
-snapshots roll back. CSRF/auth/method protections and named success redirects
-match guest routes. Duplicate draft creation is still not request-idempotent.
+snapshots roll back. CSRF/method protections and named success redirects match
+guest routes. The user requested guest/member counter access without login;
+member selection and sales actions therefore do not require staff credentials.
+Product admin retains its own login/permissions. Duplicate draft creation is
+still not request-idempotent.
 
 ## Reporting handoff
 
