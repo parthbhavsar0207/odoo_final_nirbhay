@@ -1,5 +1,9 @@
 # Commerce Product milestone — Utkarsh
 
+> Repeatable catalogue demo setup: [DEMO_DATA.md](DEMO_DATA.md).
+> Run `python manage.py seed_commerce_data` to add missing shop/bar demonstration
+> products without resetting existing inventory or prices.
+
 > Current delivery: Product, guest/member sales, inventory and shared frontend
 > are published as dependent PRs. Read [DELIVERY.md](DELIVERY.md) and
 > [MEMBER_SALES.md](MEMBER_SALES.md). Preparation notes below are historical.
