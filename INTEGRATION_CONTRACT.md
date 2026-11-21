@@ -65,7 +65,7 @@ Set the Django timezone to `Asia/Kolkata`. Use decimal fields for money. Keep se
 
 ### Pratik - Frontend
 
-**Owns:** Django templates, shared page styling, HTMX/Alpine interactions, and responsive layouts. This is the frontend for the same Django app, not a separate React/Vite application.
+**Owns:** Django app `frontend`: templates (`frontend/templates/`), static assets (`frontend/static/`), owner dashboard views (`frontend/views.py`), HTMX/Alpine interactions, and responsive layouts. This is the frontend for the same Django app, not a separate React/Vite application.
 
 **Build order:**
 

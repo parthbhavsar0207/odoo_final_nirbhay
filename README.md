@@ -10,7 +10,7 @@ A unified sports club management system built with **Django 5.2**, **PostgreSQL 
 |---|---|---|
 | **Nayan** | Backend: Memberships & Bookings | Owns `club/` app: `Member`, `MembershipPlan`, `Court`, `Booking`, `BookingParticipant`, and PostgreSQL GiST overlap constraints. |
 | **Utkarsh** | Backend: Shop, Bar & Sales | Owns `commerce/` app: `Product`, `Sale`, `SaleItem`, atomic inventory decrement, and membership tier discounts. References Nayan's `Member`. |
-| **Pratik** | Frontend & Styling | Owns `templates/` and `static/`: responsive layouts, server-rendered views, HTMX/Alpine enhancements. Zero business logic in templates. |
+| **Pratik** | Frontend & Styling | Owns `frontend/` app: templates (`frontend/templates/`), static assets (`frontend/static/`), responsive layouts, server-rendered views, HTMX/Alpine enhancements. Zero business logic in templates. |
 | **Parth** | Integration, Setup & Delivery | Project scaffolding, settings, PostgreSQL 16 Docker Compose, migration coordination, seed data, and demo delivery. |
 
 ---
@@ -51,20 +51,28 @@ A unified sports club management system built with **Django 5.2**, **PostgreSQL 
 │   ├── views.py                  # Shop & Bar catalog
 │   ├── urls.py
 │   └── migrations/
-├── templates/                    # Pratik's shared template directory
-│   ├── base.html                 # Main layout with navigation
-│   ├── dashboard/
-│   │   └── index.html            # Landing page & integration checklist
-│   ├── club/
-│   │   ├── members.html          # Members list placeholder
-│   │   └── bookings.html         # Bookings list placeholder
-│   └── commerce/
-│       └── index.html            # Shop & Bar catalog placeholder
-├── static/                       # Static assets
-│   ├── css/
-│   │   └── style.css             # Base stylesheet
-│   └── js/
-│       └── main.js               # HTMX CSRF helper & client scripts
+├── frontend/                     # Pratik's dedicated frontend & UI app
+│   ├── apps.py
+│   ├── urls.py                   # Frontend routing (dashboard overview)
+│   ├── views.py                  # Dashboard presentation & live KPI metrics
+│   ├── templates/                # Server-rendered templates
+│   │   ├── base.html             # Main layout with navigation
+│   │   ├── dashboard/
+│   │   │   └── index.html        # Landing page & integration checklist
+│   │   ├── club/
+│   │   │   ├── members.html      # Members directory
+│   │   │   ├── member_form.html  # Member creation / edit form
+│   │   │   ├── bookings.html     # Bookings list & schedule
+│   │   │   ├── booking_form.html # Court booking form
+│   │   │   ├── booking_detail.html # Booking detail & roster
+│   │   │   └── public_availability.html # Live availability matrix
+│   │   └── commerce/
+│   │       └── index.html        # Shop & Bar catalog
+│   └── static/                   # Static assets
+│       ├── css/
+│       │   └── style.css         # Modernist design system styles
+│       └── js/
+│           └── main.js           # HTMX CSRF helper & client scripts
 ├── scripts/                      # Developer utility scripts
 │   ├── setup_dev.ps1             # Automated Windows PowerShell setup
 │   └── wait_for_db.py            # PostgreSQL connectivity checker
