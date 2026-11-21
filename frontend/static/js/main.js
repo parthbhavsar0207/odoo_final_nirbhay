@@ -795,16 +795,35 @@ function initQuickSlotHelper() {
             // If an active button was clicked, update the input
             const activeBtn = quickGrid.querySelector('.quick-slot-btn.is-selected');
             if (activeBtn) {
+                activeBtn.classList.remove('slot-pulse-active');
+                void activeBtn.offsetWidth;
+                activeBtn.classList.add('slot-pulse-active');
+                setTimeout(() => activeBtn.classList.remove('slot-pulse-active'), 400);
                 setSlot(activeBtn.dataset.time);
             }
         });
     });
 
-    // Slot button clicks
+    // Slot button clicks with restrained athletic highlight
     quickGrid.querySelectorAll('.quick-slot-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             quickGrid.querySelectorAll('.quick-slot-btn').forEach(b => b.classList.remove('is-selected'));
             btn.classList.add('is-selected');
+            
+            // Brief visual pulse on selected slot
+            btn.classList.remove('slot-pulse-active');
+            void btn.offsetWidth;
+            btn.classList.add('slot-pulse-active');
+            setTimeout(() => btn.classList.remove('slot-pulse-active'), 400);
+
+            // Subtle confirmation flash on preview card
+            const previewCard = document.querySelector('.session-preview-card');
+            if (previewCard) {
+                previewCard.classList.remove('session-card-flash');
+                void previewCard.offsetWidth;
+                previewCard.classList.add('session-card-flash');
+            }
+
             setSlot(btn.dataset.time);
         });
     });
@@ -813,6 +832,17 @@ function initQuickSlotHelper() {
     startInput.addEventListener('change', updateSessionPreview);
 
     updateSessionPreview();
+
+    // If pre-filled from court matrix URL query (?start=...), highlight the matching slot
+    if (window.location.search && window.location.search.includes('start=')) {
+        setTimeout(() => {
+            const selectedBtn = quickGrid.querySelector('.quick-slot-btn.is-selected');
+            if (selectedBtn) {
+                selectedBtn.classList.add('slot-pulse-active');
+                setTimeout(() => selectedBtn.classList.remove('slot-pulse-active'), 500);
+            }
+        }, 100);
+    }
 }
 
 // Attach to document events

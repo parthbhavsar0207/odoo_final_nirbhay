@@ -32,6 +32,13 @@
     --border-stitch: #e4e7eb;
     --tertiary: #b32820;
     --error: #ba1a1a;
+    /* Athletic Modernist Motion Tokens */
+    --motion-fast: 150ms;
+    --motion-base: 220ms;
+    --motion-slow: 360ms;
+    --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --motion-ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
 }
 
 * {
@@ -1585,3 +1592,282 @@ select.form-select:disabled,
     border-color: var(--on-surface);
     background-color: var(--surface-container-low);
 }
+
+/* ==========================================================================
+   Athletic Modernist Motion & Animation System
+   Calm, purposeful, responsive feedback with zero layout shift
+   ========================================================================== */
+
+/* 1. Page Content Entrance (Brief, gentle, zero delay to interactivity) */
+@keyframes pageContentEntrance {
+    0% {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+main > .app-container {
+    animation: pageContentEntrance var(--motion-base) var(--motion-ease) both;
+}
+
+/* 2. Interactive Buttons & Links (Hover elevation & active press feedback) */
+.btn,
+.btn-primary,
+.btn-accent,
+.btn-secondary-low,
+.btn-outline,
+.btn-sm,
+.quick-slot-btn,
+.chat-chip,
+.chip-pill,
+.help-bot-toggle,
+.mobile-nav-toggle {
+    transition: background-color var(--motion-fast) ease,
+                color var(--motion-fast) ease,
+                border-color var(--motion-fast) ease,
+                box-shadow var(--motion-fast) var(--motion-ease),
+                transform var(--motion-fast) var(--motion-ease);
+}
+
+.btn:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
+.btn-accent:hover:not(:disabled),
+.btn-secondary-low:hover:not(:disabled),
+.btn-outline:hover:not(:disabled),
+.btn-sm:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.btn:active:not(:disabled),
+.btn-primary:active:not(:disabled),
+.btn-accent:active:not(:disabled),
+.btn-secondary-low:active:not(:disabled),
+.btn-outline:active:not(:disabled),
+.btn-sm:active:not(:disabled),
+.chip-pill:active,
+.chat-chip:active,
+.quick-slot-btn:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Keyboard Accessible Focus Rings */
+.btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-accent:focus-visible,
+.btn-secondary-low:focus-visible,
+.btn-outline:focus-visible,
+.btn-sm:focus-visible,
+.chip-pill:focus-visible,
+.chat-chip:focus-visible,
+.quick-slot-btn:focus-visible,
+.champions-select-trigger:focus-visible,
+.matrix-slot-cell:focus-visible,
+.form-input:focus-visible,
+.form-select:focus-visible {
+    outline: 2px solid var(--on-surface) !important;
+    outline-offset: 2px !important;
+}
+
+/* 3. Cards & Surfaces (Restrained hover highlight, ZERO layout shift) */
+.metric-card,
+.catalog-card,
+.session-preview-card,
+.modern-table-container,
+.card {
+    transition: transform var(--motion-fast) var(--motion-ease),
+                box-shadow var(--motion-fast) var(--motion-ease),
+                border-color var(--motion-fast) ease;
+    box-sizing: border-box;
+}
+
+.metric-card:hover,
+.session-preview-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+}
+
+.modern-table tbody tr {
+    transition: background-color var(--motion-fast) ease;
+}
+
+.modern-table tbody tr:hover {
+    background-color: var(--surface-container-low);
+}
+
+/* 4. Dropdowns & Filters: Smooth Menu Open & Clear Selected State */
+.champions-select-trigger {
+    transition: border-color var(--motion-fast) ease,
+                background-color var(--motion-fast) ease,
+                box-shadow var(--motion-fast) var(--motion-ease);
+}
+
+.champions-select-trigger:hover {
+    border-color: #94a3b8;
+    background-color: #ffffff;
+}
+
+.champions-select-chevron {
+    transition: transform var(--motion-base) var(--motion-ease);
+}
+
+.champions-select-wrapper.is-open .champions-select-menu {
+    display: block;
+    animation: dropFadeIn var(--motion-fast) var(--motion-ease) both;
+}
+
+.champions-select-wrapper.dropdown-menu-up.is-open .champions-select-menu {
+    animation: dropFadeInUp var(--motion-fast) var(--motion-ease) both;
+}
+
+.champions-select-option {
+    transition: background-color 120ms ease,
+                color 120ms ease,
+                border-color 120ms ease,
+                padding-left var(--motion-fast) ease;
+    border-left: 3px solid transparent;
+}
+
+.champions-select-option:hover,
+.champions-select-option.is-highlighted {
+    background-color: var(--surface-container-low);
+    color: var(--on-surface);
+}
+
+.champions-select-option.is-selected {
+    background-color: rgba(210, 240, 60, 0.16);
+    color: var(--on-surface);
+    font-weight: 600;
+    border-left: 3px solid #84a600;
+    padding-left: 0.95rem;
+}
+
+/* 5. Successful Booking / Form Confirmation Cue (Tennis-Inspired Ace Pulse) */
+@keyframes toastSlideEntrance {
+    0% {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes tennisAcePulse {
+    0% {
+        transform: scale(0.65);
+        box-shadow: 0 0 0 0 rgba(210, 240, 60, 0.95);
+    }
+    40% {
+        transform: scale(1.18);
+        box-shadow: 0 0 0 8px rgba(210, 240, 60, 0);
+    }
+    70% {
+        transform: scale(0.96);
+        box-shadow: 0 0 0 0 rgba(210, 240, 60, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(210, 240, 60, 0);
+    }
+}
+
+.toast-alert {
+    animation: toastSlideEntrance var(--motion-base) var(--motion-ease) both;
+}
+
+.toast-alert-success {
+    border-left: 4px solid var(--primary-container) !important;
+    background: linear-gradient(90deg, rgba(210, 240, 60, 0.12) 0%, #ffffff 35%);
+}
+
+.toast-alert-success .toast-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--primary-container);
+    color: var(--on-primary-fixed) !important;
+    padding: 3px;
+    font-size: 18px;
+    animation: tennisAcePulse 480ms var(--motion-ease) 1;
+}
+
+/* 6. Availability & Slot Selection Cues (Subtle flash on change) */
+.matrix-slot-free {
+    transition: background-color var(--motion-fast) ease,
+                border-color var(--motion-fast) ease,
+                color var(--motion-fast) ease,
+                transform var(--motion-fast) var(--motion-ease),
+                box-shadow var(--motion-fast) var(--motion-ease);
+}
+
+.matrix-slot-free:hover {
+    background-color: #dcfce7;
+    border-color: #86efac;
+    color: #15803d;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(22, 163, 74, 0.15);
+}
+
+.matrix-slot-free:active {
+    transform: translateY(0) scale(0.97);
+    background-color: #bbf7d0;
+}
+
+@keyframes slotPulseActive {
+    0% {
+        transform: scale(0.96);
+        box-shadow: 0 0 0 0 rgba(210, 240, 60, 0.9);
+        background-color: var(--primary-container);
+    }
+    50% {
+        transform: scale(1.03);
+        box-shadow: 0 0 0 6px rgba(210, 240, 60, 0);
+        background-color: #c4e625;
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(210, 240, 60, 0);
+    }
+}
+
+.quick-slot-btn.slot-pulse-active {
+    animation: slotPulseActive 360ms var(--motion-ease) 1;
+}
+
+@keyframes sessionCardFlash {
+    0% {
+        border-color: var(--primary-container);
+        box-shadow: 0 0 0 3px rgba(210, 240, 60, 0.35);
+    }
+    100% {
+        border-color: var(--border-stitch);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+}
+
+.session-preview-card.session-card-flash {
+    animation: sessionCardFlash 380ms ease-out 1;
+}
+
+/* 7. Accessibility: Strict Prefers-Reduced-Motion Guarantee */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+}
+
