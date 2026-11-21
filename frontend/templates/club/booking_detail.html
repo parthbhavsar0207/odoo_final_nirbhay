@@ -45,10 +45,10 @@
                         <a href="{% url 'club:member_edit' booking.booked_by_member.id %}" style="color: var(--on-surface); text-decoration: none;">
                             {{ booking.booked_by_member.name }}
                         </a>
-                        {% if booking.booked_by_member.plan %}
+                        {% if booking.booked_by_member.current_plan %}
                             <div style="margin-top: 0.15rem;">
-                                <span class="pill-tier tier-{{ booking.booked_by_member.plan.tier }}">
-                                    {{ booking.booked_by_member.plan.name }}
+                                <span class="pill-tier tier-{{ booking.booked_by_member.current_plan.tier }}">
+                                    {{ booking.booked_by_member.current_plan.name }}
                                 </span>
                             </div>
                         {% endif %}
@@ -152,9 +152,9 @@
                             </span>
                         </td>
                         <td>
-                            {% if participant.member and participant.member.plan %}
-                                <span class="pill-tier tier-{{ participant.member.plan.tier }}">
-                                    {{ participant.member.plan.name }}
+                            {% if participant.member and participant.member.current_plan %}
+                                <span class="pill-tier tier-{{ participant.member.current_plan.tier }}">
+                                    {{ participant.member.current_plan.name }}
                                 </span>
                             {% else %}
                                 <span style="color: var(--secondary-stitch); font-size: 0.8rem;">&mdash;</span>

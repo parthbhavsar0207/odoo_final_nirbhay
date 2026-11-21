@@ -107,7 +107,7 @@
 
         <!-- Responsive Matrix Grid -->
         <div class="matrix-container">
-            <div class="matrix-grid">
+            <div class="matrix-grid" style="grid-template-columns: 200px repeat({{ operating_hours|length }}, minmax(68px, 1fr));">
                 <!-- Header: Court Column -->
                 <div class="matrix-header-cell" style="text-align: left; padding-left: 0.5rem;">
                     COURT / SURFACE
