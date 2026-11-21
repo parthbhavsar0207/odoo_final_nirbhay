@@ -1,0 +1,45 @@
+/* Commerce additions to Pratik's published design tokens and components. */
+.commerce-heading, .commerce-card-heading, .commerce-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.commerce-heading { align-items: flex-end; margin-bottom: 1.5rem; }
+.commerce-eyebrow { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--secondary-stitch); margin-bottom: .25rem; }
+.commerce-heading h1 { font-size: 1.75rem; font-weight: 700; color: var(--on-surface); letter-spacing: -.02em; }
+.commerce-copy { color: var(--secondary-stitch); font-size: .88rem; margin-top: .25rem; }
+.commerce-panel { background: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; box-shadow: 0 1px 3px rgba(0,0,0,.02); }
+.commerce-panel h2 { font-size: 1.15rem; font-weight: 600; letter-spacing: -.02em; color: var(--on-surface); }
+.commerce-form-grid { display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1fr) minmax(0,1fr); gap: 1rem; margin: 1.25rem 0; }
+.commerce-field { min-width: 0; }
+.commerce-field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .45rem; color: var(--on-surface); }
+.commerce-field input, .commerce-field select { width: 100%; min-height: 44px; padding: .55rem .75rem; border: 1px solid var(--border-stitch); border-radius: 8px; color: var(--on-surface); background: var(--surface-container-lowest); font: inherit; font-size: .92rem; }
+.commerce-field input:focus, .commerce-field select:focus { outline: 2px solid var(--primary-container); outline-offset: 2px; border-color: var(--on-surface-variant); }
+.commerce-page .errorlist { list-style: none; color: var(--error); font-size: .85rem; margin-top: .4rem; }
+.commerce-feedback { padding: .9rem 1.25rem; border: 1px solid var(--border-stitch); border-left: 4px solid var(--primary-container); border-radius: 12px; background: var(--surface-container-lowest); margin-bottom: 1.25rem; font-size: .9rem; color: var(--on-surface); }
+.commerce-feedback-error { border-left-color: var(--error); }
+.commerce-feedback-success { background: var(--surface-container-low); border-left-color: var(--primary-container); }
+.commerce-meta { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; margin: 1.25rem 0; }
+.commerce-meta dt, .commerce-totals dt { font-size: .78rem; color: var(--secondary-stitch); }
+.commerce-meta dd { font-size: .9rem; font-weight: 500; color: var(--on-surface); }
+.commerce-table-scroll { overflow-x: auto; }
+.commerce-table-scroll .modern-table { min-width: 600px; }
+.commerce-totals { max-width: 320px; margin: 1.25rem 0 1.25rem auto; font-variant-numeric: tabular-nums; }
+.commerce-totals div { display: flex; justify-content: space-between; gap: 1rem; padding: .35rem 0; }
+.commerce-totals .commerce-total { border-top: 1px solid var(--border-stitch); margin-top: .35rem; padding-top: .7rem; font-weight: 700; }
+.commerce-total dt { font-size: .95rem; color: var(--on-surface); }
+.commerce-actions { justify-content: flex-start; }
+.commerce-card-price { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: 1rem 0 .75rem; }
+.commerce-stock { font-size: .8rem; color: var(--secondary-stitch); }
+.commerce-catalog-title { font-size: 1.1rem; letter-spacing: -.02em; color: var(--on-surface); }
+.commerce-empty { text-align: center; padding: 2rem 1.5rem; }
+.commerce-page .btn-accent:focus-visible, .commerce-page .btn-secondary-low:focus-visible { outline: 2px solid var(--on-surface-variant); outline-offset: 3px; }
+@media (max-width: 1100px) {
+    .navbar > .app-container, .navbar > .app-container > div:first-child { flex-wrap: wrap; gap: 1rem !important; }
+    .navbar .nav-links { flex-wrap: wrap; margin-left: 0 !important; }
+    .top-notice-strip, .top-notice-strip > div { flex-wrap: wrap; gap: .5rem; }
+}
+@media (max-width: 640px) {
+    .commerce-form-grid, .commerce-meta { grid-template-columns: minmax(0,1fr); }
+    .commerce-panel { padding: 1rem; }
+    .commerce-heading h1 { font-size: 1.5rem; }
+    .commerce-page .catalog-grid { grid-template-columns: minmax(0,1fr); }
+    .commerce-page .btn-accent, .commerce-page .btn-secondary-low { min-height: 44px; }
+    .commerce-card-heading .catalog-title { overflow-wrap: anywhere; }
+}
