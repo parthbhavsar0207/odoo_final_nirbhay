@@ -1062,7 +1062,7 @@ def search_suggestions_api(request):
         suggestions.append({
             'type': 'Shop & Bar',
             'title': p.name,
-            'subtitle': f"{p.get_category_display()} · ₹{p.price} in stock ({p.stock_quantity})",
+            'subtitle': f"{p.get_category_display()} · ₹{p.price}",
             'url': p.get_absolute_url(),
             'icon': 'shopping_bag',
         })

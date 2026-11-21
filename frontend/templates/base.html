@@ -33,16 +33,35 @@
             </div>
             <!-- Staff Operations Quick Links (Clearly distinguished from Public pages) -->
             <div class="desktop-only" style="display: flex; align-items: center; gap: 0.65rem;">
+                {% if user.is_authenticated and user.is_staff %}
                 <span style="color: var(--secondary-stitch); text-transform: uppercase; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;">Staff Operations:</span>
+                {% if perms.commerce.view_sale and perms.club.view_booking and perms.club.view_member %}
                 <a href="{% url 'dashboard' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Dashboard</a>
                 <span style="color: var(--secondary-stitch);">&middot;</span>
+                {% endif %}
+                {% if perms.club.view_booking %}
                 <a href="{% url 'club:booking_list' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Bookings Ledger</a>
                 <span style="color: var(--secondary-stitch);">&middot;</span>
+                {% endif %}
+                {% if perms.club.view_member %}
                 <a href="{% url 'club:member_list' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Members</a>
                 <span style="color: var(--secondary-stitch);">&middot;</span>
+                {% endif %}
+                {% if perms.club.view_membershipplan %}
                 <a href="{% url 'club:plan_list' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Plan Subscriptions</a>
                 <span style="color: var(--secondary-stitch);">&middot;</span>
+                {% endif %}
+                {% if perms.commerce.view_sale and perms.commerce.add_sale and perms.commerce.view_product %}
                 <a href="{% url 'commerce:guest_counter' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Shop &amp; Bar POS</a>
+                {% endif %}
+                <span style="color: #e2e8f0; font-weight: 600;">{{ user.get_username }}</span>
+                <form method="post" action="{% url 'staff_logout' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" style="background: none; border: none; color: #cbd5e1; font: inherit; cursor: pointer;">Sign out</button>
+                </form>
+                {% else %}
+                <a href="{% url 'staff_login' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Staff sign in</a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -136,10 +155,12 @@
                 </div>
 
                 <!-- Reserve Court CTA -->
+                {% if user.is_authenticated and user.is_staff and perms.club.add_booking and perms.club.view_booking and perms.club.view_member %}
                 <a href="{% url 'club:booking_create' %}" class="btn-accent desktop-only">
                     <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
                     <span>Reserve Slot</span>
                 </a>
+                {% endif %}
 
                 <!-- Mobile Toggle -->
                 <button type="button" class="mobile-nav-toggle mobile-only" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle navigation menu" style="display: none; background: none; border: 1px solid var(--border-stitch); border-radius: 8px; padding: 0.4rem 0.6rem; cursor: pointer; color: var(--on-surface);">
@@ -164,59 +185,86 @@
                 Pro Shop &amp; Bar
             </a>
 
+            {% if user.is_authenticated and user.is_staff %}
             <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); margin-top: 0.75rem; margin-bottom: 0.2rem;">Staff Operations</div>
+            {% if perms.commerce.view_sale and perms.club.view_booking and perms.club.view_member %}
             <a href="{% url 'dashboard' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
                 Dashboard Overview
             </a>
+            {% endif %}
+            {% if perms.club.view_booking %}
             <a href="{% url 'club:booking_list' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
                 Bookings Ledger
             </a>
+            {% endif %}
+            {% if perms.club.view_member %}
             <a href="{% url 'club:member_list' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
                 Members Directory
             </a>
+            {% endif %}
+            {% if perms.club.view_membershipplan %}
             <a href="{% url 'club:plan_list' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
                 Plans Management
             </a>
+            {% endif %}
+            {% if perms.commerce.view_sale and perms.commerce.add_sale and perms.commerce.view_product %}
             <a href="{% url 'commerce:guest_counter' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
                 Shop &amp; Bar POS
             </a>
+            {% endif %}
 
             <div style="padding-top: 0.75rem; border-top: 1px solid var(--border-stitch); margin-top: 0.25rem;">
+                {% if perms.club.add_booking and perms.club.view_booking and perms.club.view_member %}
                 <a href="{% url 'club:booking_create' %}" class="btn-accent" style="width: 100%; justify-content: center; padding: 0.6rem 1rem;">
                     <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
 
                     <span>Reserve Court</span>
                 </a>
+                {% endif %}
 
                 <!-- Staff Profile / Operations Dropdown -->
                 <div x-data="{ open: false }" @click.outside="open = false" style="position: relative;">
                     <button type="button" @click="open = !open" class="btn-secondary-low" style="padding: 0.45rem 0.65rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
                         <span class="material-symbols-outlined" style="font-size: 18px;">account_circle</span>
-                        <span style="font-size: 0.8rem; font-weight: 600;">Admin</span>
+                        <span style="font-size: 0.8rem; font-weight: 600;">{{ user.get_username }}</span>
                         <span class="material-symbols-outlined" style="font-size: 16px; transition: transform 0.2s ease;" :style="open ? 'transform: rotate(180deg)' : ''">expand_more</span>
                     </button>
                     <div x-show="open" x-cloak class="club-dropdown-menu" style="position: absolute; top: 100%; right: 0; margin-top: 0.4rem; z-index: 1000; min-width: 220px;">
                         <div style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-stitch); background-color: var(--surface-container-low); border-top-left-radius: 10px; border-top-right-radius: 10px;">
-                            <div style="font-size: 0.78rem; font-weight: 700; color: var(--on-surface);">Terminal #1 &middot; Front Desk</div>
+                            <div style="font-size: 0.78rem; font-weight: 700; color: var(--on-surface);">{{ user.get_username }}</div>
                             <div style="font-size: 0.7rem; color: #166534; display: flex; align-items: center; gap: 0.35rem; margin-top: 2px;">
                                 <span class="pulse-indicator"></span> Session Active
                             </div>
                         </div>
+                        {% if perms.commerce.view_sale and perms.club.view_booking and perms.club.view_member %}
                         <a href="{% url 'dashboard' %}" class="club-dropdown-item">
                             <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">dashboard</span>
                             <span>Executive Dashboard</span>
                         </a>
+                        {% endif %}
+                        {% if perms.club.view_booking %}
                         <a href="{% url 'club:booking_export_csv' %}" class="club-dropdown-item">
                             <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">download</span>
                             <span>Export Bookings CSV</span>
                         </a>
+                        {% endif %}
                         <a href="{% url 'club:public_availability' %}" class="club-dropdown-item">
                             <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">grid_view</span>
                             <span>Live Court Schedule</span>
                         </a>
+                        <form method="post" action="{% url 'staff_logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="club-dropdown-item" style="width: 100%; background: none; border: none; font: inherit; cursor: pointer; text-align: left;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">logout</span>
+                                <span>Sign out</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
+            {% else %}
+            <a href="{% url 'staff_login' %}" class="btn-accent" style="justify-content: center; margin-top: 0.75rem;">Staff sign in</a>
+            {% endif %}
         </div>
     </header>
 
