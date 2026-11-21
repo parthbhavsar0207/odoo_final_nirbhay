@@ -1,5 +1,9 @@
 # Commerce Product milestone — Utkarsh
 
+> Current delivery: Product, guest/member sales, inventory and shared frontend
+> are published as dependent PRs. Read [DELIVERY.md](DELIVERY.md) and
+> [MEMBER_SALES.md](MEMBER_SALES.md). Preparation notes below are historical.
+
 > Guest-sales update: Sale, SaleItem, Decimal guest calculations and PostgreSQL
 > transaction services are now prepared. See [GUEST_SALES.md](GUEST_SALES.md) for
 > the current interface, migration, tests and integration limits. The Product-only

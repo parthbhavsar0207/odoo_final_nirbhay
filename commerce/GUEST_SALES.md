@@ -1,5 +1,9 @@
 # Guest sales — independent commerce milestone
 
+> Current delivery and executed151-test results: [DELIVERY.md](DELIVERY.md).
+> Guests still use the same interface; shared Member sales now also exist as
+> described in [MEMBER_SALES.md](MEMBER_SALES.md). Older preparation notes follow.
+
 ## Scope and integration status
 
 This is Utkarsh's commerce backend on `feature/utkarsh-commerce`. It extends the

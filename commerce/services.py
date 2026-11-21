@@ -1,15 +1,19 @@
-"""The write interface for guest sales. All sale mutations must use services."""
+"""The write interface for counter sales. All sale mutations use services."""
 
 from collections.abc import Mapping
 
 from django.core.exceptions import ValidationError
 from django.db import NotSupportedError, connection, transaction
 from django.db.models import F
+from django.utils import timezone
+
+from club.models import Member, MembershipPlan
 
 from .calculations import (
     InsufficientStock,
-    calculate_guest_line,
-    calculate_guest_totals,
+    ZERO,
+    calculate_sale_line,
+    calculate_sale_totals,
     restored_stock,
     validate_quantity,
     validate_stock,
@@ -36,7 +40,7 @@ def cancellation_requires_restock(status):
 
 def _require_postgresql():
     if connection.vendor != "postgresql" or not connection.features.has_select_for_update:
-        raise NotSupportedError("Guest sale services require PostgreSQL row locking.")
+        raise NotSupportedError("Sale services require PostgreSQL row locking.")
 
 
 def _normalise_quantities(quantities):
@@ -51,18 +55,27 @@ def _normalise_quantities(quantities):
 
 
 def create_guest_sale(*, quantities, payment_method):
+    """Preserve the existing guest interface with no member benefits."""
+    return create_sale(quantities=quantities, payment_method=payment_method)
+
+
+def create_sale(*, quantities, payment_method, member_id=None):
     """Create a draft without reserving stock or accepting caller-supplied prices."""
     quantities = _normalise_quantities(quantities)
     if payment_method not in Sale.PaymentMethod.values:
         raise ValidationError("Choose cash, card or UPI.", code="invalid_payment_method")
+    if member_id is not None and (type(member_id) is not int or member_id < 1):
+        raise ValidationError("Choose an existing member.", code="invalid_member")
     _require_postgresql()
     with transaction.atomic():
+        if member_id is not None and not Member.objects.filter(pk=member_id).exists():
+            raise ValidationError("Member does not exist.", code="invalid_member")
         products = list(Product.objects.filter(pk__in=quantities).order_by("pk"))
         if {product.pk for product in products} != set(quantities):
             raise ValidationError("One or more products do not exist.", code="invalid_product")
         if any(not product.is_active for product in products):
             raise ValidationError("Inactive products cannot be sold.", code="inactive_product")
-        sale = Sale.objects.create(payment_method=payment_method)
+        sale = Sale.objects.create(payment_method=payment_method, member_id=member_id)
         SaleItem.objects.bulk_create([
             SaleItem(sale=sale, product=product, quantity=quantities[product.pk])
             for product in products
@@ -88,7 +101,7 @@ def _locked_items_and_products(sale):
 
 
 def complete_sale(sale_id):
-    """Snapshot guest prices and deduct stock once, in one PostgreSQL transaction."""
+    """Snapshot prices/benefits and deduct stock once in one transaction."""
     _require_postgresql()
     with transaction.atomic():
         sale = Sale.objects.select_for_update().get(pk=sale_id)
@@ -96,6 +109,19 @@ def complete_sale(sale_id):
             return sale
         if sale.payment_method not in Sale.PaymentMethod.values:
             raise ValidationError("Choose cash, card or UPI.", code="invalid_payment_method")
+        # Lock separate queries: a nullable member/plan outer join cannot be
+        # locked safely by PostgreSQL. Retry returns above before repricing.
+        plan = None
+        if sale.member_id is not None:
+            member = Member.objects.select_for_update().get(pk=sale.member_id)
+            if member.plan_id is not None:
+                candidate = MembershipPlan.objects.select_for_update().get(pk=member.plan_id)
+                if (
+                    member.is_club_member
+                    and member.is_active_on_date(timezone.localdate())
+                    and candidate.active
+                ):
+                    plan = candidate
         items, products = _locked_items_and_products(sale)
         amounts = []
         for item in items:
@@ -105,8 +131,16 @@ def complete_sale(sale_id):
                 available=product.stock_quantity,
                 is_active=product.is_active,
             )
-            amounts.append(calculate_guest_line(unit_price=product.price, quantity=item.quantity))
-        totals = calculate_guest_totals(amounts)
+            rate = ZERO
+            if plan is not None:
+                rate = (
+                    plan.shop_discount_percent if product.category == Product.Category.SHOP
+                    else plan.bar_discount_percent
+                )
+            amounts.append(calculate_sale_line(
+                unit_price=product.price, quantity=item.quantity, discount_percent=rate,
+            ))
+        totals = calculate_sale_totals(amounts)
 
         # Validate every line before any deduction. Conditional F updates are an
         # additional guard; row locks serialize competing checkout services.
