@@ -117,7 +117,7 @@
 
         <!-- Responsive Matrix Grid -->
         <div class="matrix-container">
-            <div class="matrix-grid">
+            <div class="matrix-grid" style="grid-template-columns: 200px repeat({{ operating_hours|length }}, minmax(68px, 1fr));">
                 <!-- Header: Court Column -->
                 <div class="matrix-header-cell" style="text-align: left; padding: 0.5rem 0.75rem; align-items: flex-start; justify-content: center;">
                     <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch);">FACILITY</div>
@@ -150,28 +150,22 @@
                                onclick="event.preventDefault(); openBookingModal('{{ row.court.id }}', '{{ selected_date|date:'Y-m-d' }}T{{ hour }}');"
                                class="matrix-slot-cell matrix-slot-free"
                                id="slot-cell-{{ row.court.id }}-{{ hour|cut:':' }}"
-                               title="Reserve {{ row.court.name }}: {{ slot.time_diff }} (60 mins) &middot; Standard Rate: ₹{{ slot.standard_price|floatformat:0 }} &middot; Click to Reserve"
+                               title="Reserve {{ row.court.name }} at {{ hour }} (60 mins) &middot; Standard Rate: ₹{{ row.court.hourly_rate|floatformat:0 }} &middot; Click to Reserve"
                                data-slot-cell="free"
                                data-court-id="{{ row.court.id }}"
                                data-slot-hour="{{ hour }}"
                                data-court="{{ row.court.name }}"
-                               data-standard="{{ slot.standard_price|floatformat:0 }}"
-                               data-gold="{{ slot.gold_price|floatformat:0 }}"
-                               data-silver="{{ slot.silver_price|floatformat:0 }}"
-                               data-junior="{{ slot.junior_price|floatformat:0 }}">
-                                <span class="matrix-slot-price" style="font-size: 0.85rem; font-weight: 800; color: #166534; line-height: 1.1;">₹{{ slot.standard_price|floatformat:0 }}</span>
+                               data-standard="{{ row.court.hourly_rate|floatformat:0 }}"
+                               data-gold="{{ tier_rates.gold|floatformat:0 }}"
+                               data-silver="{{ tier_rates.silver|floatformat:0 }}"
+                               data-junior="{{ tier_rates.junior|floatformat:0 }}">
+                                <span class="matrix-slot-price" style="font-size: 0.85rem; font-weight: 800; color: #166534; line-height: 1.1;">₹{{ row.court.hourly_rate|floatformat:0 }}</span>
                                 <span class="matrix-slot-status" style="font-size: 0.62rem; font-weight: 700; text-transform: uppercase; color: #15803d; letter-spacing: 0.03em;">Open</span>
                             </a>
                         {% else %}
                             <div class="matrix-slot-cell matrix-slot-booked"
                                  id="slot-cell-{{ row.court.id }}-{{ hour|cut:':' }}"
-                                 data-court-id="{{ row.court.id }}"
-                                 data-slot-hour="{{ hour }}"
-                                 data-booking-id="{{ slot.booking_id }}"
-                                 onclick="inspectBookedSlot('{{ slot.booking_id }}')"
-                                 style="cursor: pointer;"
-                                 title="Booked: {{ slot.player_display }} ({{ slot.booking_type }}) &middot; {{ slot.time_diff }} &middot; Price: ₹{{ slot.price|floatformat:0 }} &middot; Click to View / Cancel Slot">
-                                <span class="matrix-slot-price" style="font-size: 0.8rem; font-weight: 700; color: #475569; line-height: 1.1;">₹{{ slot.price|floatformat:0 }}</span>
+                                 title="Unavailable: an existing reservation overlaps this 60-minute session">
                                 <span class="matrix-slot-status" style="font-size: 0.62rem; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.03em;">Booked</span>
 
                             </div>
@@ -866,30 +860,9 @@ async function handleModalSubmit(event) {
                 window.showClubToast(toastTitle, data.message, 'success', 6500);
             }
 
-            // 2. Real-time in-place mutation of the matrix slot cell
-            const cellId = `slot-cell-${data.court_id}-${data.slot_hour.replace(':', '')}`;
-            const cell = document.getElementById(cellId) || document.querySelector(`[data-court-id="${data.court_id}"][data-slot-hour="${data.slot_hour}"]`);
-
-            if (cell) {
-                cell.className = 'matrix-slot-cell matrix-slot-booked slot-pulse-highlight';
-                cell.setAttribute('onclick', `inspectBookedSlot('${data.booking_id}')`);
-                cell.setAttribute('data-booking-id', data.booking_id);
-                cell.style.cursor = 'pointer';
-                cell.removeAttribute('href');
-                cell.removeAttribute('data-slot-cell');
-                cell.title = `Booked: ${data.player_display} (${data.booking_type}) · ${data.time_diff} · Price: ₹${data.price.toFixed(0)} · Click to View / Cancel Slot`;
-                cell.innerHTML = `
-                    <span class="matrix-slot-price" style="font-size: 0.8rem; font-weight: 700; color: #475569; line-height: 1.1;">₹${data.price.toFixed(0)}</span>
-                    <span class="matrix-slot-status" style="font-size: 0.62rem; font-weight: 600; text-transform: uppercase; color: #64748b; letter-spacing: 0.03em;">Booked</span>
-                `;
-            }
-
-            // 3. Real-time increment of Today's Confirmed Slots counter
-            const counterEl = document.getElementById('total-confirmed-counter');
-            if (counterEl) {
-                const cur = parseInt(counterEl.innerText.trim()) || 0;
-                counterEl.innerText = cur + 1;
-            }
+            // Reload availability so every overlapping sixty-minute session is marked unavailable.
+            const selectedDate = document.getElementById('date-jump')?.value;
+            if (selectedDate) await handleDateChange(selectedDate);
 
             // Reset form
             form.reset();
@@ -921,7 +894,9 @@ async function handleDateChange(newDate) {
 
     wrapper.style.opacity = '0.4';
     try {
-        const response = await fetch(`{% url 'club:public_availability' %}?date=${newDate}`);
+        const scheduleUrl = new URL(window.location.href);
+        scheduleUrl.searchParams.set('date', newDate);
+        const response = await fetch(scheduleUrl.toString());
         if (response.ok) {
             const html = await response.text();
             const parser = new DOMParser();
@@ -930,7 +905,7 @@ async function handleDateChange(newDate) {
 
             if (newMatrix) {
                 wrapper.innerHTML = newMatrix.innerHTML;
-                window.history.pushState(null, '', `?date=${newDate}`);
+                window.history.pushState(null, '', scheduleUrl.toString());
                 const dateJump = document.getElementById('date-jump');
                 if (dateJump) dateJump.value = newDate;
 
@@ -1076,31 +1051,8 @@ async function executeCancelFromInspect() {
         if (response.ok && data.success) {
             closeInspectModal();
 
-            // Transform matrix slot cell back to open/free in-place
-            const cellId = `slot-cell-${data.court_id}-${data.slot_hour.replace(':', '')}`;
-            const cell = document.getElementById(cellId) || document.querySelector(`[data-court-id="${data.court_id}"][data-slot-hour="${data.slot_hour}"]`);
-            if (cell) {
-                const dateJump = document.getElementById('date-jump');
-                const selectedDate = dateJump ? dateJump.value : '';
-                cell.className = 'matrix-slot-cell matrix-slot-free slot-pulse-highlight';
-                cell.setAttribute('data-slot-cell', 'free');
-                cell.setAttribute('onclick', `event.preventDefault(); openBookingModal('${data.court_id}', '${selectedDate}T${data.slot_hour}');`);
-                cell.setAttribute('href', `/club/bookings/new/?court=${data.court_id}&start=${selectedDate}T${data.slot_hour}`);
-                cell.removeAttribute('data-booking-id');
-                cell.style.cursor = '';
-                cell.title = `Reserve ${data.court_name} (${data.slot_hour}) · Standard Rate: ₹${data.standard_price.toFixed(0)} · Click to Reserve`;
-                cell.innerHTML = `
-                    <span class="matrix-slot-price" style="font-size: 0.85rem; font-weight: 800; color: #166534; line-height: 1.1;">₹${data.standard_price.toFixed(0)}</span>
-                    <span class="matrix-slot-status" style="font-size: 0.62rem; font-weight: 700; text-transform: uppercase; color: #15803d; letter-spacing: 0.03em;">Open</span>
-                `;
-            }
-
-            // Decrement active confirmed counter
-            const counterEl = document.getElementById('total-confirmed-counter');
-            if (counterEl) {
-                const cur = parseInt(counterEl.innerText.trim()) || 0;
-                counterEl.innerText = Math.max(0, cur - 1);
-            }
+            const selectedDate = document.getElementById('date-jump')?.value;
+            if (selectedDate) await handleDateChange(selectedDate);
 
             if (window.showClubToast) {
                 window.showClubToast('Slot Released & Free', data.message, 'success', 5000);

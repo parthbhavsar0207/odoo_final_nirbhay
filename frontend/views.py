@@ -5,23 +5,27 @@ Coordinates owner dashboard presentation and live aggregations.
 """
 
 from decimal import Decimal
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from django.shortcuts import render
-from django.db.models import Sum, F
+from django.db.models import Sum
 from django.utils import timezone
 
 from club.models import Member, Court, Booking, MembershipPlan
-from commerce.models import Sale, Product
+from commerce.reporting import commerce_dashboard_summary
 
 
 def dashboard_view(request):
     """
     Owner Overview Dashboard.
-    Pulls live data from PostgreSQL for courts, members, and bookings.
-    Notes commerce/dues dependencies awaiting Utkarsh's models.
+    Pulls live database booking values, completed sales and inventory alerts.
     """
     total_courts = Court.objects.filter(active=True).count()
-    active_members = Member.objects.filter(is_club_member=True, is_suspended=False).count()
+    today = timezone.localdate()
+    active_members = 0
+    for member in Member.objects.select_related('plan').all():
+        plan = member.effective_plan_on_date(today)
+        if member.is_club_member and member.is_active_on_date(today) and plan is not None and plan.active:
+            active_members += 1
     total_members = Member.objects.count()
 
     # Bookings stats
@@ -29,9 +33,9 @@ def dashboard_view(request):
     total_confirmed_count = confirmed_bookings.count()
     total_bookings_count = Booking.objects.count()
 
-    # Revenue aggregation from snapshotted prices
+    # A confirmed booking snapshot is booking value, not collected revenue.
     revenue_agg = confirmed_bookings.aggregate(total=Sum('price'))
-    court_revenue = revenue_agg['total'] if revenue_agg['total'] is not None else Decimal('0.00')
+    confirmed_booking_value = revenue_agg['total'] if revenue_agg['total'] is not None else Decimal('0.00')
 
     # Recent live bookings
     recent_bookings = Booking.objects.select_related(
@@ -40,29 +44,19 @@ def dashboard_view(request):
 
     # Today's bookings
     tz = timezone.get_current_timezone()
-    today = timezone.localtime(timezone.now(), tz).date()
     today_start = timezone.make_aware(datetime.combine(today, time.min), tz)
-    today_end = timezone.make_aware(datetime.combine(today, time.max), tz)
+    today_end = timezone.make_aware(datetime.combine(today + timedelta(days=1), time.min), tz)
     today_bookings_count = confirmed_bookings.filter(
         start_datetime__gte=today_start,
-        start_datetime__lte=today_end
+        start_datetime__lt=today_end
     ).count()
 
     # Calculate utilization for today (assuming 16 operating hours per court: 06:00 to 22:00)
-    total_bookable_hours_today = total_courts * 16 if total_courts > 0 else 1
-    utilization_rate = round((today_bookings_count / total_bookable_hours_today) * 100, 1)
-
-    # Commerce stats from completed sales
-    completed_sales = Sale.objects.filter(status='completed')
-    commerce_rev_agg = completed_sales.aggregate(total=Sum('total'))
-    commerce_revenue = commerce_rev_agg['total'] if commerce_rev_agg['total'] is not None else Decimal('0.00')
-    completed_sales_count = completed_sales.count()
-
-    # Low stock alerts (products where stock <= threshold)
-    low_stock_products = Product.objects.filter(
-        is_active=True,
-        stock_quantity__lte=F('low_stock_threshold')
-    ).order_by('stock_quantity')[:4]
+    total_bookable_hours_today = total_courts * 16
+    utilization_rate = (
+        round((today_bookings_count / total_bookable_hours_today) * 100, 1)
+        if total_bookable_hours_today else 0
+    )
 
     plans = MembershipPlan.objects.filter(active=True)
 
@@ -73,10 +67,7 @@ def dashboard_view(request):
         'total_members': total_members,
         'total_confirmed_count': total_confirmed_count,
         'total_bookings_count': total_bookings_count,
-        'court_revenue': court_revenue,
-        'commerce_revenue': commerce_revenue,
-        'completed_sales_count': completed_sales_count,
-        'low_stock_products': low_stock_products,
+        'confirmed_booking_value': confirmed_booking_value,
         'today_bookings_count': today_bookings_count,
         'total_bookable_hours_today': total_bookable_hours_today,
         'utilization_rate': utilization_rate,
@@ -84,4 +75,5 @@ def dashboard_view(request):
         'today_date': today,
         'plans': plans,
     }
+    context.update(commerce_dashboard_summary(today=today))
     return render(request, 'dashboard/index.html', context)

@@ -49,13 +49,29 @@ def _counter_response(request, *, form=None, sale=None, error_message=None, stat
 @require_safe
 @ensure_csrf_cookie
 def guest_counter(request):
-    return _counter_response(request)
+    return _counter_response(request, form=GuestSaleForm(initial=_product_initial(request)))
+
+
+def _product_initial(request):
+    product_id = request.GET.get("product")
+    if product_id is None:
+        return {}
+    # Only existing, active products can be selected from public search links.
+    if not product_id.isascii() or not product_id.isdigit() or len(product_id) > 19:
+        raise Http404("Product does not exist.")
+    product_id = int(product_id)
+    if not 1 <= product_id <= 9223372036854775807:
+        raise Http404("Product does not exist.")
+    product = get_object_or_404(Product, pk=product_id, is_active=True)
+    return {"product": product.pk, "quantity": 1}
 
 
 @require_safe
 @ensure_csrf_cookie
 def member_counter(request):
-    return _counter_response(request, member_mode=True)
+    return _counter_response(
+        request, form=MemberSaleForm(initial=_product_initial(request)), member_mode=True,
+    )
 
 
 @require_POST

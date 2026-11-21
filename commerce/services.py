@@ -114,11 +114,13 @@ def complete_sale(sale_id):
         plan = None
         if sale.member_id is not None:
             member = Member.objects.select_for_update().get(pk=sale.member_id)
-            if member.plan_id is not None:
-                candidate = MembershipPlan.objects.select_for_update().get(pk=member.plan_id)
+            completion_date = timezone.localdate()
+            effective_plan = member.effective_plan_on_date(completion_date)
+            if effective_plan is not None:
+                candidate = MembershipPlan.objects.select_for_update().get(pk=effective_plan.pk)
                 if (
                     member.is_club_member
-                    and member.is_active_on_date(timezone.localdate())
+                    and member.is_active_on_date(completion_date)
                     and candidate.active
                 ):
                     plan = candidate

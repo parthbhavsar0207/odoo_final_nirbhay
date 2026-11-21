@@ -7,8 +7,9 @@ from decimal import Decimal
 from datetime import timedelta, datetime, time
 import zoneinfo
 
-from django.db import models
+from django.db import models, transaction
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.contrib.postgres.fields import DateTimeRangeField, RangeOperators
 from django.contrib.postgres.constraints import ExclusionConstraint
@@ -35,24 +36,28 @@ class MembershipPlan(models.Model):
         max_digits=10,
         decimal_places=2,
         default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00'))],
         help_text="Membership enrollment/annual fee"
     )
     court_hourly_rate = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00'))],
         help_text="Plan-specific hourly rate for court bookings (0.00 if included/free)"
     )
     shop_discount_percent = models.DecimalField(
         max_digits=5,
         decimal_places=2,
         default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00')), MaxValueValidator(Decimal('100.00'))],
         help_text="Discount percentage applicable in Club Shop"
     )
     bar_discount_percent = models.DecimalField(
         max_digits=5,
         decimal_places=2,
         default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00')), MaxValueValidator(Decimal('100.00'))],
         help_text="Discount percentage applicable in Club Bar"
     )
     active = models.BooleanField(default=True)
@@ -95,8 +100,25 @@ class Member(models.Model):
         verbose_name_plural = 'Members'
 
     def __str__(self):
-        tier_label = self.plan.get_tier_display() if self.plan else 'No Plan'
+        plan = self.current_plan
+        tier_label = plan.get_tier_display() if plan else 'No Plan'
         return f"{self.name} [{tier_label}]"
+
+    def effective_plan_on_date(self, target_date):
+        """Resolve recorded plan changes without rewriting membership dates."""
+        if self.pk:
+            change = self.plan_changes.filter(effective_date__lte=target_date).select_related('plan').order_by('-effective_date', '-pk').first()
+            if change is not None:
+                return change.plan
+        return self.plan
+
+    @property
+    def current_plan(self):
+        return self.effective_plan_on_date(timezone.localdate())
+
+    @property
+    def pending_plan_changes(self):
+        return self.plan_changes.filter(effective_date__gt=timezone.localdate()).select_related('plan').order_by('effective_date', 'pk')
 
     def is_active_on_date(self, target_date):
         """
@@ -174,6 +196,21 @@ class Court(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_sport_display()})"
+
+
+class MemberPlanChange(models.Model):
+    """A dated plan assignment; transaction amounts remain their own snapshots."""
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='plan_changes')
+    plan = models.ForeignKey(MembershipPlan, on_delete=models.PROTECT, related_name='member_changes')
+    effective_date = models.DateField()
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['effective_date', 'pk']
+        constraints = [
+            models.UniqueConstraint(fields=['member', 'effective_date'], name='club_member_plan_change_date_unique'),
+        ]
 
 
 class Booking(models.Model):
@@ -306,13 +343,16 @@ class Booking(models.Model):
             else timezone.localdate()
         )
 
-        # Apply plan rate only if member is active on the booking date
+        plan = self.booked_by_member.effective_plan_on_date(booking_date) if self.booked_by_member else None
+        # Apply the plan effective for this date only for eligible members.
         if (
             self.booked_by_member
-            and self.booked_by_member.plan
+            and self.booked_by_member.is_club_member
+            and plan
+            and plan.active
             and self.booked_by_member.is_active_on_date(booking_date)
         ):
-            return self.booked_by_member.plan.court_hourly_rate
+            return plan.court_hourly_rate
         elif self.court:
             return self.court.hourly_rate
         return Decimal('0.00')
@@ -335,6 +375,11 @@ class Booking(models.Model):
         4. Members can participate in at most two confirmed bookings per club-local date.
         """
         tz = timezone.get_current_timezone()
+
+        if self.start_datetime:
+            local_start = timezone.localtime(self.start_datetime, tz)
+            if local_start.minute not in (0, 30) or local_start.second or local_start.microsecond:
+                raise ValidationError({'start_datetime': 'Sessions must start on the hour or half-hour.'})
 
         # Auto-compute 60-minute duration if end_datetime is not explicitly supplied
         if self.start_datetime and not self.end_datetime:
@@ -377,45 +422,58 @@ class Booking(models.Model):
                 )
 
             # 4. Daily limit check: max 2 confirmed bookings per member per local club date
-            if self.booked_by_member:
-                local_date = timezone.localtime(self.start_datetime, tz).date()
+            member_ids = set()
+            if self.booked_by_member_id:
+                member_ids.add(self.booked_by_member_id)
+            if self.pk:
+                member_ids.update(self.participants.filter(member__isnull=False).values_list('member_id', flat=True))
+            local_date = timezone.localtime(self.start_datetime, tz).date()
+            for member in Member.objects.filter(pk__in=member_ids).order_by('pk'):
                 member_bookings_count = self.count_member_daily_plays(
-                    self.booked_by_member,
+                    member,
                     local_date,
                     exclude_booking_id=self.pk
                 )
 
                 if member_bookings_count >= 2:
                     raise ValidationError(
-                        f"Member '{self.booked_by_member.name}' already has {member_bookings_count} confirmed "
+                        f"Member '{member.name}' already has {member_bookings_count} confirmed "
                         f"bookings on {local_date}. Maximum allowed is 2 per club day."
                     )
 
     def save(self, *args, **kwargs):
-        if self.start_datetime and not self.end_datetime:
-            self.end_datetime = self.start_datetime + timedelta(minutes=60)
-        if self.start_datetime and self.end_datetime:
-            self.slot_range = Range(self.start_datetime, self.end_datetime, bounds='[)')
+        with transaction.atomic():
+            # Existing parent first, then member IDs in one consistent order.
+            # All booking/roster saves use these locks before counting plays.
+            persisted = type(self).objects.select_for_update().filter(pk=self.pk).first() if self.pk else None
+            member_ids = {value for value in (self.booked_by_member_id, persisted.booked_by_member_id if persisted else None) if value}
+            if persisted:
+                member_ids.update(self.participants.filter(member__isnull=False).values_list('member_id', flat=True))
+            list(Member.objects.select_for_update().filter(pk__in=member_ids).order_by('pk'))
+            if self.start_datetime and not self.end_datetime:
+                self.end_datetime = self.start_datetime + timedelta(minutes=60)
+            if self.start_datetime and self.end_datetime:
+                self.slot_range = Range(self.start_datetime, self.end_datetime, bounds='[)')
 
-        # Snapshot price when confirmed
-        if self.status == 'confirmed' and self.price == Decimal('0.00'):
-            self.snapshot_price()
+            # A zero-price confirmed booking is still a saved historical snapshot.
+            if self.status == 'confirmed' and not (persisted and persisted.status == 'confirmed'):
+                self.snapshot_price()
 
-        # Auto-set payment_status if waived under a free court plan
-        if self.price == Decimal('0.00') and self.booked_by_member:
-            self.payment_status = self.PaymentStatus.WAIVED
-            if self.payment_method == self.PaymentMethod.CASH:
-                self.payment_method = self.PaymentMethod.MEMBER_TAB
+            # Auto-set payment_status if waived under a free court plan
+            if self.price == Decimal('0.00') and self.booked_by_member:
+                self.payment_status = self.PaymentStatus.WAIVED
+                if self.payment_method == self.PaymentMethod.CASH:
+                    self.payment_method = self.PaymentMethod.MEMBER_TAB
 
-        self.full_clean()
-        super().save(*args, **kwargs)
+            self.full_clean()
+            super().save(*args, **kwargs)
 
-        # Ensure the booking member is added as a participant
-        if self.booked_by_member:
-            BookingParticipant.objects.get_or_create(
-                booking=self,
-                member=self.booked_by_member
-            )
+            # The booking and its primary participant succeed or roll back together.
+            if self.booked_by_member_id:
+                BookingParticipant.objects.get_or_create(
+                    booking=self,
+                    member_id=self.booked_by_member_id,
+                )
 
 
 class BookingParticipant(models.Model):
@@ -471,5 +529,11 @@ class BookingParticipant(models.Model):
                 )
 
     def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            # Re-read the locked parent so a stale draft cannot bypass a newly
+            # confirmed booking's daily limit. Match Booking.save's lock order.
+            self.booking = Booking.objects.select_for_update().get(pk=self.booking_id)
+            member_ids = {value for value in (self.member_id, self.booking.booked_by_member_id) if value}
+            list(Member.objects.select_for_update().filter(pk__in=member_ids).order_by('pk'))
+            self.full_clean()
+            super().save(*args, **kwargs)

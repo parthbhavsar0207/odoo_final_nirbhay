@@ -45,10 +45,10 @@
                         <a href="{% url 'club:member_edit' booking.booked_by_member.id %}" style="color: var(--on-surface); text-decoration: none;">
                             {{ booking.booked_by_member.name }}
                         </a>
-                        {% if booking.booked_by_member.plan %}
+                        {% if booking.booked_by_member.current_plan %}
                             <div style="margin-top: 0.15rem;">
-                                <span class="pill-tier tier-{{ booking.booked_by_member.plan.tier }}">
-                                    {{ booking.booked_by_member.plan.name }}
+                                <span class="pill-tier tier-{{ booking.booked_by_member.current_plan.tier }}">
+                                    {{ booking.booked_by_member.current_plan.name }}
                                 </span>
                             </div>
                         {% endif %}
@@ -165,9 +165,9 @@
                             </span>
                         </td>
                         <td>
-                            {% if participant.member and participant.member.plan %}
-                                <span class="pill-tier tier-{{ participant.member.plan.tier }}">
-                                    {{ participant.member.plan.name }}
+                            {% if participant.member and participant.member.current_plan %}
+                                <span class="pill-tier tier-{{ participant.member.current_plan.tier }}">
+                                    {{ participant.member.current_plan.name }}
                                 </span>
                             {% else %}
                                 <span style="color: var(--secondary-stitch); font-size: 0.8rem;">&mdash;</span>
@@ -192,17 +192,28 @@
                 </div>
                 <form method="post" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.75rem; align-items: flex-end;">
                     {% csrf_token %}
+                    {% if participant_form.non_field_errors %}
+                        <div role="alert" style="grid-column: 1 / -1; color: var(--danger); font-size: 0.82rem;">
+                            {{ participant_form.non_field_errors }}
+                        </div>
+                    {% endif %}
                     <div>
                         <label for="{{ participant_form.member.id_for_label }}" style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
                             Select Member
                         </label>
                         {{ participant_form.member }}
+                        {% if participant_form.member.errors %}
+                            <div role="alert" style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ participant_form.member.errors }}</div>
+                        {% endif %}
                     </div>
                     <div>
                         <label for="{{ participant_form.guest_name.id_for_label }}" style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
                             Or Guest Name
                         </label>
                         {{ participant_form.guest_name }}
+                        {% if participant_form.guest_name.errors %}
+                            <div role="alert" style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ participant_form.guest_name.errors }}</div>
+                        {% endif %}
                     </div>
                     <div>
                         <button type="submit" class="btn-accent" style="height: 38px; padding: 0 1rem;">

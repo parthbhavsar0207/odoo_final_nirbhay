@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
+from django.urls import reverse
 
 
 class Product(models.Model):
@@ -97,6 +98,10 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_absolute_url(self):
+        """Open this product in the counter without reserving inventory."""
+        return f"{reverse('commerce:guest_counter')}?product={self.pk}#guest-sale-form"
 
 
 class Sale(models.Model):
