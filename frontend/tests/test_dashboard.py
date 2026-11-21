@@ -13,10 +13,15 @@ from club.models import Booking, Court, Member, MemberPlanChange, MembershipPlan
 from commerce.models import Product, Sale
 from commerce.reporting import commerce_dashboard_summary
 from commerce.services import cancel_sale, complete_sale, create_guest_sale, create_sale
+from frontend.tests.helpers import login_test_staff
 
 
 @skipUnless(connection.vendor == "postgresql", "Requires actual shared PostgreSQL records")
 class OwnerDashboardTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        login_test_staff(self.client)
+
     @classmethod
     def setUpTestData(cls):
         cls.today = timezone.localdate()
