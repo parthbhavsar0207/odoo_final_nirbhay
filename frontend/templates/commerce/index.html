@@ -8,7 +8,7 @@
     <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
             <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
-                Commerce Operations / Point-of-Sale &middot; Module owned by Utkarsh
+                Commerce Operations / Point-of-Sale
             </div>
             <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.02em;">
                 Pro Shop &amp; Clubhouse Bar POS
@@ -19,22 +19,11 @@
         </div>
 
         <div>
-            <button class="btn-accent" disabled style="opacity: 0.6; cursor: not-allowed;" title="Utkarsh is finalizing the Sale model">
+            <button class="btn-accent" disabled style="opacity: 0.6; cursor: not-allowed;" title="New sales flow">
                 <span class="material-symbols-outlined" style="font-size: 18px;">point_of_sale</span>
-                <span>+ New POS Sale (In Progress)</span>
+                <span>+ New POS Sale</span>
             </button>
         </div>
-    </div>
-
-    <!-- Backend Contract Status & Architecture Banner -->
-    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-left: 4px solid var(--primary); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
-            <span class="material-symbols-outlined" style="color: var(--primary); font-size: 20px;">info</span>
-            <strong style="font-size: 0.95rem; color: var(--on-surface);">Backend Integration Contract Status: Utkarsh (Commerce) &rarr; Pratik (UI)</strong>
-        </div>
-        <p style="font-size: 0.85rem; color: var(--secondary-stitch); line-height: 1.5;">
-            The <code>commerce</code> app scaffold is active in <code>INSTALLED_APPS</code>. Utkarsh owns the <code>Product</code>, <code>Sale</code>, and <code>SaleItem</code> models. Per the root <strong>INTEGRATION_CONTRACT.md</strong>, completed sales will reference Nayan’s unified <code>club.Member</code> model to apply plan discounts (Gold: 20% shop / 15% bar; Silver: 10% shop / 5% bar; Junior: 15% shop / 0% bar). Stock will decrement atomically inside a single database transaction.
-        </p>
     </div>
 
     <!-- Category Filter Tabs & Search -->
@@ -88,13 +77,13 @@
                 No Live Products in Database Yet
             </h3>
             <p style="font-size: 0.88rem; color: var(--secondary-stitch); max-width: 540px; margin: 0 auto 1.5rem auto;">
-                The database table for products is awaiting Utkarsh's model migration. Below is the responsive Stitch Pro Shop catalog component wireframe ready to render real products immediately upon model migration.
+                Registered items and stock inventory will appear here. Below is the pro shop catalog showcase.
             </p>
         </div>
 
-        <!-- Wireframe Preview Grid (Design System Showcase) -->
+        <!-- Catalog Preview Grid -->
         <div style="margin-bottom: 1rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch);">
-            Design System Catalog Preview Wireframe (Ready for Commerce Models)
+            Pro Shop &amp; Bar Catalog Preview
         </div>
 
         <div class="catalog-grid">
