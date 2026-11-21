@@ -13,10 +13,15 @@ from club.models import Booking, Court, Member, MemberPlanChange, MembershipPlan
 from commerce.models import Product, Sale
 from commerce.reporting import commerce_dashboard_summary
 from commerce.services import cancel_sale, complete_sale, create_guest_sale, create_sale
+from frontend.tests.helpers import login_test_staff
 
 
 @skipUnless(connection.vendor == "postgresql", "Requires actual shared PostgreSQL records")
 class OwnerDashboardTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        login_test_staff(self.client)
+
     @classmethod
     def setUpTestData(cls):
         cls.today = timezone.localdate()
@@ -165,7 +170,7 @@ class OwnerDashboardTests(TestCase):
         sale = complete_sale(self.guest_sale({self.bar.pk: 2}).pk)
         response = self.client.get(reverse("dashboard"))
         self.assertContains(response, "Dashboard racket")
-        self.assertContains(response, self.shop.get_absolute_url())
+        self.assertContains(response, reverse("admin:commerce_product_change", args=[self.shop.pk]))
         self.assertContains(response, reverse("commerce:sale_detail", args=[sale.pk]))
         self.assertContains(response, "Completed Sales by Creation Date")
 
@@ -178,3 +183,41 @@ class OwnerDashboardTests(TestCase):
         self.assertEqual(response.context["active_members"], 1)
         member.refresh_from_db()
         self.assertEqual(member.plan_id, inactive.pk)
+
+    def test_redesigned_utilization_uses_confirmed_hours_on_current_club_date(self):
+        court = Court.objects.create(name="Utilization court", sport="tennis", hourly_rate=Decimal("500.00"))
+        for day, hour, status in [
+            (self.today, 9, "confirmed"), (self.today, 11, "confirmed"),
+            (self.today, 13, "cancelled"), (self.today, 15, "draft"),
+            (self.today + timedelta(days=1), 9, "confirmed"),
+        ]:
+            Booking.objects.create(court=court, walkin_name="Guest", status=status,
+                start_datetime=timezone.make_aware(datetime.combine(day, time(hour))))
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.context["today_booked_hours"], 2)
+        self.assertEqual(response.context["today_bookings_count"], 2)
+        self.assertEqual(response.context["total_bookable_hours_today"], 16)
+        self.assertEqual(response.context["utilization_rate"], 12.5)
+        self.assertContains(response, 'dashboard-metrics')
+        self.assertContains(response, "2 / 16 booked court hrs")
+
+    def test_redesigned_ledger_limits_display_without_changing_totals(self):
+        court = Court.objects.create(name="Ledger court", sport="tennis", hourly_rate=Decimal("500.00"))
+        for hour in range(6, 13):
+            Booking.objects.create(court=court, walkin_name="Guest", status="confirmed",
+                start_datetime=timezone.make_aware(datetime.combine(self.today, time(hour))))
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(len(response.context["recent_bookings"]), 5)
+        self.assertEqual(response.context["total_confirmed_count"], 7)
+        self.assertEqual(response.context["confirmed_booking_value"], Decimal("3500.00"))
+
+    def test_utilization_excludes_inactive_courts_and_clips_opening_closing(self):
+        active = Court.objects.create(name="Active utilization", sport="tennis", hourly_rate=Decimal("500.00"))
+        inactive = Court.objects.create(name="Retired utilization", sport="tennis", hourly_rate=Decimal("500.00"), active=False)
+        for court, hour, minute in [(active, 4, 0), (active, 5, 30), (active, 9, 0), (active, 21, 30), (inactive, 11, 0)]:
+            Booking.objects.create(court=court, walkin_name="Guest", status="confirmed",
+                start_datetime=timezone.make_aware(datetime.combine(self.today, time(hour, minute))))
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.context["total_courts"], 1)
+        self.assertEqual(response.context["today_booked_hours"], 2)
+        self.assertEqual(response.context["utilization_rate"], 12.5)
