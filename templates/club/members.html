@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Members - Champions Club{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="section-header">
+        <div>
+            <h1>{{ page_title }}</h1>
+            <p class="section-subtitle">Membership Directory and Plan Assignments (Module owned by Nayan)</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" disabled title="Feature implementation in progress by Nayan">+ New Member</button>
+        </div>
+    </div>
+
+    <div class="info-banner">
+        <strong>📋 Backend Contract Handoff (Nayan &rarr; Pratik):</strong>
+        <p>This page will render member records containing <code>name</code>, <code>contact</code>, <code>plan</code> (Gold/Silver/Junior), <code>membership_start</code>, and <code>membership_end</code>. Commerce transactions will link directly to this member ID.</p>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Member ID</th>
+                    <th>Full Name</th>
+                    <th>Plan Tier</th>
+                    <th>Validity Start</th>
+                    <th>Validity End</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if members %}
+                    {% for member in members %}
+                        <tr>
+                            <td>{{ member.id }}</td>
+                            <td>{{ member.name }}</td>
+                            <td><span class="badge badge-gold">{{ member.plan.tier }}</span></td>
+                            <td>{{ member.membership_start }}</td>
+                            <td>{{ member.membership_end }}</td>
+                            <td>{{ member.status }}</td>
+                            <td><a href="#" class="btn-link">View</a></td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center empty-state">
+                            <p>No members registered yet. Nayan will seed initial members once the Member model is migrated.</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Champions Club{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="hero-section">
+        <h1 class="hero-title">Champions Club Control Panel</h1>
+        <p class="hero-subtitle">
+            Unified sports club management platform. Django 5.2 &amp; PostgreSQL 16 foundation.
+        </p>
+    </div>
+
+    <!-- Quick Navigation Cards -->
+    <div class="card-grid">
+        <div class="card">
+            <div class="card-header">
+                <h3>👥 Memberships</h3>
+                <span class="role-tag">Nayan</span>
+            </div>
+            <p>Member records, tier entitlement (Gold, Silver, Junior), start/end dates, and activity status.</p>
+            <a href="{% url 'club:member_list' %}" class="btn btn-outline">Go to Members &rarr;</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>📅 Court Bookings</h3>
+                <span class="role-tag">Nayan</span>
+            </div>
+            <p>60-minute court reservations, 30-minute start slots, GiST no-overlap enforcement, and daily limits.</p>
+            <a href="{% url 'club:booking_list' %}" class="btn btn-outline">Go to Bookings &rarr;</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>🛒 Shop &amp; Bar POS</h3>
+                <span class="role-tag">Utkarsh</span>
+            </div>
+            <p>Point-of-sale catalog, inventory stock levels, atomic sales deduction, and member tier discounts.</p>
+            <a href="{% url 'commerce:shop' %}" class="btn btn-outline">Go to Shop/Bar &rarr;</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>📊 Owner Summary</h3>
+                <span class="role-tag">Utkarsh / Pratik</span>
+            </div>
+            <p>Read-only aggregations computed directly from bookings and completed sales. No manual totals.</p>
+            <span class="badge badge-info">Awaiting Data Models</span>
+        </div>
+    </div>
+
+    <!-- Integration & Architecture Status -->
+    <div class="status-panel">
+        <h2>🛠️ Integration Scaffold Checklist (Parth)</h2>
+        <ul class="checklist">
+            <li><span class="check-icon">✅</span> <strong>One Django Project:</strong> Configured with <code>club</code> and <code>commerce</code> apps in <code>INSTALLED_APPS</code>.</li>
+            <li><span class="check-icon">✅</span> <strong>PostgreSQL 16 via Docker:</strong> Database credentials set via environment variables (<code>.env</code>).</li>
+            <li><span class="check-icon">✅</span> <strong>Database Extensions:</strong> Migration <code>club.0001_initial</code> enables <code>btree_gist</code> for overlap constraints.</li>
+            <li><span class="check-icon">✅</span> <strong>Timezone:</strong> Standardized to <code>Asia/Kolkata</code> for uniform booking and participation counts.</li>
+            <li><span class="check-icon">✅</span> <strong>Unified Member Identity:</strong> <code>commerce.Sale</code> must reference Nayan's <code>club.Member</code>.</li>
+            <li><span class="check-icon">✅</span> <strong>UI Contract:</strong> Pure Django templates with HTMX/Alpine; zero business logic in templates.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
