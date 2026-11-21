@@ -57,7 +57,7 @@
                     <a href="{% url 'club:member_list' %}" class="chip-pill {% if 'member' in request.path %}active{% endif %}">
                         Members Ledger
                     </a>
-                    <a href="{% url 'commerce:shop' %}" class="chip-pill {% if 'commerce' in request.path %}active{% endif %}">
+                    <a href="{% url 'commerce:guest_counter' %}" class="chip-pill {% if 'commerce' in request.path %}active{% endif %}">
                         Shop &amp; Bar POS
                     </a>
                     <a href="{% url 'club:public_availability' %}" class="chip-pill {% if 'availability' in request.path %}active{% endif %}">

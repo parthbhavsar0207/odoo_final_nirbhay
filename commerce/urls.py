@@ -8,8 +8,8 @@ from . import views
 app_name = 'commerce'
 
 urlpatterns = [
-    path('', views.shop_index, name='index'),
-    path('shop/', views.shop_index, name='shop'),
+    path('', views.guest_counter, name='index'),
+    path('shop/', views.guest_counter, name='shop'),
     path('counter/', views.guest_counter, name='guest_counter'),
     path('sales/create/', views.sale_create, name='sale_create'),
     path('sales/<int:pk>/', views.sale_detail, name='sale_detail'),
