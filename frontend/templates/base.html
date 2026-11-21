@@ -27,23 +27,12 @@
     <div class="top-notice-strip">
         <div class="app-container top-notice-inner">
             <div class="top-notice-brand"><span class="pulse-indicator"></span>Staff Operations Terminal &middot; Champions Club</div>
-            <div class="desktop-only" style="display: flex; align-items: center; gap: 0.75rem;">
-                {% if user.is_authenticated and user.is_staff %}
-                    <span style="color: #e2e8f0; font-weight: 600;">{{ user.get_username }}</span>
-                    <form method="post" action="{% url 'staff_logout' %}" style="display: inline;">
-                        {% csrf_token %}
-                        <button type="submit" style="background: none; border: none; color: #cbd5e1; font: inherit; cursor: pointer;">Sign out</button>
-                    </form>
-                {% else %}
-                    <a href="{% url 'staff_login' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Staff sign in</a>
-                {% endif %}
-            </div>
         </div>
     </div>
 
     <header class="navbar club-navbar">
         <div class="app-container club-navbar-inner">
-            <a href="{% url 'club:sports_directory' %}" class="club-brand">
+            <a href="{% url 'dashboard' %}" class="club-brand">
                 <span class="club-brand-icon material-symbols-outlined">sports_tennis</span>
                 <span class="club-brand-copy">
                     <strong>CHAMPIONS CLUB</strong>
@@ -51,40 +40,34 @@
                 </span>
             </a>
 
-            {% if user.is_authenticated and user.is_staff %}
             <nav class="staff-nav desktop-only" aria-label="Staff operations">
-                {% if perms.commerce.view_sale and perms.club.view_booking and perms.club.view_member %}
                 <a href="{% url 'dashboard' %}" class="chip-pill staff-nav-link {% if request.path == '/' %}active{% endif %}">Dashboard</a>
-                {% endif %}
 
                 <div class="staff-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
                     <button type="button" class="chip-pill staff-nav-trigger {% if '/bookings/' in request.path or '/availability/' in request.path or '/sports/' in request.path %}active{% endif %}" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true">
                         Courts &amp; Bookings <span class="material-symbols-outlined">expand_more</span>
                     </button>
                     <div x-show="open" x-cloak class="club-dropdown-menu staff-nav-menu">
-                        {% if perms.club.view_booking %}<a href="{% url 'club:booking_list' %}" class="club-dropdown-item"><span class="material-symbols-outlined">calendar_view_week</span><span>Bookings Ledger</span></a>{% endif %}
-                        {% if perms.club.add_booking and perms.club.view_booking and perms.club.view_member %}<a href="{% url 'club:booking_create' %}" class="club-dropdown-item"><span class="material-symbols-outlined">event_available</span><span>New Booking</span></a>{% endif %}
+                        <a href="{% url 'club:booking_list' %}" class="club-dropdown-item"><span class="material-symbols-outlined">calendar_view_week</span><span>Bookings Ledger</span></a>
+                        <a href="{% url 'club:booking_create' %}" class="club-dropdown-item"><span class="material-symbols-outlined">event_available</span><span>New Booking</span></a>
                         <a href="{% url 'club:public_availability' %}" class="club-dropdown-item"><span class="material-symbols-outlined">grid_view</span><span>Live Court Availability</span></a>
                         <a href="{% url 'club:sports_directory' %}" class="club-dropdown-item"><span class="material-symbols-outlined">sports_tennis</span><span>Activities &amp; Facilities</span></a>
-                        {% if perms.club.view_booking %}<a href="{% url 'club:booking_export_csv' %}" class="club-dropdown-item"><span class="material-symbols-outlined">download</span><span>Export Bookings CSV</span></a>{% endif %}
+                        <a href="{% url 'club:booking_export_csv' %}" class="club-dropdown-item"><span class="material-symbols-outlined">download</span><span>Export Bookings CSV</span></a>
                     </div>
                 </div>
 
-                {% if perms.club.view_member or perms.club.view_membershipplan %}
                 <div class="staff-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
                     <button type="button" class="chip-pill staff-nav-trigger {% if '/members/' in request.path or '/plans/' in request.path %}active{% endif %}" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true">
                         Members Ledger <span class="material-symbols-outlined">expand_more</span>
                     </button>
                     <div x-show="open" x-cloak class="club-dropdown-menu staff-nav-menu">
-                        {% if perms.club.view_member %}<a href="{% url 'club:member_list' %}" class="club-dropdown-item"><span class="material-symbols-outlined">groups</span><span>Members Directory</span></a>{% endif %}
-                        {% if perms.club.view_member and perms.club.add_member %}<a href="{% url 'club:member_create' %}" class="club-dropdown-item"><span class="material-symbols-outlined">person_add</span><span>Add Member</span></a>{% endif %}
-                        {% if perms.club.view_membershipplan %}<a href="{% url 'club:plan_list' %}" class="club-dropdown-item"><span class="material-symbols-outlined">loyalty</span><span>Membership Plans</span></a>{% endif %}
+                        <a href="{% url 'club:member_list' %}" class="club-dropdown-item"><span class="material-symbols-outlined">groups</span><span>Members Directory</span></a>
+                        <a href="{% url 'club:member_create' %}" class="club-dropdown-item"><span class="material-symbols-outlined">person_add</span><span>Add Member</span></a>
+                        <a href="{% url 'club:plan_list' %}" class="club-dropdown-item"><span class="material-symbols-outlined">loyalty</span><span>Membership Plans</span></a>
                         <a href="{% url 'club:public_plans' %}" class="club-dropdown-item"><span class="material-symbols-outlined">card_membership</span><span>Public Plan Catalog</span></a>
                     </div>
                 </div>
-                {% endif %}
 
-                {% if perms.commerce.view_sale and perms.commerce.add_sale and perms.commerce.view_product %}
                 <div class="staff-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
                     <button type="button" class="chip-pill staff-nav-trigger {% if '/commerce/' in request.path %}active{% endif %}" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true">
                         Shop &amp; Bar POS <span class="material-symbols-outlined">expand_more</span>
@@ -93,92 +76,64 @@
                         <a href="{% url 'commerce:guest_counter' %}" class="club-dropdown-item"><span class="material-symbols-outlined">point_of_sale</span><span>Guest Counter</span></a>
                         <a href="{% url 'commerce:member_counter' %}" class="club-dropdown-item"><span class="material-symbols-outlined">badge</span><span>Member Counter</span></a>
                         <a href="{% url 'commerce:shop' %}" class="club-dropdown-item"><span class="material-symbols-outlined">storefront</span><span>Shop &amp; Bar Catalog</span></a>
-                        {% if perms.commerce.view_sale and perms.club.view_booking and perms.club.view_member %}
                         <a href="{% url 'dashboard' %}#commerce-performance" class="club-dropdown-item"><span class="material-symbols-outlined">monitoring</span><span>Sales Performance</span></a>
                         <a href="{% url 'dashboard' %}#inventory-alerts" class="club-dropdown-item"><span class="material-symbols-outlined">inventory_2</span><span>Low Inventory Alerts</span></a>
-                        {% endif %}
                     </div>
                 </div>
-                {% endif %}
             </nav>
-            {% else %}
-            <nav class="staff-nav desktop-only" aria-label="Club pages">
-                <a href="{% url 'club:sports_directory' %}" class="chip-pill staff-nav-link">Activities</a>
-                <a href="{% url 'club:public_availability' %}" class="chip-pill staff-nav-link">Court Schedule</a>
-                <a href="{% url 'club:public_plans' %}" class="chip-pill staff-nav-link">Memberships</a>
-            </nav>
-            {% endif %}
 
             <div class="club-navbar-actions">
-                {% if user.is_authenticated and user.is_staff %}
-                    {% if perms.club.add_booking and perms.club.view_booking and perms.club.view_member %}<a href="{% url 'club:booking_create' %}" class="btn-accent desktop-only"><span class="material-symbols-outlined">calendar_month</span><span>Reserve Court</span></a>{% endif %}
-                    <div class="staff-menu desktop-only admin-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
-                        <button type="button" class="btn-secondary-low admin-trigger" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true">
-                            <span class="material-symbols-outlined">account_circle</span><span>Admin</span><span class="material-symbols-outlined admin-chevron" :class="{ 'is-open': open }">expand_more</span>
-                        </button>
-                        <div x-show="open" x-cloak class="club-dropdown-menu staff-nav-menu staff-nav-menu-right admin-dropdown">
-                            <div class="admin-menu-heading">Quick Search</div>
-                            <div class="site-search-wrapper admin-search" x-data="siteSearch()" @click.outside="close()" @keydown="onKeyDown($event)">
-                                <span class="material-symbols-outlined site-search-icon">search</span>
-                                <input type="text" class="site-search-input" placeholder="Sports, courts, products..." x-model="query" @input="onInput()" @focus="if (query.trim().length > 0) isOpen = true" aria-autocomplete="list" :aria-expanded="isOpen.toString()" aria-label="Search sports, facilities, and products">
-                                <div class="search-suggestions-dropdown" x-show="isOpen" x-cloak x-ref="suggestionsList">
-                                    <template x-if="isLoading"><div class="search-empty-state">Searching club facilities &amp; catalog...</div></template>
-                                    <template x-if="!isLoading &amp;&amp; suggestions.length &gt; 0"><div>
-                                        <template x-for="(item, idx) in suggestions" :key="idx">
-                                            <div class="search-suggestion-item" :class="{ 'is-highlighted': selectedIndex === idx }" @click="selectItem(item.url)" @mouseenter="selectedIndex = idx">
-                                                <div class="search-suggestion-copy"><span class="material-symbols-outlined" x-text="item.icon || 'arrow_forward'"></span><span><strong x-text="item.title"></strong><small x-text="item.subtitle"></small></span></div>
-                                                <span class="search-suggestion-type-badge" x-text="item.type"></span>
-                                            </div>
-                                        </template>
-                                    </div></template>
-                                    <template x-if="!isLoading &amp;&amp; suggestions.length === 0 &amp;&amp; query.trim().length &gt; 0"><div class="search-empty-state"><strong>No matches found</strong><span>No sports, facilities, or products match this search.</span></div></template>
-                                </div>
+                <a href="{% url 'club:booking_create' %}" class="btn-accent desktop-only"><span class="material-symbols-outlined">calendar_month</span><span>Reserve Court</span></a>
+
+                <div class="staff-menu desktop-only admin-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
+                    <button type="button" class="btn-secondary-low admin-trigger" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true">
+                        <span class="material-symbols-outlined">account_circle</span><span>Admin</span><span class="material-symbols-outlined admin-chevron" :class="{ 'is-open': open }">expand_more</span>
+                    </button>
+                    <div x-show="open" x-cloak class="club-dropdown-menu staff-nav-menu staff-nav-menu-right admin-dropdown">
+                        <div class="admin-menu-heading">Quick Search</div>
+                        <div class="site-search-wrapper admin-search" x-data="siteSearch()" @click.outside="close()" @keydown="onKeyDown($event)">
+                            <span class="material-symbols-outlined site-search-icon">search</span>
+                            <input type="text" class="site-search-input" placeholder="Sports, courts, products..." x-model="query" @input="onInput()" @focus="if (query.trim().length > 0) isOpen = true" aria-autocomplete="list" :aria-expanded="isOpen.toString()" aria-label="Search sports, facilities, and products">
+                            <div class="search-suggestions-dropdown" x-show="isOpen" x-cloak x-ref="suggestionsList">
+                                <template x-if="isLoading"><div class="search-empty-state">Searching club facilities &amp; catalog...</div></template>
+                                <template x-if="!isLoading &amp;&amp; suggestions.length &gt; 0"><div>
+                                    <template x-for="(item, idx) in suggestions" :key="idx">
+                                        <div class="search-suggestion-item" :class="{ 'is-highlighted': selectedIndex === idx }" @click="selectItem(item.url)" @mouseenter="selectedIndex = idx">
+                                            <div class="search-suggestion-copy"><span class="material-symbols-outlined" x-text="item.icon || 'arrow_forward'"></span><span><strong x-text="item.title"></strong><small x-text="item.subtitle"></small></span></div>
+                                            <span class="search-suggestion-type-badge" x-text="item.type"></span>
+                                        </div>
+                                    </template>
+                                </div></template>
+                                <template x-if="!isLoading &amp;&amp; suggestions.length === 0 &amp;&amp; query.trim().length &gt; 0"><div class="search-empty-state"><strong>No matches found</strong><span>No sports, facilities, or products match this search.</span></div></template>
                             </div>
-                            <div class="club-dropdown-divider"></div>
-                            {% if perms.commerce.view_sale and perms.club.view_booking and perms.club.view_member %}<a href="{% url 'dashboard' %}" class="club-dropdown-item"><span class="material-symbols-outlined">dashboard</span><span>Executive Dashboard</span></a>{% endif %}
-                            <a href="{% url 'admin:index' %}" class="club-dropdown-item"><span class="material-symbols-outlined">settings</span><span>Django Admin</span></a>
                         </div>
+                        <div class="club-dropdown-divider"></div>
+                        <a href="{% url 'dashboard' %}" class="club-dropdown-item"><span class="material-symbols-outlined">dashboard</span><span>Executive Dashboard</span></a>
+                        <a href="{% url 'admin:index' %}" class="club-dropdown-item"><span class="material-symbols-outlined">settings</span><span>Django Admin</span></a>
                     </div>
-                {% else %}
-                    <a href="{% url 'staff_login' %}" class="btn-secondary-low desktop-only">Staff sign in</a>
-                {% endif %}
+                </div>
+
                 <button type="button" class="mobile-nav-toggle mobile-only" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle navigation menu"><span class="material-symbols-outlined" x-text="mobileMenuOpen ? 'close' : 'menu'">menu</span></button>
             </div>
         </div>
 
-        <nav class="mobile-nav-drawer" x-show="mobileMenuOpen" x-cloak @click.outside="mobileMenuOpen = false" aria-label="Staff and public pages">
-            {% if user.is_authenticated and user.is_staff %}
-                {% if perms.commerce.view_sale and perms.club.view_booking and perms.club.view_member %}<a href="{% url 'dashboard' %}" class="mobile-nav-link">Dashboard Overview</a>{% endif %}
-                {% if perms.club.view_booking %}<a href="{% url 'club:booking_list' %}" class="mobile-nav-link">Bookings Ledger</a>{% endif %}
-                {% if perms.club.add_booking and perms.club.view_booking and perms.club.view_member %}<a href="{% url 'club:booking_create' %}" class="mobile-nav-link">New Booking</a>{% endif %}
-                <a href="{% url 'club:public_availability' %}" class="mobile-nav-link">Live Court Availability</a>
-                <a href="{% url 'club:sports_directory' %}" class="mobile-nav-link">Activities &amp; Facilities</a>
-                {% if perms.club.view_booking %}<a href="{% url 'club:booking_export_csv' %}" class="mobile-nav-link">Export Bookings CSV</a>{% endif %}
-                {% if perms.club.view_member %}<a href="{% url 'club:member_list' %}" class="mobile-nav-link">Members Directory</a>{% endif %}
-                {% if perms.club.view_member and perms.club.add_member %}<a href="{% url 'club:member_create' %}" class="mobile-nav-link">Add Member</a>{% endif %}
-                {% if perms.club.view_membershipplan %}<a href="{% url 'club:plan_list' %}" class="mobile-nav-link">Membership Plans</a>{% endif %}
-                <a href="{% url 'club:public_plans' %}" class="mobile-nav-link">Public Plan Catalog</a>
-                {% if perms.commerce.view_sale and perms.commerce.add_sale and perms.commerce.view_product %}
-                    <a href="{% url 'commerce:guest_counter' %}" class="mobile-nav-link">Guest Counter</a>
-                    <a href="{% url 'commerce:member_counter' %}" class="mobile-nav-link">Member Counter</a>
-                    <a href="{% url 'commerce:shop' %}" class="mobile-nav-link">Shop &amp; Bar Catalog</a>
-                {% endif %}
-                {% if perms.commerce.view_sale and perms.club.view_booking and perms.club.view_member %}
-                    <a href="{% url 'dashboard' %}#commerce-performance" class="mobile-nav-link">Sales Performance</a>
-                    <a href="{% url 'dashboard' %}#inventory-alerts" class="mobile-nav-link">Low Inventory Alerts</a>
-                {% endif %}
-                <a href="{% url 'admin:index' %}" class="mobile-nav-link">Django Admin</a>
-                <form method="post" action="{% url 'staff_logout' %}" style="display: contents;">
-                    {% csrf_token %}
-                    <button type="submit" class="mobile-nav-link" style="width: 100%; border: 0; background: none; font-family: inherit; font-size: 0.85rem; text-align: left; cursor: pointer;">Sign out</button>
-                </form>
-                {% if perms.club.add_booking and perms.club.view_booking and perms.club.view_member %}<a href="{% url 'club:booking_create' %}" class="btn-accent mobile-reserve"><span class="material-symbols-outlined">calendar_month</span>Reserve Court</a>{% endif %}
-            {% else %}
-                <a href="{% url 'club:sports_directory' %}" class="mobile-nav-link">Activities &amp; Facilities</a>
-                <a href="{% url 'club:public_availability' %}" class="mobile-nav-link">Live Court Availability</a>
-                <a href="{% url 'club:public_plans' %}" class="mobile-nav-link">Memberships</a>
-                <a href="{% url 'staff_login' %}" class="mobile-nav-link">Staff sign in</a>
-            {% endif %}
+        <nav class="mobile-nav-drawer" x-show="mobileMenuOpen" x-cloak aria-label="Staff and public pages">
+            <a href="{% url 'dashboard' %}" class="mobile-nav-link">Dashboard Overview</a>
+            <a href="{% url 'club:booking_list' %}" class="mobile-nav-link">Bookings Ledger</a>
+            <a href="{% url 'club:booking_create' %}" class="mobile-nav-link">New Booking</a>
+            <a href="{% url 'club:public_availability' %}" class="mobile-nav-link">Live Court Availability</a>
+            <a href="{% url 'club:sports_directory' %}" class="mobile-nav-link">Activities &amp; Facilities</a>
+            <a href="{% url 'club:booking_export_csv' %}" class="mobile-nav-link">Export Bookings CSV</a>
+            <a href="{% url 'club:member_list' %}" class="mobile-nav-link">Members Directory</a>
+            <a href="{% url 'club:member_create' %}" class="mobile-nav-link">Add Member</a>
+            <a href="{% url 'club:plan_list' %}" class="mobile-nav-link">Membership Plans</a>
+            <a href="{% url 'club:public_plans' %}" class="mobile-nav-link">Public Plan Catalog</a>
+            <a href="{% url 'commerce:guest_counter' %}" class="mobile-nav-link">Guest Counter</a>
+            <a href="{% url 'commerce:member_counter' %}" class="mobile-nav-link">Member Counter</a>
+            <a href="{% url 'dashboard' %}#commerce-performance" class="mobile-nav-link">Sales Performance</a>
+            <a href="{% url 'dashboard' %}#inventory-alerts" class="mobile-nav-link">Low Inventory Alerts</a>
+            <a href="{% url 'admin:index' %}" class="mobile-nav-link">Django Admin</a>
+            <a href="{% url 'club:booking_create' %}" class="btn-accent mobile-reserve"><span class="material-symbols-outlined">calendar_month</span>Reserve Court</a>
         </nav>
     </header>
 

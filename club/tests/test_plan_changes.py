@@ -16,15 +16,10 @@ from club.models import Member, MembershipPlan, MemberPlanChange, Court, Booking
 from club.plan_changes import change_membership_plan
 from commerce.models import Product, Sale
 from commerce.services import create_sale, complete_sale, cancel_sale
-from frontend.tests.helpers import login_test_staff
 
 
 @skipUnless(connection.vendor == "postgresql", "Requires the shared PostgreSQL environment")
 class PlanValidationTests(TestCase):
-    def setUp(self):
-        super().setUp()
-        login_test_staff(self.client)
-
     def values(self, **changes):
         values = dict(tier="silver", name="Silver", membership_fee="3000.00",
                       court_hourly_rate="200.00", shop_discount_percent="10.00",
@@ -65,10 +60,6 @@ class PlanValidationTests(TestCase):
 
 @skipUnless(connection.vendor == "postgresql", "Requires shared PostgreSQL plan changes")
 class ScheduledPlanChangeTests(TestCase):
-    def setUp(self):
-        super().setUp()
-        login_test_staff(self.client)
-
     @classmethod
     def setUpTestData(cls):
         cls.today = timezone.localdate()
@@ -241,7 +232,6 @@ class ScheduledPlanChangeTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("effective_date", form.errors)
         client = Client(enforce_csrf_checks=True)
-        login_test_staff(client)
         response = client.post(reverse("club:member_change_plan", args=[self.member.pk]), {
             "new_plan": self.new.pk, "effective_date": self.today.isoformat(), "confirm_change": "on"})
         self.assertEqual(response.status_code, 403)
