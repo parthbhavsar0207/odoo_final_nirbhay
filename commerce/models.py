@@ -1,18 +1,54 @@
-"""
-Commerce App Models (Owned by Utkarsh)
+from decimal import Decimal
 
-Models to be implemented by Utkarsh:
-- Product: name, category ('shop', 'bar'), price, stock quantity, low_stock_threshold, active
-- Sale: member FK (references club.Member, nullable for guest/counter walk-ins), status, payment_method, subtotal, discount, total
-- SaleItem: sale FK, product FK, quantity, unit_price snapshot, discount, line_total
-- Enquiry (stretch): visitor contact, message, status, optional member link
-
-CRITICAL INTEGRATION RULES:
-1. Always reference Nayan's `club.Member` model via ForeignKey. Never create a separate customer/member table.
-2. Migrations that add the foreign key to `club.Member` must explicitly declare a dependency on Nayan's core club migration.
-3. Decrement stock atomically within transaction.atomic() upon sale completion; idempotent; restock on cancellation without double-restocking.
-"""
-
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
-# Utkarsh will implement Product first (independent), and Sale/SaleItem once Nayan's Member migration lands.
+
+class Product(models.Model):
+    class Category(models.TextChoices):
+        SHOP = "shop", "Shop"
+        BAR = "bar", "Bar / cafeteria"
+
+    name = models.CharField(
+        max_length=200,
+        validators=[
+            RegexValidator(r"\S", "Enter a name containing a non-whitespace character.")
+        ],
+    )
+    category = models.CharField(max_length=4, choices=Category.choices)
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    stock_quantity = models.PositiveIntegerField(default=0)
+    low_stock_threshold = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["category", "name", "pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(category__in=["shop", "bar"]),
+                name="commerce_product_category_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(price__gte=0),
+                name="commerce_product_price_gte_0",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(stock_quantity__gte=0),
+                name="commerce_product_stock_gte_0",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(low_stock_threshold__gte=0),
+                name="commerce_product_threshold_gte_0",
+            ),
+        ]
+
+    @property
+    def is_low_stock(self):
+        return self.stock_quantity <= self.low_stock_threshold
+
+    def __str__(self):
+        return self.name
