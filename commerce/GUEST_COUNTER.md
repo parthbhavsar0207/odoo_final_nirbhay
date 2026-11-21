@@ -1,5 +1,10 @@
 # Guest-counter backend handoff — Utkarsh to Pratik
 
+> Published guest/frontend/member delivery: [DELIVERY.md](DELIVERY.md).
+> Guest form fields/routes below are preserved. Member mode adds separate
+> routes/form as documented in [MEMBER_SALES.md](MEMBER_SALES.md).
+> Earlier checkout/testing status is historical.
+
 ## Scope
 
 This milestone adds one active Product line per guest draft: select a product,

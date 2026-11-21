@@ -55,7 +55,12 @@ class Product(models.Model):
 
 
 class Sale(models.Model):
-    """Guest sale for now; the real shared Member FK will be added later."""
+    """Counter sale; an optional shared membership profile supplies benefits."""
+
+    member = models.ForeignKey(
+        "club.Member", null=True, blank=True, on_delete=models.PROTECT,
+        related_name="commerce_sales",
+    )
 
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"

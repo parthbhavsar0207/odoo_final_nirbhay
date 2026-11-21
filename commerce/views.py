@@ -10,9 +10,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.views.decorators.http import require_POST, require_safe
 
-from .counter_forms import GuestSaleForm
+from .counter_forms import GuestSaleForm, MemberSaleForm
 from .models import Product, Sale
-from .services import cancel_sale, complete_sale, create_guest_sale
+from .services import cancel_sale, complete_sale, create_guest_sale, create_sale
 
 
 logger = logging.getLogger(__name__)
@@ -33,15 +33,16 @@ def shop_index(request):
     return render(request, 'commerce/index.html', context)
 
 
-def _counter_response(request, *, form=None, sale=None, error_message=None, status=200):
+def _counter_response(request, *, form=None, sale=None, error_message=None, status=200, member_mode=False):
     """Reuse Pratik's existing template without introducing competing markup."""
     context = {
-        "page_title": "Guest Counter" if sale is None else f"Guest Sale #{sale.pk}",
+        "page_title": ("Member Counter" if member_mode else "Guest Counter") if sale is None else f"Sale #{sale.pk}",
         "products": Product.objects.filter(is_active=True),
-        "form": GuestSaleForm() if form is None else form,
+        "form": (MemberSaleForm() if member_mode else GuestSaleForm()) if form is None else form,
         "sale": sale,
         "sale_items": sale.items.select_related("product").all() if sale is not None else [],
         "error_message": error_message,
+        "member_mode": member_mode,
     }
     return render(request, "commerce/index.html", context, status=status)
 
@@ -51,6 +52,38 @@ def _counter_response(request, *, form=None, sale=None, error_message=None, stat
 @ensure_csrf_cookie
 def guest_counter(request):
     return _counter_response(request)
+
+
+@staff_member_required(login_url="admin:login")
+@require_safe
+@ensure_csrf_cookie
+def member_counter(request):
+    return _counter_response(request, member_mode=True)
+
+
+@staff_member_required(login_url="admin:login")
+@require_POST
+@csrf_protect
+def member_sale_create(request):
+    form = MemberSaleForm(request.POST)
+    try:
+        if not form.is_valid():
+            return _counter_response(request, form=form, member_mode=True, status=400)
+        sale = create_sale(
+            quantities={form.cleaned_data["product"].pk: form.cleaned_data["quantity"]},
+            payment_method=form.cleaned_data["payment_method"],
+            member_id=form.cleaned_data["member"].pk,
+        )
+    except ValidationError as error:
+        form.add_error(None, error.messages)
+        return _counter_response(request, form=form, member_mode=True, status=400)
+    except DatabaseError:
+        logger.exception("Member draft creation failed")
+        return HttpResponse(
+            "The sale could not be created. Check its status before trying again.",
+            status=503, content_type="text/plain",
+        )
+    return redirect("commerce:sale_detail", pk=sale.pk)
 
 
 @staff_member_required(login_url="admin:login")
