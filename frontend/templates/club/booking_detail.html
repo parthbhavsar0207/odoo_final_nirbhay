@@ -173,7 +173,7 @@
 
         <!-- Add Participant Form (if booking confirmed) -->
         {% if booking.status == 'confirmed' %}
-            <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 8px; padding: 1.15rem;">
+            <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 8px; padding: 1.15rem; position: relative; z-index: 10;">
                 <div style="font-size: 0.85rem; font-weight: 700; color: var(--on-surface); margin-bottom: 0.75rem;">
                     + Add Playing Participant to This Reservation
                 </div>

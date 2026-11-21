@@ -5,13 +5,23 @@ Styled by Pratik (Frontend templates & styling)
 """
 
 from decimal import Decimal
+from datetime import datetime, time
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.db.models import Sum, Count, Q
+from django.http import JsonResponse, Http404
 
 from .models import Member, MembershipPlan, Court, Booking, BookingParticipant
-from .forms import MemberForm, BookingForm, BookingParticipantForm
+from .forms import (
+    MemberForm, BookingForm, BookingParticipantForm,
+    MembershipPlanForm, MemberChangePlanForm
+)
+from .sports_catalog import (
+    SPORTS_CATALOG, get_sport_data, get_all_sports_with_facilities
+)
+from commerce.models import Product
 
 
 def member_list(request):
@@ -22,7 +32,33 @@ def member_list(request):
     - Template path: 'club/members.html'
     - Context keys: 'page_title', 'members', 'plans'
     """
+    search_query = request.GET.get('q', '').strip()
+    tier_filter = request.GET.get('tier', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+
     members = Member.objects.select_related('plan').all()
+
+    if search_query:
+        members = members.filter(
+            Q(name__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(phone__icontains=search_query)
+        )
+    if tier_filter:
+        members = members.filter(plan__tier=tier_filter)
+
+    all_members = list(Member.objects.select_related('plan').all())
+    active_count = sum(1 for m in all_members if m.is_active_member)
+    suspended_count = sum(1 for m in all_members if m.is_suspended)
+    expired_count = sum(1 for m in all_members if m.status_label == 'Expired')
+
+    if status_filter == 'active':
+        members = [m for m in members if m.is_active_member]
+    elif status_filter == 'suspended':
+        members = [m for m in members if m.is_suspended]
+    elif status_filter == 'expired':
+        members = [m for m in members if m.status_label == 'Expired']
+
     plans = MembershipPlan.objects.filter(active=True)
     form = MemberForm()
 
@@ -31,6 +67,13 @@ def member_list(request):
         'members': members,
         'plans': plans,
         'form': form,
+        'search_query': search_query,
+        'tier_filter': tier_filter,
+        'status_filter': status_filter,
+        'active_count': active_count,
+        'suspended_count': suspended_count,
+        'expired_count': expired_count,
+        'total_members_count': len(all_members),
     }
     return render(request, 'club/members.html', context)
 
@@ -97,6 +140,8 @@ def booking_list(request):
     """
     court_id = request.GET.get('court')
     status_filter = request.GET.get('status')
+    search_query = request.GET.get('q', '').strip()
+    date_filter = request.GET.get('date', '').strip()
 
     bookings = Booking.objects.select_related('court', 'booked_by_member', 'booked_by_member__plan')
 
@@ -104,9 +149,30 @@ def booking_list(request):
         bookings = bookings.filter(court_id=court_id)
     if status_filter:
         bookings = bookings.filter(status=status_filter)
+    if search_query:
+        bookings = bookings.filter(
+            Q(booked_by_member__name__icontains=search_query) |
+            Q(walkin_name__icontains=search_query) |
+            Q(court__name__icontains=search_query) |
+            Q(id__iexact=search_query.lstrip('#'))
+        )
+
+    tz = timezone.get_current_timezone()
+    today = timezone.localtime(timezone.now(), tz).date()
+    today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()), tz)
+    today_end = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.max.time()), tz)
+
+    if date_filter == 'today':
+        bookings = bookings.filter(start_datetime__gte=today_start, start_datetime__lte=today_end)
 
     courts = Court.objects.filter(active=True)
     booking_form = BookingForm()
+
+    # Facility KPI Summary
+    today_bookings_count = Booking.objects.filter(start_datetime__gte=today_start, start_datetime__lte=today_end).count()
+    confirmed_count = Booking.objects.filter(status='confirmed').count()
+    active_courts_count = courts.count()
+    confirmed_revenue = Booking.objects.filter(status='confirmed').aggregate(total=Sum('price'))['total'] or Decimal('0.00')
 
     context = {
         'page_title': 'Court Bookings',
@@ -114,6 +180,12 @@ def booking_list(request):
         'courts': courts,
         'selected_court': court_id,
         'selected_status': status_filter,
+        'search_query': search_query,
+        'date_filter': date_filter,
+        'today_bookings_count': today_bookings_count,
+        'confirmed_count': confirmed_count,
+        'active_courts_count': active_courts_count,
+        'confirmed_revenue': confirmed_revenue,
         'form': booking_form,
     }
     return render(request, 'club/bookings.html', context)
@@ -163,8 +235,11 @@ def booking_create(request):
         initial = {}
         court_id = request.GET.get('court')
         start_param = request.GET.get('start')
+        member_id = request.GET.get('member')
         if court_id:
             initial['court'] = court_id
+        if member_id:
+            initial['booked_by_member'] = member_id
         if start_param:
             initial['start_datetime'] = start_param
         else:
@@ -240,10 +315,12 @@ def public_availability(request):
     """
     Public Live Court Availability Screen.
     Allows prospective players, members, and guests to view live court status.
-    Handoff to Pratik:
-    - Route name: 'club:public_availability'
-    - Template path: 'club/public_availability.html'
-    - Context keys: 'courts', 'court_grid', 'operating_hours', 'selected_date', 'plans'
+    Privacy protection: Player names and member identities are never exposed on public screens.
+    Filters:
+    - sport: filters courts by sport
+    - court: filters to specific court
+    - date: filters to specific date (default today)
+    - time: highlights or focuses on specific time
     """
     tz = timezone.get_current_timezone()
     today = timezone.localtime(timezone.now(), tz).date()
@@ -252,21 +329,29 @@ def public_availability(request):
 
     if date_str:
         try:
-            from datetime import datetime
             selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         except ValueError:
             selected_date = today
 
-    from datetime import datetime, time
     day_start = timezone.make_aware(datetime.combine(selected_date, time.min), tz)
     day_end = timezone.make_aware(datetime.combine(selected_date, time.max), tz)
 
+    selected_sport = request.GET.get('sport', '').strip().lower()
+    selected_court = request.GET.get('court', '').strip()
+    selected_time = request.GET.get('time', '').strip()
+
     courts = Court.objects.filter(active=True).order_by('id')
+    if selected_sport:
+        courts = courts.filter(sport=selected_sport)
+    if selected_court:
+        courts = courts.filter(id=selected_court)
+
     confirmed_bookings = Booking.objects.filter(
         status='confirmed',
+        court__in=courts,
         start_datetime__gte=day_start,
         start_datetime__lte=day_end
-    ).select_related('court', 'booked_by_member')
+    ).select_related('court')
 
     # Operating hours: 06:00 to 22:00 (1-hour slots)
     operating_hours = [f"{h:02d}:00" for h in range(6, 22)]
@@ -277,12 +362,12 @@ def public_availability(request):
         local_start = timezone.localtime(b.start_datetime, tz)
         slot_key = local_start.strftime('%H:00')
         if b.court_id in grid:
-            player_label = b.booked_by_member.name if b.booked_by_member else (b.walkin_name or "Walk-in Guest")
+            # Privacy: never show private member identity or contact on public screens
             grid[b.court_id][slot_key] = {
                 'status': 'booked',
                 'booking_id': b.id,
                 'booking_type': b.get_booking_type_display(),
-                'player_display': player_label,
+                'player_display': 'Reserved Slot',
             }
 
     court_grid = []
@@ -293,6 +378,7 @@ def public_availability(request):
         })
 
     plans = MembershipPlan.objects.filter(active=True).order_by('id')
+    all_sports = get_all_sports_with_facilities()
 
     context = {
         'page_title': 'Champions Club Live Court Availability',
@@ -303,6 +389,415 @@ def public_availability(request):
         'today': today,
         'plans': plans,
         'total_confirmed_today': confirmed_bookings.count(),
+        'all_sports': all_sports,
+        'selected_sport': selected_sport,
+        'selected_court': selected_court,
+        'selected_time': selected_time,
     }
     return render(request, 'club/public_availability.html', context)
+
+
+# ==========================================================================
+# Section for Ten Sports (Data-Driven Shared Architecture)
+# ==========================================================================
+
+def sports_directory(request):
+    """
+    Public Sports Directory showing all 10 sports.
+    Data-driven listing with real facility availability counts.
+    """
+    search_q = request.GET.get('q', '').strip().lower()
+    selected_category = request.GET.get('category', '').strip()
+
+    all_sports = get_all_sports_with_facilities()
+
+    if search_q:
+        all_sports = [
+            s for s in all_sports
+            if search_q in s['name'].lower() or search_q in s['category'].lower() or search_q in s['description'].lower()
+        ]
+    if selected_category:
+        all_sports = [s for s in all_sports if s['category'].lower() == selected_category.lower()]
+
+    categories = sorted(list(set(s['category'] for s in SPORTS_CATALOG.values())))
+
+    context = {
+        'page_title': 'Sports & Athletic Facilities · Champions Club',
+        'sports': all_sports,
+        'categories': categories,
+        'selected_category': selected_category,
+        'search_q': search_q,
+    }
+    return render(request, 'club/sports_directory.html', context)
+
+
+def sport_detail(request, sport_slug):
+    """
+    Shared Sport Detail & Availability Page.
+    Renders real facility information, bookable times, or a clear
+    'No facilities or availability configured' state if no active facility exists.
+    """
+    sport_info = get_sport_data(sport_slug)
+    if not sport_info:
+        raise Http404(f"Sport '{sport_slug}' is not recognized in the Champions Club catalog.")
+
+    courts = Court.objects.filter(sport=sport_slug, active=True).order_by('name')
+    has_facilities = courts.exists()
+
+    tz = timezone.get_current_timezone()
+    today = timezone.localtime(timezone.now(), tz).date()
+    date_str = request.GET.get('date')
+    selected_date = today
+
+    if date_str:
+        try:
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = today
+
+    day_start = timezone.make_aware(datetime.combine(selected_date, time.min), tz)
+    day_end = timezone.make_aware(datetime.combine(selected_date, time.max), tz)
+
+    court_slots = []
+    operating_hours = [f"{h:02d}:00" for h in range(6, 22)]
+
+    if has_facilities:
+        confirmed_bookings = Booking.objects.filter(
+            status='confirmed',
+            court__in=courts,
+            start_datetime__gte=day_start,
+            start_datetime__lte=day_end
+        )
+        grid = {c.id: {} for c in courts}
+        for b in confirmed_bookings:
+            local_start = timezone.localtime(b.start_datetime, tz)
+            slot_key = local_start.strftime('%H:00')
+            if b.court_id in grid:
+                grid[b.court_id][slot_key] = {'status': 'booked'}
+
+        for c in courts:
+            court_slots.append({
+                'court': c,
+                'slots': [(hour, grid[c.id].get(hour, {'status': 'free'})) for hour in operating_hours]
+            })
+
+    context = {
+        'page_title': f"{sport_info['name']} Facilities &amp; Availability · Champions Club",
+        'sport': sport_info,
+        'has_facilities': has_facilities,
+        'courts': courts,
+        'court_slots': court_slots,
+        'operating_hours': operating_hours,
+        'selected_date': selected_date,
+        'today': today,
+    }
+    return render(request, 'club/sport_detail.html', context)
+
+
+# ==========================================================================
+# Membership Plan Management & Member Upgrades/Downgrades
+# ==========================================================================
+
+def plan_list(request):
+    """
+    Staff-facing membership plans list.
+    Displays all plans (active & inactive) with member counts and plan benefits.
+    """
+    plans = MembershipPlan.objects.annotate(
+        member_count=Count('members')
+    ).order_by('-active', 'membership_fee')
+
+    context = {
+        'page_title': 'Membership Plans Management · Champions Club',
+        'plans': plans,
+    }
+    return render(request, 'club/plan_list.html', context)
+
+
+def plan_create(request):
+    """
+    Staff-facing view to create a new MembershipPlan.
+    """
+    if request.method == 'POST':
+        form = MembershipPlanForm(request.POST)
+        if form.is_valid():
+            plan = form.save()
+            messages.success(request, f"Membership Plan '{plan.name}' was successfully created.")
+            return redirect('club:plan_list')
+        else:
+            messages.error(request, "Please correct the errors in the plan form.")
+    else:
+        form = MembershipPlanForm()
+
+    context = {
+        'page_title': 'Create New Membership Plan',
+        'form': form,
+    }
+    return render(request, 'club/plan_form.html', context)
+
+
+def plan_edit(request, pk):
+    """
+    Staff-facing view to edit an existing MembershipPlan.
+    """
+    plan = get_object_or_404(MembershipPlan, pk=pk)
+    if request.method == 'POST':
+        form = MembershipPlanForm(request.POST, instance=plan)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Membership Plan '{plan.name}' was updated successfully.")
+            return redirect('club:plan_list')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = MembershipPlanForm(instance=plan)
+
+    context = {
+        'page_title': f"Edit Plan: {plan.name}",
+        'form': form,
+        'plan': plan,
+    }
+    return render(request, 'club/plan_form.html', context)
+
+
+def plan_toggle_active(request, pk):
+    """
+    Staff-facing action to activate or deactivate a membership plan without deleting referenced records.
+    """
+    plan = get_object_or_404(MembershipPlan, pk=pk)
+    if request.method == 'POST':
+        plan.active = not plan.active
+        plan.save()
+        status_word = "activated" if plan.active else "deactivated"
+        messages.success(request, f"Plan '{plan.name}' has been {status_word}.")
+    return redirect('club:plan_list')
+
+
+def public_plans(request):
+    """
+    Customer-facing membership plans screen.
+    Clear, transparent display of active plans, pricing, and privileges.
+    """
+    plans = MembershipPlan.objects.filter(active=True).order_by('membership_fee')
+    context = {
+        'page_title': 'Membership Plans &amp; Tiers · Champions Club',
+        'plans': plans,
+    }
+    return render(request, 'club/public_plans.html', context)
+
+
+def member_change_plan(request, pk):
+    """
+    Staff-facing view to change a member's plan (Upgrade or Downgrade).
+    Requires explicit effective date and confirmation.
+    Preserves all past historical price snapshots on past bookings and sales.
+    """
+    member = get_object_or_404(Member.objects.select_related('plan'), pk=pk)
+
+    if request.method == 'POST':
+        form = MemberChangePlanForm(request.POST)
+        if form.is_valid():
+            new_plan = form.cleaned_data['new_plan']
+            effective_date = form.cleaned_data['effective_date']
+            notes = form.cleaned_data.get('notes', '')
+
+            old_plan_name = member.plan.name if member.plan else "No Plan"
+
+            # Determine transition type
+            old_fee = member.plan.membership_fee if member.plan else Decimal('0.00')
+            new_fee = new_plan.membership_fee
+            transition_type = "Upgrade" if new_fee >= old_fee else "Downgrade"
+
+            # Apply change to member profile
+            member.plan = new_plan
+            member.membership_start = effective_date
+            if notes:
+                existing_notes = member.contact_details or ""
+                log_entry = f"\n[{effective_date}] Plan {transition_type}: {old_plan_name} -> {new_plan.name}. Note: {notes}"
+                member.contact_details = (existing_notes + log_entry).strip()
+
+            member.save()
+
+            messages.success(
+                request,
+                f"Member '{member.name}' plan was successfully changed from {old_plan_name} "
+                f"to '{new_plan.name}' ({transition_type}) effective {effective_date}. "
+                f"Historical booking and sales records remain preserved."
+            )
+            return redirect('club:member_list')
+        else:
+            messages.error(request, "Please confirm the plan change and correct any errors below.")
+    else:
+        form = MemberChangePlanForm(initial={
+            'effective_date': timezone.localdate(),
+        })
+
+    active_plans = MembershipPlan.objects.filter(active=True).order_by('membership_fee')
+
+    context = {
+        'page_title': f"Change Membership Plan: {member.name}",
+        'member': member,
+        'form': form,
+        'active_plans': active_plans,
+    }
+    return render(request, 'club/member_change_plan.html', context)
+
+
+# ==========================================================================
+# Real-Time Search Suggestions API (Public & Secure)
+# ==========================================================================
+
+def search_suggestions_api(request):
+    """
+    Returns matching suggestions for site search across:
+    - Sports
+    - Active Facilities / Courts
+    - Active Commerce Products (Shop & Bar)
+    - Active Membership Plans
+    Privacy guarantee: ZERO private member details (name, email, phone) are queried or returned.
+    """
+    q = request.GET.get('q', '').strip().lower()
+    if not q or len(q) < 1:
+        return JsonResponse({'suggestions': []})
+
+    suggestions = []
+
+    # 1. Sports in catalog
+    for slug, sport in SPORTS_CATALOG.items():
+        if q in sport['name'].lower() or q in sport['category'].lower() or q in slug:
+            suggestions.append({
+                'type': 'Sport',
+                'title': sport['name'],
+                'subtitle': f"{sport['category']} · {sport['surface_types'][:45]}...",
+                'url': f"/club/sports/{slug}/",
+                'icon': sport['icon'],
+            })
+
+    # 2. Active Courts / Facilities
+    courts = Court.objects.filter(active=True).filter(
+        Q(name__icontains=q) | Q(sport__icontains=q)
+    )[:6]
+    for c in courts:
+        suggestions.append({
+            'type': 'Facility',
+            'title': c.name,
+            'subtitle': f"{c.get_sport_display()} · Cap {c.capacity} · ₹{c.hourly_rate}/hr",
+            'url': f"/club/sports/{c.sport}/",
+            'icon': 'stadium',
+        })
+
+    # 3. Active Commerce Products
+    products = Product.objects.filter(is_active=True).filter(
+        Q(name__icontains=q) | Q(category__icontains=q)
+    )[:6]
+    for p in products:
+        suggestions.append({
+            'type': 'Shop & Bar',
+            'title': p.name,
+            'subtitle': f"{p.get_category_display()} · ₹{p.price} in stock ({p.stock_quantity})",
+            'url': "/commerce/",
+            'icon': 'shopping_bag',
+        })
+
+    # 4. Active Membership Plans
+    plans = MembershipPlan.objects.filter(active=True).filter(
+        Q(name__icontains=q) | Q(tier__icontains=q)
+    )[:4]
+    for pl in plans:
+        suggestions.append({
+            'type': 'Membership',
+            'title': pl.name,
+            'subtitle': f"₹{pl.membership_fee}/yr · {pl.get_tier_display()} Benefits",
+            'url': "/club/plans/public/",
+            'icon': 'badge',
+        })
+
+    return JsonResponse({'suggestions': suggestions[:12]})
+
+
+# ==========================================================================
+# Curated Help Chatbot Assistant API
+# ==========================================================================
+
+def help_bot_faq_api(request):
+    """
+    Curated FAQ knowledge base for customer-facing Help Chatbot widget.
+    Provides instant answers, structured recommendations, and real contact fallback.
+    """
+    q = request.GET.get('q', '').strip().lower()
+
+    FAQS = [
+        {
+            'id': 'sports',
+            'topic': 'Sports & Facilities',
+            'keywords': ['sport', 'sports', 'court', 'courts', 'tennis', 'badminton', 'squash', 'cricket', 'football', 'basketball', 'volleyball', 'table tennis', 'pickleball', 'swimming', 'facility', 'pool'],
+            'question': 'What sports and athletic facilities are available at Champions Club?',
+            'answer': 'Champions Club features 10 world-class sports: Tennis (French Red Clay & Hardcourt), Badminton (BWF Mat), Squash (WSF Glass Back), Cricket practice nets, Football turf, Basketball, Volleyball, Table Tennis, Pickleball, and a 25-meter heated Lap Pool.',
+            'action_label': 'Explore All 10 Sports',
+            'action_url': '/club/sports/',
+        },
+        {
+            'id': 'availability',
+            'topic': 'Live Court Availability',
+            'keywords': ['available', 'availability', 'schedule', 'free', 'slots', 'matrix', 'hours', 'time', 'timing'],
+            'question': 'How can I check if courts or practice nets are free today?',
+            'answer': 'Our Live Availability Matrix provides real-time court schedules from 06:00 to 22:00 daily. You can filter by sport, court, and date to spot free 60-minute session slots.',
+            'action_label': 'View Live Availability',
+            'action_url': '/club/availability/',
+        },
+        {
+            'id': 'booking',
+            'topic': 'Making a Reservation',
+            'keywords': ['book', 'booking', 'reserve', 'reservation', 'walkin', 'guest', 'cost', 'fee', 'price'],
+            'question': 'Can walk-in guests reserve courts, and how long are sessions?',
+            'answer': 'Yes! Both verified members and walk-in guests can book sessions. All sessions last exactly 60 minutes and start every 30 minutes. Prices are snapshotted upon confirmation based on court standard rates or member plan perks.',
+            'action_label': 'Reserve Court Slot',
+            'action_url': '/club/bookings/new/',
+        },
+        {
+            'id': 'plans',
+            'topic': 'Membership Tiers',
+            'keywords': ['membership', 'plan', 'plans', 'tier', 'gold', 'silver', 'junior', 'subscription', 'perks', 'benefits', 'discount'],
+            'question': 'What are the membership plans and what discounts do they offer?',
+            'answer': 'We offer Gold (Free court access, 20% shop / 15% bar discount), Silver (₹150/hr court rate, 10% shop / 5% bar discount), and Junior (for aspiring athletes) tiers. Members can participate in up to two daily confirmed plays.',
+            'action_label': 'View Membership Plans',
+            'action_url': '/club/plans/public/',
+        },
+        {
+            'id': 'commerce',
+            'topic': 'Pro Shop & Bar',
+            'keywords': ['shop', 'bar', 'drink', 'water', 'racquet', 'racket', 'equipment', 'refreshment', 'pos', 'balls', 'food'],
+            'question': 'What equipment and refreshments are sold on site?',
+            'answer': 'Our Pro Shop stocks premium racquets, tour balls, grip tape, and accessories. The Clubhouse Bar provides electrolyte hydration, fresh juices, and specialty espresso. Member discounts apply automatically at checkout.',
+            'action_label': 'Visit Club Pro Shop & Bar',
+            'action_url': '/commerce/',
+        },
+        {
+            'id': 'contact',
+            'topic': 'Front Desk & Contact',
+            'keywords': ['contact', 'phone', 'email', 'address', 'location', 'help', 'desk', 'reception', 'coach', 'coaching'],
+            'question': 'How do I contact customer support or visit the facility?',
+            'answer': 'Our front desk operations team is on site daily from 06:00 to 22:00 at North Lawn, Champions Club. You can reach us by email at operations@championsclub.com or phone at +91 98765 43210.',
+            'action_label': 'Back to Club Home',
+            'action_url': '/',
+        },
+    ]
+
+    if not q:
+        return JsonResponse({'faqs': FAQS})
+
+    matched = []
+    for faq in FAQS:
+        if any(k in q for k in faq['keywords']) or q in faq['question'].lower() or q in faq['answer'].lower():
+            matched.append(faq)
+
+    return JsonResponse({
+        'faqs': matched if matched else [],
+        'fallback': {
+            'message': 'No direct FAQ matched your inquiry. Our front desk concierge is ready to assist you directly at operations@championsclub.com or +91 98765 43210.',
+            'action_label': 'View Sports Facilities',
+            'action_url': '/club/sports/',
+        } if not matched else None
+    })
+
 

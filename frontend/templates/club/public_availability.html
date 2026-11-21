@@ -43,41 +43,65 @@
 
     <!-- Live Court Availability Matrix Section -->
     <div style="margin-bottom: 2.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
             <div>
                 <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.01em;">
                     Live Court Availability Matrix &mdash; {{ selected_date|date:"l, F j, Y" }}
                 </h2>
                 <p style="font-size: 0.85rem; color: var(--secondary-stitch);">
-                    Real-time slot availability &middot; 60-minute duration per session
+                    Real-time slot availability across all facility surfaces &middot; 60-minute duration per session
                 </p>
             </div>
+        </div>
 
-            <!-- Date Scrubber & Jump Controls -->
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <form method="get" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="date-jump" style="font-size: 0.82rem; font-weight: 600; color: var(--secondary-stitch);">Date:</label>
+        <!-- Filter Control Bar (Sport, Court, Date) -->
+        <div class="filter-control-bar" style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); position: relative; z-index: 20;">
+            <form method="get" style="display: flex; gap: 0.85rem; align-items: center; flex-wrap: wrap; flex: 1;">
+                <!-- Sport Filter -->
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <label for="avail-sport" style="font-size: 0.8rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Sport:</label>
+                    <select name="sport" id="avail-sport" class="form-select filter-select" onchange="this.form.submit()">
+                        <option value="">All Sports</option>
+                        {% for sp in all_sports %}
+                            <option value="{{ sp.slug }}" {% if selected_sport == sp.slug %}selected{% endif %}>
+                                {{ sp.icon }} {{ sp.name }} ({{ sp.facility_count }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Date Scrubber -->
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <label for="date-jump" style="font-size: 0.8rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Date:</label>
                     <input type="date" name="date" id="date-jump" value="{{ selected_date|date:'Y-m-d' }}" class="form-input" style="padding: 0.35rem 0.65rem; font-size: 0.85rem; border-radius: 8px;" onchange="this.form.submit()">
-                </form>
-                {% if selected_date != today %}
-                    <a href="{% url 'club:public_availability' %}" class="btn-secondary-low" style="font-size: 0.82rem;">Today</a>
+                </div>
+
+                {% if selected_sport or selected_court or selected_date != today %}
+                    <a href="{% url 'club:public_availability' %}" class="btn-secondary-low" style="padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--secondary-stitch); text-decoration: none;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">restart_alt</span>
+                        <span>Reset Filters</span>
+                    </a>
                 {% endif %}
-            </div>
+            </form>
+
+            <span class="badge-pill">
+                Showing {{ courts|length }} Active Court{{ courts|length|pluralize }}
+            </span>
         </div>
 
         <!-- Matrix Visual Legend -->
         <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1rem; font-size: 0.8rem; color: var(--secondary-stitch);">
             <div style="display: flex; align-items: center; gap: 0.4rem;">
                 <span style="width: 14px; height: 14px; border-radius: 4px; background-color: #f0fdf4; border: 1px solid #bbf7d0;"></span>
-                <span>Free / Available Slot</span>
+                <span>Free / Available Slot (Click to reserve)</span>
             </div>
             <div style="display: flex; align-items: center; gap: 0.4rem;">
                 <span style="width: 14px; height: 14px; border-radius: 4px; background-color: #f1f5f9; border: 1px solid #cbd5e1;"></span>
-                <span>Reserved / Confirmed</span>
+                <span>Reserved Slot</span>
             </div>
             <div style="display: flex; align-items: center; gap: 0.4rem;">
-                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--primary);">info</span>
-                <span>Local Facility Schedule</span>
+                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--primary);">verified</span>
+                <span>GiST Overlap Exclusion Protected</span>
             </div>
         </div>
 
@@ -110,11 +134,15 @@
                                 Free
                             </a>
                         {% else %}
-                            <div class="matrix-slot-cell matrix-slot-booked" title="Booked: {{ slot.player_display }} ({{ slot.booking_type }})">
-                                Booked
+                            <div class="matrix-slot-cell matrix-slot-booked" title="Reserved for confirmed match play">
+                                Reserved
                             </div>
                         {% endif %}
                     {% endfor %}
+                {% empty %}
+                    <div style="grid-column: 1 / -1; padding: 2.5rem; text-align: center; color: var(--secondary-stitch);">
+                        No facilities match your selected sport or court filter.
+                    </div>
                 {% endfor %}
             </div>
         </div>

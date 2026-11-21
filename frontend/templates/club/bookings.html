@@ -26,12 +26,58 @@
         </div>
     </div>
 
-    <!-- Filter Control Bar -->
-    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-        <form method="get" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <label for="court-filter" style="font-size: 0.82rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Court:</label>
-                <select name="court" id="court-filter" class="form-select" onchange="this.form.submit()" style="padding: 0.4rem 0.75rem; font-size: 0.88rem; border-radius: 8px;">
+    <!-- Facility Operational KPI Summary Cards -->
+    <div class="kpi-metrics-row">
+        <div class="kpi-card">
+            <div class="kpi-card-header">
+                <span>Today's Sessions</span>
+                <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">calendar_today</span>
+            </div>
+            <div class="kpi-card-value">{{ today_bookings_count|default:"0" }}</div>
+            <div class="kpi-card-subtitle">Scheduled for today</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-card-header">
+                <span>Confirmed Slots</span>
+                <span class="material-symbols-outlined" style="font-size: 18px; color: var(--success);">check_circle</span>
+            </div>
+            <div class="kpi-card-value">{{ confirmed_count|default:"0" }}</div>
+            <div class="kpi-card-subtitle">Active confirmed reservations</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-card-header">
+                <span>Active Facility Courts</span>
+                <span class="material-symbols-outlined" style="font-size: 18px; color: var(--secondary);">sports_tennis</span>
+            </div>
+            <div class="kpi-card-value">{{ active_courts_count }}</div>
+            <div class="kpi-card-subtitle">French Clay, Grass, Turf &amp; Courts</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-card-header">
+                <span>Confirmed Court Revenue</span>
+                <span class="material-symbols-outlined" style="font-size: 18px; color: #854d0e;">payments</span>
+            </div>
+            <div class="kpi-card-value">₹{{ confirmed_revenue|default:"0.00" }}</div>
+            <div class="kpi-card-subtitle">Snapshotted confirmed value</div>
+        </div>
+    </div>
+
+    <!-- Filter & Instant Search Control Bar -->
+    <div class="filter-control-bar" style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); position: relative; z-index: 20;">
+        <form method="get" style="display: flex; gap: 0.85rem; align-items: center; flex-wrap: wrap; flex: 1;">
+            <!-- Instant Search Input -->
+            <div class="search-input-wrapper">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Search player name, phone, court or #ID..." class="form-input search-input">
+            </div>
+
+            <!-- Court Dropdown Filter -->
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <label for="court-filter" style="font-size: 0.8rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Court:</label>
+                <select name="court" id="court-filter" class="form-select filter-select" onchange="this.form.submit()">
                     <option value="">All Courts</option>
                     {% for court in courts %}
                         <option value="{{ court.id }}" {% if selected_court == court.id|stringformat:"s" %}selected{% endif %}>
@@ -41,9 +87,10 @@
                 </select>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <label for="status-filter" style="font-size: 0.82rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Status:</label>
-                <select name="status" id="status-filter" class="form-select" onchange="this.form.submit()" style="padding: 0.4rem 0.75rem; font-size: 0.88rem; border-radius: 8px;">
+            <!-- Status Dropdown Filter -->
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <label for="status-filter" style="font-size: 0.8rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Status:</label>
+                <select name="status" id="status-filter" class="form-select filter-select" onchange="this.form.submit()">
                     <option value="">All Statuses</option>
                     <option value="confirmed" {% if selected_status == 'confirmed' %}selected{% endif %}>Confirmed</option>
                     <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
@@ -51,14 +98,25 @@
                 </select>
             </div>
 
-            {% if selected_court or selected_status %}
-                <a href="{% url 'club:booking_list' %}" style="font-size: 0.82rem; color: var(--secondary-stitch); text-decoration: underline;">Clear Filters</a>
+            <!-- Date Filter Toggle -->
+            <div style="display: flex; gap: 0.25rem;">
+                <button type="submit" name="date" value="today" class="btn-secondary-low {% if date_filter == 'today' %}btn-accent{% endif %}" style="padding: 0.45rem 0.75rem; font-size: 0.82rem;">
+                    Today Only
+                </button>
+            </div>
+
+            {% if selected_court or selected_status or search_query or date_filter %}
+                <a href="{% url 'club:booking_list' %}" class="btn-secondary-low" style="padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--secondary-stitch); text-decoration: none;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">restart_alt</span>
+                    <span>Reset</span>
+                </a>
             {% endif %}
         </form>
 
-        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: var(--secondary-stitch);">
-            <span class="pulse-indicator"></span>
-            <span>Enforced: Max 2 confirmed bookings per member / club day</span>
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <span class="badge-pill">
+                Showing {{ bookings|length }} Reservation{{ bookings|length|pluralize }}
+            </span>
         </div>
     </div>
 
@@ -82,12 +140,27 @@
                     {% for booking in bookings %}
                         <tr>
                             <td class="tabular-nums" style="font-weight: 600;">
-                                #{{ booking.id }}
+                                <a href="{% url 'club:booking_detail' booking.id %}" style="color: var(--on-surface); text-decoration: none;">
+                                    #{{ booking.id }}
+                                </a>
                             </td>
                             <td>
-                                <div style="font-weight: 600;">{{ booking.court.name }}</div>
-                                <div style="font-size: 0.72rem; color: var(--secondary-stitch); text-transform: uppercase;">
-                                    {{ booking.court.get_sport_display }} &middot; Cap {{ booking.court.capacity }}
+                                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                    <div style="font-weight: 600; color: var(--on-surface);">{{ booking.court.name }}</div>
+                                    <div>
+                                        {% if booking.court.sport == 'tennis' %}
+                                            <span class="sport-badge sport-tennis">🎾 Tennis</span>
+                                        {% elif booking.court.sport == 'badminton' %}
+                                            <span class="sport-badge sport-badminton">🏸 Badminton</span>
+                                        {% elif booking.court.sport == 'squash' %}
+                                            <span class="sport-badge sport-squash">🟡 Squash</span>
+                                        {% elif booking.court.sport == 'cricket' %}
+                                            <span class="sport-badge sport-cricket">🏏 Cricket</span>
+                                        {% else %}
+                                            <span class="sport-badge">{{ booking.court.get_sport_display }}</span>
+                                        {% endif %}
+                                        <span style="font-size: 0.72rem; color: var(--secondary-stitch); margin-left: 0.35rem;">Cap {{ booking.court.capacity }}</span>
+                                    </div>
                                 </div>
                             </td>
                             <td>
@@ -111,22 +184,23 @@
                                     </div>
                                 {% else %}
                                     <div style="display: flex; align-items: center;">
-                                        <div class="avatar-box" style="background-color: var(--surface-container-high);">
+                                        <div class="avatar-box" style="background-color: var(--surface-container-high); color: var(--secondary-stitch);">
                                             W
                                         </div>
                                         <div>
                                             <span style="font-weight: 600;">{{ booking.walkin_name|default:"Walk-in Guest" }}</span>
                                             {% if booking.walkin_contact %}
-                                                <div style="font-size: 0.75rem; color: var(--secondary-stitch);">{{ booking.walkin_contact }}</div>
+                                                <div style="font-size: 0.75rem; color: var(--secondary-stitch); font-variant-numeric: tabular-nums;">{{ booking.walkin_contact }}</div>
                                             {% endif %}
                                         </div>
                                     </div>
                                 {% endif %}
                             </td>
                             <td class="tabular-nums">
-                                <div style="font-weight: 500;">{{ booking.start_datetime|date:"Y-m-d" }}</div>
-                                <div style="font-size: 0.8rem; color: var(--secondary-stitch);">
-                                    {{ booking.start_datetime|date:"H:i" }} &ndash; {{ booking.end_datetime|date:"H:i" }} (60 min)
+                                <div style="font-weight: 600; color: var(--on-surface);">{{ booking.start_datetime|date:"d M Y" }}</div>
+                                <div style="font-size: 0.8rem; color: var(--secondary-stitch); display: flex; align-items: center; gap: 0.35rem; margin-top: 0.15rem;">
+                                    <span>{{ booking.start_datetime|date:"H:i" }} &ndash; {{ booking.end_datetime|date:"H:i" }}</span>
+                                    <span class="badge-pill" style="font-size: 0.68rem; padding: 0.1rem 0.35rem;">60 min</span>
                                 </div>
                             </td>
                             <td>
@@ -134,12 +208,15 @@
                                     {{ booking.get_booking_type_display }}
                                 </span>
                             </td>
-                            <td class="tabular-nums" style="font-weight: 700;">
+                            <td class="tabular-nums" style="font-weight: 700; font-size: 0.95rem;">
                                 ₹{{ booking.price }}
                             </td>
                             <td>
                                 {% if booking.status == 'confirmed' %}
-                                    <span class="pill-status pill-status-active">Confirmed</span>
+                                    <span class="pill-status pill-status-active">
+                                        <span class="pulse-indicator-small"></span>
+                                        <span>Confirmed</span>
+                                    </span>
                                 {% elif booking.status == 'cancelled' %}
                                     <span class="pill-status pill-status-expired">Cancelled</span>
                                 {% else %}
@@ -148,14 +225,16 @@
                             </td>
                             <td style="text-align: right;">
                                 <div style="display: inline-flex; gap: 0.4rem; align-items: center;">
-                                    <a href="{% url 'club:booking_detail' booking.id %}" class="btn-secondary-low" style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">
-                                        Details
+                                    <a href="{% url 'club:booking_detail' booking.id %}" class="btn-secondary-low" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;">
+                                        <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
+                                        <span>Details</span>
                                     </a>
                                     {% if booking.status != 'cancelled' %}
                                         <form method="post" action="{% url 'club:booking_cancel' booking.id %}" onsubmit="return confirm('Cancel this court reservation? This will free the slot immediately for other players.');" style="display: inline;">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn-secondary-low" style="padding: 0.3rem 0.65rem; font-size: 0.78rem; color: var(--danger); border-color: #fecaca; background-color: #fff5f5;">
-                                                Cancel
+                                            <button type="submit" class="btn-secondary-low" style="padding: 0.35rem 0.65rem; font-size: 0.78rem; color: var(--danger); border-color: #fecaca; background-color: #fff5f5;">
+                                                <span class="material-symbols-outlined" style="font-size: 15px;">cancel</span>
+                                                <span>Cancel</span>
                                             </button>
                                         </form>
                                     {% endif %}
@@ -167,15 +246,20 @@
                     <tr>
                         <td colspan="8" style="padding: 3.5rem 1rem; text-align: center; color: var(--secondary-stitch);">
                             <div style="font-size: 2.25rem; margin-bottom: 0.5rem;">🎾</div>
-                            <div style="font-weight: 600; font-size: 1.05rem; margin-bottom: 0.25rem;">No Reservations Found</div>
-                            <p style="font-size: 0.85rem; margin-bottom: 1.25rem;">
-                                {% if selected_court or selected_status %}
-                                    No bookings match the selected filters.
+                            <div style="font-weight: 600; font-size: 1.05rem; margin-bottom: 0.25rem; color: var(--on-surface);">No Reservations Found</div>
+                            <p style="font-size: 0.85rem; margin-bottom: 1.25rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+                                {% if selected_court or selected_status or search_query or date_filter %}
+                                    No bookings match your selected criteria. Try resetting filters or adjusting search terms.
                                 {% else %}
-                                    No court reservations have been made yet today.
+                                    No court reservations have been scheduled yet. Click below to book a court slot.
                                 {% endif %}
                             </p>
-                            <a href="{% url 'club:booking_create' %}" class="btn-accent">+ Reserve Court</a>
+                            <div style="display: inline-flex; gap: 0.75rem;">
+                                {% if selected_court or selected_status or search_query or date_filter %}
+                                    <a href="{% url 'club:booking_list' %}" class="btn-secondary-low">Reset Filters</a>
+                                {% endif %}
+                                <a href="{% url 'club:booking_create' %}" class="btn-accent">+ Reserve Court</a>
+                            </div>
                         </td>
                     </tr>
                 {% endif %}

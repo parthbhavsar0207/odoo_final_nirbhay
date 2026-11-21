@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Hero Banner -->
+    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 16px; padding: 2.5rem 2rem; margin-bottom: 2rem; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+        <div style="display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <span class="pulse-indicator"></span>
+            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--secondary-stitch);">
+                Champions Club Memberships &middot; Est. 1928
+            </span>
+        </div>
+        <h1 style="font-size: 2.25rem; font-weight: 800; color: var(--on-surface); letter-spacing: -0.02em; margin-bottom: 0.75rem;">
+            Join Champions Club
+        </h1>
+        <p style="font-size: 0.95rem; color: var(--secondary-stitch); max-width: 620px; margin: 0 auto; line-height: 1.55;">
+            Select your membership tier. Enjoy priority court access across 10 sports, tournament privileges, and exclusive pro shop and clubhouse refreshments savings.
+        </p>
+    </div>
+
+    <!-- Active Plans Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        {% for plan in plans %}
+            <div style="background-color: var(--surface-container-lowest); border: {% if plan.tier == 'gold' %}2px solid var(--primary-container){% else %}1px solid var(--border-stitch){% endif %}; border-radius: 16px; padding: 2rem 1.75rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.03); position: relative;">
+                {% if plan.tier == 'gold' %}
+                    <div style="position: absolute; top: -12px; right: 1.5rem; background-color: var(--primary-container); color: var(--on-primary-fixed); font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid #b5d625;">
+                        Most Popular
+                    </div>
+                {% endif %}
+
+                <div>
+                    <!-- Plan Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--on-surface);">{{ plan.name }}</h2>
+                        <span class="pill-tier tier-{{ plan.tier }}">
+                            {{ plan.get_tier_display }}
+                        </span>
+                    </div>
+
+                    <!-- Annual Fee -->
+                    <div style="margin-bottom: 1.25rem;">
+                        <div class="tabular-nums" style="font-size: 2.25rem; font-weight: 800; color: var(--on-surface); line-height: 1;">
+                            ₹{{ plan.membership_fee }}
+                        </div>
+                        <div style="font-size: 0.78rem; color: var(--secondary-stitch); margin-top: 0.25rem;">annual membership dues</div>
+                    </div>
+
+                    <!-- Benefits List -->
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--border-stitch); margin-bottom: 1.5rem; font-size: 0.88rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="material-symbols-outlined" style="color: var(--success); font-size: 18px;">check</span>
+                            <span>
+                                Court Hourly Rate: <strong>{% if plan.court_hourly_rate == 0 %}Free (Included){% else %}₹{{ plan.court_hourly_rate }}/hr{% endif %}</strong>
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="material-symbols-outlined" style="color: var(--success); font-size: 18px;">check</span>
+                            <span>
+                                Pro Shop Discount: <strong>{{ plan.shop_discount_percent }}% OFF</strong>
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="material-symbols-outlined" style="color: var(--success); font-size: 18px;">check</span>
+                            <span>
+                                Clubhouse Bar Discount: <strong>{{ plan.bar_discount_percent }}% OFF</strong>
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="material-symbols-outlined" style="color: var(--success); font-size: 18px;">check</span>
+                            <span>Up to 2 confirmed sessions per club day</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="material-symbols-outlined" style="color: var(--success); font-size: 18px;">check</span>
+                            <span>Full access across all 10 sports</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer CTA -->
+                <div>
+                    <a href="{% url 'club:public_availability' %}" class="btn-accent" style="width: 100%; justify-content: center; padding: 0.65rem 1rem;">
+                        <span>Check Court Schedule</span>
+                        <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- How Membership Enrollment Works -->
+    <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 14px; padding: 1.75rem; margin-bottom: 3rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--on-surface); margin-bottom: 0.5rem;">
+            Membership Enrollment &amp; Verification
+        </h3>
+        <p style="font-size: 0.88rem; color: var(--secondary-stitch); line-height: 1.5; margin-bottom: 1rem;">
+            To enroll in a Champions Club membership plan or upgrade your current tier, speak with our membership concierge desk in the main clubhouse pavilion or contact us at <strong>operations@championsclub.com</strong>.
+        </p>
+        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.82rem; color: var(--secondary-stitch);">
+            <div><strong>Front Desk Hours:</strong> 06:00 – 22:00 IST Daily</div>
+            <div><strong>Direct Inquiries:</strong> +91 98765 43210</div>
+            <div><strong>Location:</strong> North Lawn, Champions Club Estate</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

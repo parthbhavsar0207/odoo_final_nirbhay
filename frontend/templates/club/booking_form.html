@@ -88,32 +88,74 @@
                 </div>
 
                 <!-- Schedule & Session Settings -->
-                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem;">
-                    <div>
-                        <label for="{{ form.start_datetime.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
-                            Start Time *
-                        </label>
-                        {{ form.start_datetime }}
-                        <small style="color: var(--secondary-stitch); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
-                            Duration: exactly 60 minutes.
-                        </small>
-                        {% if form.start_datetime.errors %}
-                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.start_datetime.errors }}</div>
-                        {% endif %}
+                <div>
+                    <label for="{{ form.start_datetime.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                        Start Time *
+                    </label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            {{ form.start_datetime }}
+                        </div>
+                    </div>
+                    <small style="color: var(--secondary-stitch); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                        Duration: exactly 60 minutes per session. Starts every 30 minutes.
+                    </small>
+                    {% if form.start_datetime.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.start_datetime.errors }}</div>
+                    {% endif %}
+
+                    <!-- Quick Time Slot Presets (Fast Front-Desk Booking) -->
+                    <div class="quick-slots-container">
+                        <div class="quick-slots-header">
+                            <span class="quick-slots-label">Quick Slot Presets (Standard Starting Hours)</span>
+                            <div style="display: flex; gap: 0.35rem; align-items: center;">
+                                <button type="button" class="btn-secondary-low quick-minute-toggle is-active" data-minute="00" style="padding: 0.15rem 0.45rem; font-size: 0.72rem;">:00</button>
+                                <button type="button" class="btn-secondary-low quick-minute-toggle" data-minute="30" style="padding: 0.15rem 0.45rem; font-size: 0.72rem;">:30</button>
+                            </div>
+                        </div>
+                        <div class="quick-slots-grid" id="quick-slots-grid">
+                            <button type="button" class="quick-slot-btn" data-time="06:00">06:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="07:00">07:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="08:00">08:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="09:00">09:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="10:00">10:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="11:00">11:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="12:00">12:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="14:00">14:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="15:00">15:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="16:00">16:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="17:00">17:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="18:00">18:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="19:00">19:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="20:00">20:00</button>
+                            <button type="button" class="quick-slot-btn" data-time="21:00">21:00</button>
+                        </div>
                     </div>
 
-                    <div>
-                        <label for="{{ form.booking_type.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
-                            Play Type *
-                        </label>
-                        {{ form.booking_type }}
-                        <small style="color: var(--secondary-stitch); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
-                            Select 'Social Play' to register multiple members in the roster.
-                        </small>
-                        {% if form.booking_type.errors %}
-                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.booking_type.errors }}</div>
-                        {% endif %}
+                    <!-- Live Session Duration & Overlap Indicator Card -->
+                    <div class="session-preview-card" id="session-preview-card">
+                        <div style="font-weight: 600; color: var(--on-surface); display: flex; align-items: center; justify-content: space-between;">
+                            <span id="session-time-display">Session: 60 Minutes</span>
+                            <span class="badge-pill" style="font-size: 0.72rem;" id="session-status-badge">Ready</span>
+                        </div>
+                        <div style="color: var(--secondary-stitch); font-size: 0.78rem;" id="session-desc-display">
+                            PostgreSQL GiST exclusion constraint will verify court availability atomically on confirmation.
+                        </div>
                     </div>
+                </div>
+
+                <!-- Play Type Setting -->
+                <div>
+                    <label for="{{ form.booking_type.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                        Play Type *
+                    </label>
+                    {{ form.booking_type }}
+                    <small style="color: var(--secondary-stitch); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                        Select 'Social Play' to register multiple members in the roster.
+                    </small>
+                    {% if form.booking_type.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.booking_type.errors }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Reservation Information Callout -->

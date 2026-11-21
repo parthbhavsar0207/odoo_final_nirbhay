@@ -23,6 +23,10 @@ class MembershipPlan(models.Model):
         ('gold', 'Gold'),
         ('silver', 'Silver'),
         ('junior', 'Junior'),
+        ('platinum', 'Platinum'),
+        ('corporate', 'Corporate'),
+        ('weekend', 'Weekend'),
+        ('custom', 'Custom'),
     ]
 
     tier = models.CharField(max_length=20, choices=TIER_CHOICES, unique=True)
@@ -133,6 +137,12 @@ class Court(models.Model):
         ('badminton', 'Badminton'),
         ('squash', 'Squash'),
         ('cricket', 'Cricket'),
+        ('football', 'Football'),
+        ('basketball', 'Basketball'),
+        ('volleyball', 'Volleyball'),
+        ('table_tennis', 'Table Tennis'),
+        ('pickleball', 'Pickleball'),
+        ('swimming', 'Swimming'),
     ]
 
     name = models.CharField(max_length=100, unique=True)

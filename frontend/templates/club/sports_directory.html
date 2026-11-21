@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Header & Hero -->
+    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span class="pulse-indicator"></span>
+            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--secondary-stitch);">
+                Champions Club &middot; Master Surface Circuit &middot; Ten Athletic Disciplines
+            </span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1.5rem;">
+            <div>
+                <h1 style="font-size: 2rem; font-weight: 800; color: var(--on-surface); letter-spacing: -0.02em; margin-bottom: 0.5rem;">
+                    Sports &amp; Athletic Facilities
+                </h1>
+                <p style="font-size: 0.95rem; color: var(--secondary-stitch); max-width: 680px; line-height: 1.5;">
+                    Explore all 10 championship sports configured at Champions Club. From world-class red clay tennis courts to tournament badminton, practice turf, and lap swimming.
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+                <a href="{% url 'club:public_availability' %}" class="btn-secondary-low">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">grid_view</span>
+                    <span>Live Court Matrix</span>
+                </a>
+                <a href="{% url 'club:public_plans' %}" class="btn-accent">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">badge</span>
+                    <span>Membership Plans</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sport Filters & Category Bar -->
+    <div class="filter-control-bar" style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+        <form method="get" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; flex: 1;">
+            <div class="search-input-wrapper">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input type="text" name="q" value="{{ search_q }}" placeholder="Filter sport by name, surface, or rules..." class="form-input search-input">
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <label for="category-filter" style="font-size: 0.8rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Category:</label>
+                <select name="category" id="category-filter" class="form-select filter-select" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% if search_q or selected_category %}
+                <a href="{% url 'club:sports_directory' %}" class="btn-secondary-low" style="padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--secondary-stitch);">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">restart_alt</span>
+                    <span>Reset</span>
+                </a>
+            {% endif %}
+        </form>
+
+        <span class="badge-pill">
+            Showing {{ sports|length }} Athletic Discipline{{ sports|length|pluralize }}
+        </span>
+    </div>
+
+    <!-- 10 Sports Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        {% for sport in sports %}
+            <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 14px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,0.02); transition: transform 0.15s ease, box-shadow 0.15s ease;">
+                <div>
+                    <!-- Sport Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div style="width: 44px; height: 44px; border-radius: 10px; background-color: var(--surface-container-low); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; border: 1px solid var(--border-stitch);">
+                                {{ sport.icon }}
+                            </div>
+                            <div>
+                                <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--on-surface); line-height: 1.2;">
+                                    {{ sport.name }}
+                                </h2>
+                                <span style="font-size: 0.74rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">
+                                    {{ sport.category }}
+                                </span>
+                            </div>
+                        </div>
+
+                        {% if sport.has_facilities %}
+                            <span class="pill-status pill-status-active" style="font-size: 0.72rem;">
+                                <span class="pulse-indicator-small"></span>
+                                <span>{{ sport.facility_count }} Court{{ sport.facility_count|pluralize }} Active</span>
+                            </span>
+                        {% else %}
+                            <span class="pill-status" style="background-color: var(--surface-container-low); color: var(--secondary-stitch); font-size: 0.72rem;">
+                                Commissioning Soon
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Sport Description -->
+                    <p style="font-size: 0.85rem; color: var(--secondary-stitch); line-height: 1.5; margin-bottom: 1rem;">
+                        {{ sport.description }}
+                    </p>
+
+                    <!-- Surface & Format Details -->
+                    <div style="background-color: var(--surface-container-low); border-radius: 8px; padding: 0.75rem 0.85rem; font-size: 0.78rem; color: var(--secondary-stitch); display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1.25rem;">
+                        <div>
+                            <strong style="color: var(--on-surface);">Surface:</strong> {{ sport.surface_types }}
+                        </div>
+                        <div>
+                            <strong style="color: var(--on-surface);">Capacity:</strong> {{ sport.players_per_session }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Action Footer -->
+                <div style="padding-top: 1rem; border-top: 1px solid var(--border-stitch); display: flex; justify-content: space-between; align-items: center;">
+                    {% if sport.has_facilities %}
+                        <a href="{% url 'club:sport_detail' sport.slug %}" class="btn-accent" style="width: 100%; justify-content: center; padding: 0.55rem 1rem;">
+                            <span>View Facilities &amp; Book</span>
+                            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'club:sport_detail' sport.slug %}" class="btn-secondary-low" style="width: 100%; justify-content: center; padding: 0.55rem 1rem;">
+                            <span>Facility Overview &amp; Rules</span>
+                            <span class="material-symbols-outlined" style="font-size: 16px;">info</span>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <div style="grid-column: 1 / -1; padding: 3rem; text-align: center; background-color: var(--surface-container-lowest); border-radius: 12px; border: 1px solid var(--border-stitch);">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔍</div>
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--on-surface); margin-bottom: 0.25rem;">No Sports Found</h3>
+                <p style="font-size: 0.85rem; color: var(--secondary-stitch); margin-bottom: 1rem;">No athletic discipline matches your search query.</p>
+                <a href="{% url 'club:sports_directory' %}" class="btn-secondary-low">Reset Filters</a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

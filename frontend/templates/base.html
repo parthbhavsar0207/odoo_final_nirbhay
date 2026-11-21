@@ -24,52 +24,166 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body x-data="{ mobileMenuOpen: false }">
-    <!-- Top System Strip -->
-    <div class="top-notice-strip">
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="pulse-indicator"></span>
-            <span><strong>Staff Operations Terminal</strong> &middot; Champions Club</span>
+    <!-- Top System Strip: Staff Terminal Switcher -->
+    <div class="top-notice-strip" style="background-color: var(--on-surface); color: #e2e8f0; font-size: 0.75rem; padding: 0.35rem 0;">
+        <div class="app-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span class="pulse-indicator"></span>
+                <span>Champions Club &middot; Master Surface Circuit &middot; Est. 1928</span>
+            </div>
+            <!-- Staff Operations Quick Links (Clearly distinguished from Public pages) -->
+            <div class="desktop-only" style="display: flex; align-items: center; gap: 0.65rem;">
+                <span style="color: var(--secondary-stitch); text-transform: uppercase; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;">Staff Operations:</span>
+                <a href="{% url 'dashboard' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Dashboard</a>
+                <span style="color: var(--secondary-stitch);">&middot;</span>
+                <a href="{% url 'club:booking_list' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Bookings Ledger</a>
+                <span style="color: var(--secondary-stitch);">&middot;</span>
+                <a href="{% url 'club:member_list' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Members</a>
+                <span style="color: var(--secondary-stitch);">&middot;</span>
+                <a href="{% url 'club:plan_list' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Plan Subscriptions</a>
+                <span style="color: var(--secondary-stitch);">&middot;</span>
+                <a href="{% url 'commerce:guest_counter' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Shop &amp; Bar POS</a>
+            </div>
         </div>
     </div>
 
-    <!-- Main Navigation Bar -->
-    <header class="navbar" style="background-color: var(--surface-container-lowest); border-bottom: 1px solid var(--border-stitch); padding: 0.75rem 0; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
-        <div class="app-container" style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 1.5rem;">
-                <a href="{% url 'dashboard' %}" style="display: flex; align-items: center; gap: 0.65rem; text-decoration: none; color: var(--on-surface);">
-                    <div style="width: 34px; height: 34px; border-radius: 8px; background-color: var(--primary-container); display: flex; align-items: center; justify-content: center;">
-                        <span class="material-symbols-outlined" style="font-size: 20px; color: var(--on-primary-fixed);">sports_tennis</span>
+    <!-- Main Navigation Bar (Customer-First & Public-Friendly) -->
+    <header class="navbar" style="background-color: var(--surface-container-lowest); border-bottom: 1px solid var(--border-stitch); padding: 0.75rem 0; box-shadow: 0 1px 4px rgba(0,0,0,0.03); position: sticky; top: 0; z-index: 50;">
+        <div class="app-container" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+            <!-- Brand Logo -->
+            <div style="display: flex; align-items: center; gap: 1.25rem;">
+                <a href="{% url 'club:sports_directory' %}" style="display: flex; align-items: center; gap: 0.65rem; text-decoration: none; color: var(--on-surface);">
+                    <div style="width: 38px; height: 38px; border-radius: 9px; background-color: var(--primary-container); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                        <span class="material-symbols-outlined" style="font-size: 22px; color: var(--on-primary-fixed);">sports_tennis</span>
                     </div>
                     <div>
-                        <div style="font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2;">CHAMPIONS CLUB</div>
-                        <div style="font-size: 0.7rem; font-weight: 500; color: var(--secondary-stitch); text-transform: uppercase; letter-spacing: 0.05em;">Court &amp; Club Operations</div>
+                        <div style="font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15;">CHAMPIONS CLUB</div>
+                        <div style="font-size: 0.68rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase; letter-spacing: 0.06em;">Multi-Sport Facility</div>
                     </div>
                 </a>
 
-                <!-- Primary Operational Links -->
-                <nav class="nav-links" style="display: flex; gap: 0.5rem; margin-left: 1rem;">
-                    <a href="{% url 'dashboard' %}" class="chip-pill {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                        Dashboard
-                    </a>
-                    <a href="{% url 'club:booking_list' %}" class="chip-pill {% if 'booking' in request.path %}active{% endif %}">
-                        Courts &amp; Bookings
-                    </a>
-                    <a href="{% url 'club:member_list' %}" class="chip-pill {% if 'member' in request.path %}active{% endif %}">
-                        Members Ledger
-                    </a>
-                    <a href="{% url 'commerce:guest_counter' %}" class="chip-pill {% if 'commerce' in request.path %}active{% endif %}">
-                        Shop &amp; Bar POS
+                <!-- Customer-Facing Navigation Links (Desktop) -->
+                <nav class="nav-links desktop-only" style="display: flex; gap: 0.4rem; margin-left: 0.5rem;">
+                    <a href="{% url 'club:sports_directory' %}" class="chip-pill {% if 'sports' in request.path %}active{% endif %}">
+                        10 Sports
                     </a>
                     <a href="{% url 'club:public_availability' %}" class="chip-pill {% if 'availability' in request.path %}active{% endif %}">
-                        Live Availability
+                        Court Schedule
+                    </a>
+                    <a href="{% url 'club:public_plans' %}" class="chip-pill {% if 'plans' in request.path and 'public' in request.path %}active{% endif %}">
+                        Memberships
+                    </a>
+                    <a href="{% url 'commerce:shop' %}" class="chip-pill {% if 'commerce' in request.path %}active{% endif %}">
+                        Pro Shop &amp; Bar
                     </a>
                 </nav>
             </div>
 
-            <!-- Quick Action Button -->
+            <!-- Real-Time Site Search with Suggestions & Actions -->
             <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <a href="{% url 'club:booking_create' %}" class="btn-accent">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+                <!-- Search Suggestions Bar (Accessible, Debounced) -->
+                <div class="site-search-wrapper desktop-only" x-data="siteSearch()" @click.outside="close()" @keydown="onKeyDown($event)">
+                    <span class="material-symbols-outlined site-search-icon">search</span>
+                    <input 
+                        type="text" 
+                        class="site-search-input" 
+                        placeholder="Search sports, courts, products..." 
+                        x-model="query" 
+                        @input="onInput()" 
+                        @focus="if (query.trim().length > 0) isOpen = true"
+                        aria-autocomplete="list"
+                        aria-expanded="isOpen"
+                        aria-label="Site Search for sports, facilities, and products"
+                    >
+
+                    <!-- Suggestions Dropdown Pane -->
+                    <div class="search-suggestions-dropdown" x-show="isOpen" x-cloak x-ref="suggestionsList">
+                        <template x-if="isLoading">
+                            <div style="padding: 0.75rem; text-align: center; color: var(--secondary-stitch); font-size: 0.8rem;">
+                                Searching club facilities &amp; catalog...
+                            </div>
+                        </template>
+
+                        <template x-if="!isLoading && suggestions.length > 0">
+                            <div>
+                                <template x-for="(item, idx) in suggestions" :key="idx">
+                                    <div 
+                                        class="search-suggestion-item" 
+                                        :class="{ 'is-highlighted': selectedIndex === idx }"
+                                        @click="selectItem(item.url)"
+                                        @mouseenter="selectedIndex = idx"
+                                    >
+                                        <div style="display: flex; align-items: center; gap: 0.5rem; overflow: hidden;">
+                                            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--secondary-stitch);" x-text="item.icon || 'arrow_forward'"></span>
+                                            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                <div style="font-weight: 600; font-size: 0.84rem; color: var(--on-surface);" x-text="item.title"></div>
+                                                <div style="font-size: 0.72rem; color: var(--secondary-stitch);" x-text="item.subtitle"></div>
+                                            </div>
+                                        </div>
+                                        <span class="search-suggestion-type-badge" x-text="item.type"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <template x-if="!isLoading && suggestions.length === 0 && query.trim().length > 0">
+                            <div style="padding: 1rem 0.75rem; text-align: center; color: var(--secondary-stitch); font-size: 0.82rem;">
+                                <div style="font-weight: 600; color: var(--on-surface); margin-bottom: 0.2rem;">No matches found</div>
+                                <div>No sports, facilities, or products match "<span x-text="query"></span>".</div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Reserve Court CTA -->
+                <a href="{% url 'club:booking_create' %}" class="btn-accent desktop-only">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
+                    <span>Reserve Slot</span>
+                </a>
+
+                <!-- Mobile Toggle -->
+                <button type="button" class="mobile-nav-toggle mobile-only" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle navigation menu" style="display: none; background: none; border: 1px solid var(--border-stitch); border-radius: 8px; padding: 0.4rem 0.6rem; cursor: pointer; color: var(--on-surface);">
+                    <span class="material-symbols-outlined" style="font-size: 22px;" x-text="mobileMenuOpen ? 'close' : 'menu'">menu</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Drawer -->
+        <div class="mobile-nav-drawer" x-show="mobileMenuOpen" x-cloak @click.outside="mobileMenuOpen = false" style="background-color: var(--surface-container-lowest); border-top: 1px solid var(--border-stitch); padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.2rem;">Public Club Pages</div>
+            <a href="{% url 'club:sports_directory' %}" class="chip-pill {% if 'sports' in request.path %}active{% endif %}" style="text-align: left; padding: 0.6rem 0.85rem;">
+                10 Sports &amp; Facilities
+            </a>
+            <a href="{% url 'club:public_availability' %}" class="chip-pill {% if 'availability' in request.path %}active{% endif %}" style="text-align: left; padding: 0.6rem 0.85rem;">
+                Court Schedule
+            </a>
+            <a href="{% url 'club:public_plans' %}" class="chip-pill {% if 'plans' in request.path and 'public' in request.path %}active{% endif %}" style="text-align: left; padding: 0.6rem 0.85rem;">
+                Memberships
+            </a>
+            <a href="{% url 'commerce:shop' %}" class="chip-pill {% if 'commerce' in request.path %}active{% endif %}" style="text-align: left; padding: 0.6rem 0.85rem;">
+                Pro Shop &amp; Bar
+            </a>
+
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); margin-top: 0.75rem; margin-bottom: 0.2rem;">Staff Operations</div>
+            <a href="{% url 'dashboard' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
+                Dashboard Overview
+            </a>
+            <a href="{% url 'club:booking_list' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
+                Bookings Ledger
+            </a>
+            <a href="{% url 'club:member_list' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
+                Members Directory
+            </a>
+            <a href="{% url 'club:plan_list' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
+                Plans Management
+            </a>
+            <a href="{% url 'commerce:guest_counter' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
+                Shop &amp; Bar POS
+            </a>
+
+            <div style="padding-top: 0.75rem; border-top: 1px solid var(--border-stitch); margin-top: 0.25rem;">
+                <a href="{% url 'club:booking_create' %}" class="btn-accent" style="width: 100%; justify-content: center; padding: 0.6rem 1rem;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
                     <span>Reserve Court</span>
                 </a>
             </div>
@@ -81,9 +195,22 @@
         {% if messages %}
             <div class="app-container" style="margin-bottom: 1.5rem;">
                 {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}" style="padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.9rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <span class="material-symbols-outlined" style="font-size: 18px;">info</span>
-                        <span>{{ message }}</span>
+                    <div x-data="{ dismissed: false }" x-show="!dismissed" class="toast-alert toast-alert-{{ message.tags|default:'info' }}" role="alert">
+                        <div style="display: flex; align-items: center; gap: 0.65rem;">
+                            {% if 'success' in message.tags %}
+                                <span class="material-symbols-outlined toast-icon" style="color: var(--success);">check_circle</span>
+                            {% elif 'error' in message.tags or 'danger' in message.tags %}
+                                <span class="material-symbols-outlined toast-icon" style="color: var(--danger);">error</span>
+                            {% elif 'warning' in message.tags %}
+                                <span class="material-symbols-outlined toast-icon" style="color: var(--warning);">warning</span>
+                            {% else %}
+                                <span class="material-symbols-outlined toast-icon" style="color: var(--info);">info</span>
+                            {% endif %}
+                            <span style="font-size: 0.88rem; font-weight: 500; color: var(--on-surface);">{{ message }}</span>
+                        </div>
+                        <button type="button" @click="dismissed = true" aria-label="Dismiss notification" class="toast-dismiss-btn">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                        </button>
                     </div>
                 {% endfor %}
             </div>
@@ -96,13 +223,98 @@
     <footer style="background-color: var(--surface-container-lowest); border-top: 1px solid var(--border-stitch); padding: 1.5rem 0; font-size: 0.82rem; color: var(--secondary-stitch);">
         <div class="app-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
             <div>
-                <strong>Champions Club</strong> &middot; Court &amp; Club Management Platform
+                <strong>Champions Club</strong> &middot; Multi-Sport Court &amp; Club Management Platform
             </div>
             <div>
                 &copy; 2026 Champions Club. All rights reserved.
             </div>
         </div>
     </footer>
+
+    <!-- Customer-Facing Help Chatbot Assistant (Requirement 5) -->
+    <div class="help-bot-container" x-data="helpBot()" @click.outside="isOpen = false">
+        <!-- Floating Toggle Pill -->
+        <button type="button" class="help-bot-toggle" @click="toggle()" aria-label="Open concierge help assistant">
+            <span class="material-symbols-outlined" style="font-size: 20px;" x-text="isOpen ? 'close' : 'support_agent'">support_agent</span>
+            <span x-text="isOpen ? 'Close' : 'Concierge &amp; FAQs'">Concierge &amp; FAQs</span>
+        </button>
+
+        <!-- Chatbot Window -->
+        <div class="help-bot-window" x-show="isOpen" x-cloak>
+            <!-- Header -->
+            <div class="help-bot-header">
+                <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background-color: var(--primary-container); display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: var(--on-primary-fixed);">sports_tennis</span>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.92rem; font-weight: 700; color: var(--on-surface);">Champions Concierge</div>
+                        <div style="font-size: 0.7rem; color: var(--success); font-weight: 600;">● Online Assistance</div>
+                    </div>
+                </div>
+                <button type="button" @click="isOpen = false" style="background: none; border: none; cursor: pointer; color: var(--secondary-stitch); display: flex; align-items: center;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+                </button>
+            </div>
+
+            <!-- Message Stream -->
+            <div class="help-bot-body" x-ref="chatBody">
+                <template x-for="(msg, index) in messages" :key="index">
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem;" :style="msg.role === 'user' ? 'align-items: flex-end;' : 'align-items: flex-start;'">
+                        <div :class="msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-agent'">
+                            <span x-text="msg.text"></span>
+                            
+                            <!-- Action button if response has deep link -->
+                            <template x-if="msg.actionUrl">
+                                <div style="margin-top: 0.65rem;">
+                                    <a :href="msg.actionUrl" class="btn-accent" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; display: inline-flex;">
+                                        <span x-text="msg.actionLabel"></span>
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">arrow_forward</span>
+                                    </a>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Initial Topic Chips -->
+                        <template x-if="msg.chips && msg.chips.length > 0">
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem;">
+                                <template x-for="(chip, cIdx) in msg.chips" :key="cIdx">
+                                    <button type="button" class="chat-chip" @click="ask(chip.query)" x-text="chip.label"></button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Loading Indicator -->
+                <template x-if="isLoading">
+                    <div class="chat-bubble-agent" style="color: var(--secondary-stitch); font-style: italic;">
+                        Concierge is checking club records...
+                    </div>
+                </template>
+            </div>
+
+            <!-- Input Footer -->
+            <div class="help-bot-footer">
+                <form @submit.prevent="ask()" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <input 
+                        type="text" 
+                        class="form-input" 
+                        style="flex: 1; min-height: 38px; font-size: 0.85rem; padding: 0.4rem 0.75rem;" 
+                        placeholder="Ask about sports, booking, or plans..." 
+                        x-model="inputQuery"
+                        x-ref="chatInput"
+                    >
+                    <button type="submit" class="btn-accent" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">send</span>
+                    </button>
+                </form>
+                <div style="font-size: 0.7rem; color: var(--secondary-stitch); margin-top: 0.35rem; text-align: center;">
+                    Need human assistance? Call <strong>+91 98765 43210</strong> or email <strong>operations@championsclub.com</strong>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Shared Javascript -->
     <script src="{% static 'js/main.js' %}"></script>

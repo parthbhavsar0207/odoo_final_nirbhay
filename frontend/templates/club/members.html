@@ -18,11 +18,54 @@
             </p>
         </div>
 
-        <div>
+        <div style="display: flex; gap: 0.75rem;">
+            <a href="{% url 'club:plan_list' %}" class="btn-secondary-low">
+                <span class="material-symbols-outlined" style="font-size: 18px;">tune</span>
+                <span>Manage Plans</span>
+            </a>
             <a href="{% url 'club:member_create' %}" class="btn-accent">
                 <span class="material-symbols-outlined" style="font-size: 18px;">person_add</span>
                 <span>Register New Member</span>
             </a>
+        </div>
+    </div>
+
+    <!-- Facility Operational KPI Summary Cards -->
+    <div class="kpi-metrics-row">
+        <div class="kpi-card">
+            <div class="kpi-card-header">
+                <span>Total Registered</span>
+                <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">badge</span>
+            </div>
+            <div class="kpi-card-value">{{ total_members_count }}</div>
+            <div class="kpi-card-subtitle">Member &amp; Guest profiles</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-card-header">
+                <span>Active Members</span>
+                <span class="material-symbols-outlined" style="font-size: 18px; color: var(--success);">verified</span>
+            </div>
+            <div class="kpi-card-value">{{ active_count|default:"0" }}</div>
+            <div class="kpi-card-subtitle">Eligible for plan court pricing</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-card-header">
+                <span>Suspended Profiles</span>
+                <span class="material-symbols-outlined" style="font-size: 18px; color: var(--danger);">pause_circle</span>
+            </div>
+            <div class="kpi-card-value">{{ suspended_count|default:"0" }}</div>
+            <div class="kpi-card-subtitle">Revert to standard walk-in rates</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-card-header">
+                <span>Expired Memberships</span>
+                <span class="material-symbols-outlined" style="font-size: 18px; color: var(--warning);">history</span>
+            </div>
+            <div class="kpi-card-value">{{ expired_count|default:"0" }}</div>
+            <div class="kpi-card-subtitle">Renewal required</div>
         </div>
     </div>
 
@@ -60,11 +103,52 @@
         {% endfor %}
     </div>
 
+    <!-- Filter & Search Control Bar -->
+    <div class="filter-control-bar" style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); position: relative; z-index: 20;">
+        <form method="get" style="display: flex; gap: 0.85rem; align-items: center; flex-wrap: wrap; flex: 1;">
+            <div class="search-input-wrapper">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Search by name, email, or phone..." class="form-input search-input">
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <label for="tier-filter" style="font-size: 0.8rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Tier:</label>
+                <select name="tier" id="tier-filter" class="form-select filter-select" onchange="this.form.submit()">
+                    <option value="">All Tiers</option>
+                    <option value="gold" {% if tier_filter == 'gold' %}selected{% endif %}>Gold</option>
+                    <option value="silver" {% if tier_filter == 'silver' %}selected{% endif %}>Silver</option>
+                    <option value="junior" {% if tier_filter == 'junior' %}selected{% endif %}>Junior</option>
+                </select>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <label for="status-filter" style="font-size: 0.8rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase;">Status:</label>
+                <select name="status" id="status-filter" class="form-select filter-select" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
+                    <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+                </select>
+            </div>
+
+            {% if tier_filter or status_filter or search_query %}
+                <a href="{% url 'club:member_list' %}" class="btn-secondary-low" style="padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--secondary-stitch); text-decoration: none;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">restart_alt</span>
+                    <span>Reset</span>
+                </a>
+            {% endif %}
+        </form>
+
+        <div>
+            <span class="badge-pill">Showing {{ members|length }} Member{{ members|length|pluralize }}</span>
+        </div>
+    </div>
+
     <!-- Members Ledger Table -->
     <div class="modern-table-container">
         <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-stitch); display: flex; justify-content: space-between; align-items: center; background-color: var(--surface-container-lowest);">
             <div style="font-size: 0.95rem; font-weight: 700; color: var(--on-surface);">
-                Registered Profiles ({{ members|length }})
+                Registered Member Profiles
             </div>
             <div style="font-size: 0.8rem; color: var(--secondary-stitch);">
                 Active members receive plan court pricing; expired profiles revert to standard walk-in rates.
@@ -113,7 +197,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div style="font-size: 0.82rem;">{{ member.email|default:"&mdash;" }}</div>
+                                <div style="font-size: 0.82rem; font-weight: 500;">{{ member.email|default:"&mdash;" }}</div>
                                 <div class="tabular-nums" style="font-size: 0.75rem; color: var(--secondary-stitch);">{{ member.phone|default:"" }}</div>
                             </td>
                             <td class="tabular-nums" style="font-size: 0.82rem;">
@@ -125,7 +209,10 @@
                             </td>
                             <td>
                                 {% if member.status_label == 'Active' %}
-                                    <span class="pill-status pill-status-active">Active</span>
+                                    <span class="pill-status pill-status-active">
+                                        <span class="pulse-indicator-small"></span>
+                                        <span>Active</span>
+                                    </span>
                                 {% elif member.status_label == 'Expired' %}
                                     <span class="pill-status pill-status-expired">Expired</span>
                                 {% elif member.status_label == 'Suspended' %}
@@ -135,9 +222,18 @@
                                 {% endif %}
                             </td>
                             <td style="text-align: right;">
-                                <a href="{% url 'club:member_edit' member.id %}" class="btn-secondary-low" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;">
-                                    Edit
-                                </a>
+                                <div style="display: inline-flex; gap: 0.4rem; align-items: center;">
+                                    <a href="{% url 'club:booking_create' %}?member={{ member.id }}" class="btn-accent" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;">
+                                        <span class="material-symbols-outlined" style="font-size: 15px;">event_available</span>
+                                        <span>Book</span>
+                                    </a>
+                                    <a href="{% url 'club:member_change_plan' member.id %}" class="btn-secondary-low" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;" title="Upgrade or Downgrade Membership Plan">
+                                        Plan
+                                    </a>
+                                    <a href="{% url 'club:member_edit' member.id %}" class="btn-secondary-low" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;">
+                                        Edit
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}

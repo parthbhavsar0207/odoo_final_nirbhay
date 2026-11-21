@@ -109,3 +109,56 @@ class BookingParticipantForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['member'].queryset = Member.objects.filter(is_suspended=False)
         self.fields['member'].required = False
+
+
+class MembershipPlanForm(forms.ModelForm):
+    """
+    Staff-facing form to create and edit membership plans.
+    """
+    class Meta:
+        model = MembershipPlan
+        fields = [
+            'tier',
+            'name',
+            'membership_fee',
+            'court_hourly_rate',
+            'shop_discount_percent',
+            'bar_discount_percent',
+            'active',
+        ]
+        widgets = {
+            'tier': forms.Select(attrs={'class': 'form-select'}),
+            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. Gold Tier VIP'}),
+            'membership_fee': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),
+            'court_hourly_rate': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),
+            'shop_discount_percent': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),
+            'bar_discount_percent': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),
+            'active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+        }
+
+
+class MemberChangePlanForm(forms.Form):
+    """
+    Staff-facing form to upgrade or downgrade a member's plan with confirmation.
+    """
+    new_plan = forms.ModelChoiceField(
+        queryset=MembershipPlan.objects.filter(active=True),
+        empty_label=None,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Target Membership Plan",
+    )
+    effective_date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+        label="Effective Transition Date",
+        initial=timezone.localdate,
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Reason or authorization notes (optional)'}),
+        label="Adjustment Notes",
+    )
+    confirm_change = forms.BooleanField(
+        required=True,
+        label="I confirm this member plan transition without altering past historical records",
+        widget=forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+    )

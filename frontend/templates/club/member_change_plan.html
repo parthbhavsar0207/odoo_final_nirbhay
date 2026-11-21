@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="app-container" style="max-width: 720px;">
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: 1.25rem;">
+        <a href="{% url 'club:member_list' %}" class="btn-secondary-low" style="font-size: 0.82rem; padding: 0.35rem 0.65rem;">
+            &larr; Back to Members Directory
+        </a>
+    </div>
+
+    <!-- Header Card -->
+    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 14px; padding: 1.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03); margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <div class="avatar-box" style="width: 48px; height: 48px; font-size: 1.2rem;">
+                {{ member.name|slice:":1" }}
+            </div>
+            <div>
+                <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--on-surface); line-height: 1.2;">
+                    Change Plan: {{ member.name }}
+                </h1>
+                <div style="font-size: 0.82rem; color: var(--secondary-stitch);">
+                    Member #{{ member.id }} &middot; {{ member.email|default:"No email recorded" }} &middot; {{ member.phone|default:"No phone" }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Plan Summary -->
+        <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 10px; padding: 1rem 1.15rem; margin-top: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.35rem;">
+                Current Plan Profile
+            </div>
+            {% if member.plan %}
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="pill-tier tier-{{ member.plan.tier }}">
+                            {{ member.plan.get_tier_display }}
+                        </span>
+                        <strong style="color: var(--on-surface);">{{ member.plan.name }}</strong>
+                    </div>
+                    <div style="font-size: 0.82rem; color: var(--secondary-stitch); display: flex; gap: 1rem;">
+                        <span>Fee: <strong class="tabular-nums">₹{{ member.plan.membership_fee }}</strong></span>
+                        <span>Court: <strong class="tabular-nums">{% if member.plan.court_hourly_rate == 0 %}Free{% else %}₹{{ member.plan.court_hourly_rate }}/hr{% endif %}</strong></span>
+                        <span>Shop: <strong class="tabular-nums">{{ member.plan.shop_discount_percent }}%</strong></span>
+                        <span>Bar: <strong class="tabular-nums">{{ member.plan.bar_discount_percent }}%</strong></span>
+                    </div>
+                </div>
+            {% else %}
+                <div style="color: var(--secondary-stitch); font-size: 0.85rem;">
+                    No plan currently assigned. Member has been paying standard walk-in rates.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Transition Form Card -->
+    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 14px; padding: 1.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--on-surface); margin-bottom: 0.25rem;">
+            Membership Transition Details
+        </h2>
+        <p style="font-size: 0.82rem; color: var(--secondary-stitch); margin-bottom: 1.25rem;">
+            Select target tier, set effective transition date, and confirm. All previous bookings and sales keep their historical rates.
+        </p>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" style="padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.88rem;">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <!-- Target Plan Selection -->
+                <div>
+                    <label for="{{ form.new_plan.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                        Target Plan (Upgrade or Downgrade) *
+                    </label>
+                    {{ form.new_plan }}
+                    <small style="color: var(--secondary-stitch); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                        Only active club plans are listed.
+                    </small>
+                    {% if form.new_plan.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.new_plan.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Effective Date -->
+                <div>
+                    <label for="{{ form.effective_date.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                        Effective Transition Date *
+                    </label>
+                    {{ form.effective_date }}
+                    <small style="color: var(--secondary-stitch); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                        Bookings on or after this date will automatically apply the new plan's court rate.
+                    </small>
+                    {% if form.effective_date.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.effective_date.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label for="{{ form.notes.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                        Adjustment Notes / Authorization Reference
+                    </label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.notes.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Explicit Confirmation Checkbox (Requirement 4) -->
+                <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 8px; padding: 1rem; display: flex; align-items: flex-start; gap: 0.65rem;">
+                    <div style="padding-top: 2px;">
+                        {{ form.confirm_change }}
+                    </div>
+                    <div>
+                        <label for="{{ form.confirm_change.id_for_label }}" style="font-size: 0.88rem; font-weight: 600; color: var(--on-surface); cursor: pointer; display: block;">
+                            Confirm Plan Transition
+                        </label>
+                        <small style="color: var(--secondary-stitch); font-size: 0.78rem; display: block; margin-top: 0.2rem;">
+                            I confirm updating {{ member.name }}'s active plan. Backend pricing rules snapshot booking fees at confirmation time; existing historical records will not be altered.
+                        </small>
+                        {% if form.confirm_change.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.confirm_change.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; margin-top: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--border-stitch);">
+                    <a href="{% url 'club:member_list' %}" class="btn-secondary-low">Cancel</a>
+                    <button type="submit" class="btn-accent" style="padding: 0.55rem 1.4rem;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">published_with_changes</span>
+                        <span>Confirm &amp; Apply Plan Change</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

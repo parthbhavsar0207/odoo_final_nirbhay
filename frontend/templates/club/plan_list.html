@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
+                Staff Operations / Membership Subscriptions
+            </div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.02em;">
+                Membership Plans Management
+            </h1>
+            <p style="color: var(--secondary-stitch); font-size: 0.88rem; margin-top: 0.2rem;">
+                Configure membership tiers, court booking entitlement rates, and clubhouse commerce discounts.
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+            <a href="{% url 'club:public_plans' %}" class="btn-secondary-low">
+                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                <span>Customer View</span>
+            </a>
+            <a href="{% url 'club:plan_create' %}" class="btn-accent">
+                <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+                <span>Create New Plan</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Contract Compliance Notice -->
+    <div style="background-color: var(--surface-container-low); border: 1px solid var(--border-stitch); border-radius: 10px; padding: 0.85rem 1.15rem; margin-bottom: 1.5rem; font-size: 0.82rem; color: var(--secondary-stitch); display: flex; align-items: center; gap: 0.75rem;">
+        <span class="material-symbols-outlined" style="color: var(--primary); font-size: 20px;">verified</span>
+        <span>
+            <strong>Historical Integrity Preserved:</strong> Deactivating or updating plan parameters will apply to future bookings and counter sales only. Past confirmed bookings and completed sales retain their original snapshotted rates and discounts.
+        </span>
+    </div>
+
+    <!-- Plans Table -->
+    <div class="modern-table-container">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>Plan Tier / Name</th>
+                    <th>Annual Fee</th>
+                    <th>Court Rate</th>
+                    <th>Pro Shop Discount</th>
+                    <th>Clubhouse Bar Discount</th>
+                    <th>Enrolled Members</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for plan in plans %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span class="pill-tier tier-{{ plan.tier }}">
+                                    {{ plan.get_tier_display }}
+                                </span>
+                                <strong style="color: var(--on-surface); font-size: 0.92rem;">{{ plan.name }}</strong>
+                            </div>
+                        </td>
+                        <td class="tabular-nums" style="font-weight: 700;">
+                            ₹{{ plan.membership_fee }}
+                        </td>
+                        <td class="tabular-nums">
+                            {% if plan.court_hourly_rate == 0 %}
+                                <span class="pill-status pill-status-active" style="font-size: 0.72rem;">Free (100% Off)</span>
+                            {% else %}
+                                <strong>₹{{ plan.court_hourly_rate }}/hr</strong>
+                            {% endif %}
+                        </td>
+                        <td class="tabular-nums">
+                            {{ plan.shop_discount_percent }}%
+                        </td>
+                        <td class="tabular-nums">
+                            {{ plan.bar_discount_percent }}%
+                        </td>
+                        <td class="tabular-nums">
+                            <span class="badge-pill">{{ plan.member_count }} member{{ plan.member_count|pluralize }}</span>
+                        </td>
+                        <td>
+                            {% if plan.active %}
+                                <span class="pill-status pill-status-active">
+                                    <span class="pulse-indicator-small"></span>
+                                    <span>Active</span>
+                                </span>
+                            {% else %}
+                                <span class="pill-status pill-status-expired">Deactivated</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            <div style="display: inline-flex; gap: 0.4rem; align-items: center;">
+                                <a href="{% url 'club:plan_edit' plan.id %}" class="btn-secondary-low" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;">
+                                    Edit
+                                </a>
+                                <form method="post" action="{% url 'club:plan_toggle_active' plan.id %}" style="display: inline;" onsubmit="return confirm('{% if plan.active %}Deactivate{% else %}Activate{% endif %} membership plan {{ plan.name }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-secondary-low" style="padding: 0.35rem 0.65rem; font-size: 0.78rem; {% if plan.active %}color: var(--danger);{% else %}color: var(--success);{% endif %}">
+                                        {% if plan.active %}Deactivate{% else %}Activate{% endif %}
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" style="padding: 3rem 1rem; text-align: center; color: var(--secondary-stitch);">
+                            <p>No membership plans configured yet.</p>
+                            <a href="{% url 'club:plan_create' %}" class="btn-accent" style="margin-top: 0.75rem;">+ Create Plan</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

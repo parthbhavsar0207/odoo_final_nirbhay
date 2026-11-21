@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Breadcrumb & Nav -->
+    <div style="margin-bottom: 1.25rem;">
+        <a href="{% url 'club:sports_directory' %}" class="btn-secondary-low" style="display: inline-flex; font-size: 0.82rem; padding: 0.35rem 0.65rem;">
+            &larr; All 10 Sports &amp; Facilities
+        </a>
+    </div>
+
+    <!-- Sport Overview Hero Banner -->
+    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.5rem;">
+            <div style="display: flex; gap: 1.25rem; align-items: flex-start;">
+                <div style="width: 64px; height: 64px; border-radius: 14px; background-color: var(--surface-container-low); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; border: 1px solid var(--border-stitch); flex-shrink: 0;">
+                    {{ sport.icon }}
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem;">
+                        <h1 style="font-size: 2rem; font-weight: 800; color: var(--on-surface); letter-spacing: -0.02em;">
+                            {{ sport.name }}
+                        </h1>
+                        <span class="pill-status" style="background-color: var(--surface-container-low); color: var(--on-surface); font-size: 0.75rem;">
+                            {{ sport.category }}
+                        </span>
+                        {% if has_facilities %}
+                            <span class="pill-status pill-status-active">
+                                <span class="pulse-indicator-small"></span>
+                                <span>{{ courts|length }} Active Facility/Court{{ courts|length|pluralize }}</span>
+                            </span>
+                        {% else %}
+                            <span class="pill-status pill-status-expired">
+                                Commissioning Pending
+                            </span>
+                        {% endif %}
+                    </div>
+                    <p style="font-size: 0.95rem; color: var(--secondary-stitch); line-height: 1.5; max-width: 700px; margin-bottom: 0.75rem;">
+                        {{ sport.description }}
+                    </p>
+                    <div style="font-size: 0.82rem; color: var(--secondary-stitch); display: flex; flex-wrap: wrap; gap: 1rem;">
+                        <div><strong style="color: var(--on-surface);">Surfaces:</strong> {{ sport.surface_types }}</div>
+                        <div><strong style="color: var(--on-surface);">Format:</strong> {{ sport.players_per_session }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking / Membership Shortcut -->
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 200px;">
+                {% if has_facilities %}
+                    <a href="{% url 'club:booking_create' %}" class="btn-accent" style="justify-content: center; padding: 0.6rem 1.2rem;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
+                        <span>Reserve {{ sport.name }} Court</span>
+                    </a>
+                {% endif %}
+                <a href="{% url 'club:public_plans' %}" class="btn-secondary-low" style="justify-content: center; padding: 0.55rem 1.2rem;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">badge</span>
+                    <span>View Membership Benefits</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Sport Facility Equipment & Club Rules Strip -->
+        <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-stitch); display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; font-size: 0.82rem;">
+            <div style="display: flex; gap: 0.5rem;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">sports</span>
+                <div>
+                    <strong style="color: var(--on-surface);">Equipment at Pro Shop &amp; Reception:</strong>
+                    <div style="color: var(--secondary-stitch);">{{ sport.equipment_available }}</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <span class="material-symbols-outlined" style="font-size: 18px; color: var(--success);">info</span>
+                <div>
+                    <strong style="color: var(--on-surface);">Playing Regulations &amp; Session Rules:</strong>
+                    <div style="color: var(--secondary-stitch);">{{ sport.booking_notice }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Facilities & Live Availability Flow -->
+    {% if has_facilities %}
+        <!-- Configured Facilities Cards -->
+        <div style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--on-surface); margin-bottom: 1rem;">
+                Configured {{ sport.name }} Facilities ({{ courts|length }})
+            </h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
+                {% for court in courts %}
+                    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--on-surface);">{{ court.name }}</h3>
+                            <span class="pill-status pill-status-active" style="font-size: 0.72rem;">Online</span>
+                        </div>
+                        <div style="font-size: 0.82rem; color: var(--secondary-stitch); display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.75rem;">
+                            <div>Standard Rate: <strong class="tabular-nums" style="color: var(--on-surface);">₹{{ court.hourly_rate }}/hour</strong></div>
+                            <div>Player Capacity: <strong style="color: var(--on-surface);">Up to {{ court.capacity }} Players</strong></div>
+                        </div>
+                        <a href="{% url 'club:booking_create' %}?court={{ court.id }}" class="btn-secondary-low" style="width: 100%; justify-content: center; font-size: 0.8rem; padding: 0.4rem 0.65rem;">
+                            Reserve This Court
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Live Availability Grid for This Sport -->
+        <div style="margin-bottom: 3rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--on-surface);">
+                        {{ sport.name }} Court Schedule &mdash; {{ selected_date|date:"l, F j, Y" }}
+                    </h2>
+                    <p style="font-size: 0.82rem; color: var(--secondary-stitch);">
+                        Real-time bookable session slots &middot; 60-minute duration
+                    </p>
+                </div>
+
+                <!-- Date Scrubber Form (Maintains selection after refresh) -->
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <form method="get" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label for="date-select" style="font-size: 0.82rem; font-weight: 600; color: var(--secondary-stitch);">Date:</label>
+                        <input type="date" name="date" id="date-select" value="{{ selected_date|date:'Y-m-d' }}" class="form-input" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="this.form.submit()">
+                    </form>
+                    {% if selected_date != today %}
+                        <a href="{% url 'club:sport_detail' sport.slug %}" class="btn-secondary-low" style="font-size: 0.82rem; padding: 0.35rem 0.65rem;">Today</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Matrix -->
+            <div class="matrix-container">
+                <div class="matrix-grid">
+                    <div class="matrix-header-cell" style="text-align: left; padding-left: 0.5rem;">COURT / FACILITY</div>
+                    {% for hour in operating_hours %}
+                        <div class="matrix-header-cell">{{ hour }}</div>
+                    {% endfor %}
+
+                    {% for row in court_slots %}
+                        <div class="matrix-court-name">
+                            <div style="font-weight: 700; font-size: 0.85rem; color: var(--on-surface);">{{ row.court.name }}</div>
+                            <div style="font-size: 0.7rem; color: var(--secondary-stitch); text-transform: uppercase;">
+                                ₹{{ row.court.hourly_rate }}/hr
+                            </div>
+                        </div>
+
+                        {% for hour, slot in row.slots %}
+                            {% if slot.status == 'free' %}
+                                <a href="{% url 'club:booking_create' %}?court={{ row.court.id }}&start={{ selected_date|date:'Y-m-d' }}T{{ hour }}" class="matrix-slot-cell matrix-slot-free" title="Court {{ row.court.name }} is free at {{ hour }}. Click to reserve." style="text-decoration: none;">
+                                    Free
+                                </a>
+                            {% else %}
+                                <div class="matrix-slot-cell matrix-slot-booked" title="Reserved slot for championship play">
+                                    Booked
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- Requirement: Clear No Facilities or Availability Configured State -->
+        <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 14px; padding: 3.5rem 2rem; text-align: center; margin-bottom: 3rem; box-shadow: 0 1px 4px rgba(0,0,0,0.02);">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background-color: var(--surface-container-low); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.25rem;">
+                {{ sport.icon }}
+            </div>
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--on-surface); margin-bottom: 0.5rem;">
+                No facilities or availability configured
+            </h2>
+            <p style="font-size: 0.92rem; color: var(--secondary-stitch); max-width: 580px; margin: 0 auto 1.5rem; line-height: 1.55;">
+                Club management has not yet commissioned court/pool facilities for <strong>{{ sport.name }}</strong>. Active facilities are currently available for Tennis, Badminton, Squash, and Cricket. Check back soon as facility commissioning progresses.
+            </p>
+            <div style="display: inline-flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center;">
+                <a href="{% url 'club:sports_directory' %}" class="btn-secondary-low">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">grid_view</span>
+                    <span>Browse Active Sports</span>
+                </a>
+                <a href="{% url 'club:public_availability' %}" class="btn-accent">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
+                    <span>Check Live Facility Availability</span>
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

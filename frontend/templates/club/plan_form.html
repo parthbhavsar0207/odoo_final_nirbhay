@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="app-container" style="max-width: 680px;">
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: 1.25rem;">
+        <a href="{% url 'club:plan_list' %}" class="btn-secondary-low" style="font-size: 0.82rem; padding: 0.35rem 0.65rem;">
+            &larr; Back to Plans Management
+        </a>
+    </div>
+
+    <!-- Form Card -->
+    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 14px; padding: 1.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+        <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--on-surface); margin-bottom: 0.25rem;">
+            {{ page_title }}
+        </h1>
+        <p style="font-size: 0.85rem; color: var(--secondary-stitch); margin-bottom: 1.5rem;">
+            Define tier entitlements, annual dues, and clubhouse commerce privileges.
+        </p>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" style="padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.88rem;">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <!-- Tier & Plan Name -->
+                <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1rem;">
+                    <div>
+                        <label for="{{ form.tier.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                            Tier Level *
+                        </label>
+                        {{ form.tier }}
+                        {% if form.tier.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.tier.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.name.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                            Plan Display Name *
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fees & Court Rate -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label for="{{ form.membership_fee.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                            Annual Membership Fee (₹) *
+                        </label>
+                        {{ form.membership_fee }}
+                        <small style="color: var(--secondary-stitch); font-size: 0.75rem;">Annual recurring subscription dues.</small>
+                        {% if form.membership_fee.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.membership_fee.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.court_hourly_rate.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                            Court Hourly Rate (₹) *
+                        </label>
+                        {{ form.court_hourly_rate }}
+                        <small style="color: var(--secondary-stitch); font-size: 0.75rem;">Set 0.00 for 100% free court access.</small>
+                        {% if form.court_hourly_rate.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.court_hourly_rate.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Discounts -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label for="{{ form.shop_discount_percent.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                            Pro Shop Discount (%) *
+                        </label>
+                        {{ form.shop_discount_percent }}
+                        <small style="color: var(--secondary-stitch); font-size: 0.75rem;">Discount applied on equipment sales.</small>
+                        {% if form.shop_discount_percent.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.shop_discount_percent.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.bar_discount_percent.id_for_label }}" style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.4rem;">
+                            Clubhouse Bar Discount (%) *
+                        </label>
+                        {{ form.bar_discount_percent }}
+                        <small style="color: var(--secondary-stitch); font-size: 0.75rem;">Discount applied on refreshments.</small>
+                        {% if form.bar_discount_percent.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.bar_discount_percent.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Active Toggle -->
+                <div style="background-color: var(--surface-container-low); border-radius: 8px; padding: 0.85rem 1rem; display: flex; align-items: center; gap: 0.65rem;">
+                    {{ form.active }}
+                    <label for="{{ form.active.id_for_label }}" style="font-size: 0.88rem; font-weight: 600; color: var(--on-surface); cursor: pointer;">
+                        Active Plan (Available for new member assignments and public viewing)
+                    </label>
+                </div>
+
+                <!-- Form Actions -->
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; margin-top: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--border-stitch);">
+                    <a href="{% url 'club:plan_list' %}" class="btn-secondary-low">Cancel</a>
+                    <button type="submit" class="btn-accent" style="padding: 0.55rem 1.4rem;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+                        <span>Save Membership Plan</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

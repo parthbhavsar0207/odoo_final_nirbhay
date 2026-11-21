@@ -761,3 +761,827 @@ body {
     color: var(--on-surface);
     font-variant-numeric: tabular-nums;
 }
+
+[x-cloak] {
+    display: none !important;
+}
+
+/* ==========================================================================
+   Champions Club Accessible Custom Dropdown / Select System
+   High-legibility, athletic modernist select menus replacing browser OS popups
+   ========================================================================== */
+
+/* Native select baseline polish (Fallback when JS is disabled or loading) */
+select.form-select,
+.commerce-field select {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.55rem 2.25rem 0.55rem 0.85rem;
+    border: 1px solid var(--border-stitch);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: var(--on-surface);
+    background-color: var(--surface-container-lowest);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235c5e63' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    background-size: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+select.form-select:hover,
+.commerce-field select:hover {
+    border-color: #cbd5e1;
+}
+
+select.form-select:focus,
+.commerce-field select:focus {
+    outline: 2px solid var(--primary-container);
+    outline-offset: 1px;
+    border-color: var(--on-surface);
+}
+
+select.form-select:disabled,
+.commerce-field select:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background-color: var(--surface-container-low);
+}
+
+/* Custom Select Container & Components */
+.champions-select-wrapper {
+    position: relative;
+    display: block;
+    width: 100%;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-sizing: border-box;
+}
+
+/* Inline variant for filter bars */
+.champions-select-wrapper.is-filter {
+    display: inline-block;
+    width: auto;
+    min-width: 175px;
+}
+
+/* Visually hide native select when enhanced, but keep accessible for forms/screenreaders */
+.champions-select-wrapper .champions-select-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Custom Trigger Button */
+.champions-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.55rem 0.85rem;
+    gap: 0.75rem;
+    background-color: var(--surface-container-lowest);
+    border: 1px solid var(--border-stitch);
+    border-radius: var(--radius);
+    color: var(--on-surface);
+    font-family: inherit;
+    font-size: 0.92rem;
+    text-align: left;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.champions-select-wrapper.is-filter .champions-select-trigger {
+    min-height: 38px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.88rem;
+    border-radius: 8px;
+}
+
+.champions-select-trigger:hover {
+    border-color: #cbd5e1;
+    background-color: #fafbfc;
+}
+
+.champions-select-trigger:focus-visible {
+    outline: 2px solid var(--primary-container);
+    outline-offset: 1px;
+    border-color: var(--on-surface);
+}
+
+.champions-select-wrapper.is-open .champions-select-trigger {
+    border-color: var(--on-surface);
+    box-shadow: 0 0 0 3px rgba(210, 240, 60, 0.28);
+    background-color: var(--surface-container-lowest);
+}
+
+.champions-select-trigger:disabled,
+.champions-select-wrapper.is-disabled .champions-select-trigger {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background-color: var(--surface-container-low);
+    border-color: var(--border-stitch);
+}
+
+/* Value Display & Chevron */
+.champions-select-value {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.champions-select-value.is-placeholder {
+    color: var(--secondary-stitch);
+    font-weight: 400;
+}
+
+.champions-select-chevron {
+    font-size: 18px;
+    color: var(--secondary-stitch);
+    flex-shrink: 0;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+}
+
+.champions-select-wrapper.is-open .champions-select-chevron {
+    transform: rotate(180deg);
+    color: var(--on-surface);
+}
+
+/* Floating Custom Menu / Listbox */
+.champions-select-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    min-width: 100%;
+    z-index: 1050;
+    background-color: var(--surface-container-lowest);
+    border: 1px solid var(--border-stitch);
+    border-radius: 10px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    padding: 0.35rem;
+    max-height: 270px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.champions-select-wrapper.is-filter .champions-select-menu {
+    min-width: 220px;
+    width: max-content;
+    max-width: 320px;
+}
+
+/* Open upwards when near viewport bottom */
+.champions-select-wrapper.dropdown-menu-up .champions-select-menu {
+    top: auto;
+    bottom: calc(100% + 5px);
+}
+
+.champions-select-wrapper.is-open .champions-select-menu {
+    display: block;
+    animation: dropFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.champions-select-wrapper.dropdown-menu-up.is-open .champions-select-menu {
+    animation: dropFadeInUp 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropFadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Options List */
+.champions-select-options {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Individual Option Item */
+.champions-select-option {
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 2px;
+    font-size: 0.88rem;
+    font-weight: 400;
+    color: var(--on-surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.1s ease, color 0.1s ease;
+    box-sizing: border-box;
+}
+
+.champions-select-option:last-child {
+    margin-bottom: 0;
+}
+
+/* Hover & Keyboard Highlight - RESTRAINED NEUTRAL, NO BROWSER BLUE */
+.champions-select-option.is-highlighted {
+    background-color: var(--surface-container-high);
+    color: var(--on-surface);
+}
+
+/* Selected Option - TENNIS LIME TINT, NO OS BLUE */
+.champions-select-option[aria-selected="true"] {
+    background-color: #f7fee7; /* subtle tennis lime tint */
+    color: #1a2e05;
+    font-weight: 600;
+}
+
+.champions-select-option[aria-selected="true"].is-highlighted {
+    background-color: #ecfccb;
+    color: #1a2e05;
+}
+
+.champions-option-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Selected Checkmark */
+.champions-option-check {
+    font-size: 16px;
+    color: #65a30d; /* tennis lime accent */
+    flex-shrink: 0;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+}
+
+.champions-select-option[aria-selected="true"] .champions-option-check {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Disabled Option */
+.champions-select-option[data-disabled="true"] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Scrollbar Styling */
+.champions-select-menu::-webkit-scrollbar {
+    width: 6px;
+}
+.champions-select-menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+.champions-select-menu::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+.champions-select-menu::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 640px) {
+    .champions-select-wrapper.is-filter {
+        width: 100%;
+        min-width: 100%;
+    }
+    .champions-select-wrapper.is-filter .champions-select-menu {
+        min-width: 100%;
+        width: 100%;
+        max-width: 100%;
+    }
+    .champions-select-menu {
+        max-height: 240px;
+    }
+}
+
+/* ==========================================================================
+   User Experience & Athletic Modernist Interface Upgrades
+   ========================================================================== */
+
+/* Modern Sport Surface Badges */
+.sport-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+}
+
+.sport-tennis {
+    background-color: #f7fee7;
+    color: #3f6212;
+    border: 1px solid #d9f99d;
+}
+
+.sport-badminton {
+    background-color: #f0fdfa;
+    color: #0f766e;
+    border: 1px solid #99f6e4;
+}
+
+.sport-squash {
+    background-color: #fdf4ff;
+    color: #86198f;
+    border: 1px solid #f5d0fe;
+}
+
+.sport-cricket {
+    background-color: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+/* Operational Badges & Counters */
+.badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background-color: var(--surface-container-low);
+    color: var(--secondary-stitch);
+    border: 1px solid var(--border-stitch);
+}
+
+.pulse-indicator-small {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--success);
+    display: inline-block;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.25);
+}
+
+/* High-Legibility Search Input Bar */
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 250px;
+    flex: 1;
+}
+
+.search-input-wrapper .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    font-size: 18px;
+    color: var(--secondary-stitch);
+    pointer-events: none;
+}
+
+.search-input-wrapper .search-input {
+    padding-left: 2.25rem !important;
+    padding-right: 0.75rem;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border-stitch);
+    background-color: var(--surface-container-lowest);
+    font-size: 0.88rem;
+    min-height: 42px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-input-wrapper .search-input:focus {
+    border-color: var(--on-surface);
+    outline: 2px solid var(--primary-container);
+    outline-offset: 1px;
+}
+
+/* Toast Notifications */
+.toast-alert {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1.15rem;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border-stitch);
+    background-color: var(--surface-container-lowest);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.toast-alert-success {
+    border-left: 4px solid var(--success);
+}
+
+.toast-alert-error,
+.toast-alert-danger {
+    border-left: 4px solid var(--danger);
+}
+
+.toast-alert-warning {
+    border-left: 4px solid var(--warning);
+}
+
+.toast-alert-info {
+    border-left: 4px solid var(--info);
+}
+
+.toast-dismiss-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--secondary-stitch);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.toast-dismiss-btn:hover {
+    background-color: var(--surface-container-high);
+    color: var(--on-surface);
+}
+
+/* Quick Slot Preset Pills for Fast Booking */
+.quick-slots-container {
+    margin-top: 0.65rem;
+}
+
+.quick-slots-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.quick-slots-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--secondary-stitch);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.quick-slots-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.quick-slot-btn {
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--border-stitch);
+    background-color: var(--surface-container-lowest);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--on-surface);
+    cursor: pointer;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    transition: all 0.15s ease;
+}
+
+.quick-slot-btn:hover {
+    border-color: var(--on-surface);
+    background-color: var(--surface-container-low);
+}
+
+.quick-slot-btn.is-selected {
+    background-color: var(--primary-container);
+    color: var(--on-primary-fixed);
+    border-color: #b5d625;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Session Slot Feedback Card */
+.session-preview-card {
+    background-color: var(--surface-container-low);
+    border: 1px solid var(--border-stitch);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    margin-top: 0.65rem;
+    font-size: 0.82rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+/* Metric KPI Cards on Bookings & Members */
+.kpi-metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.kpi-card {
+    background-color: var(--surface-container-lowest);
+    border: 1px solid var(--border-stitch);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.kpi-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--secondary-stitch);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+}
+
+.kpi-card-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--on-surface);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.kpi-card-subtitle {
+    font-size: 0.75rem;
+    color: var(--secondary-stitch);
+    margin-top: 0.2rem;
+}
+
+/* Responsive Navigation Helpers */
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+    .mobile-only {
+        display: inline-flex !important;
+    }
+    .filter-control-bar form {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    .search-input-wrapper {
+        min-width: 100% !important;
+    }
+}
+
+/* ==========================================================================
+   Real-Time Site Search Suggestions Component
+   ========================================================================== */
+.site-search-wrapper {
+    position: relative;
+    width: 260px;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.site-search-input {
+    width: 100%;
+    height: 38px;
+    padding: 0.4rem 0.75rem 0.4rem 2.25rem;
+    border: 1px solid var(--border-stitch);
+    border-radius: 8px;
+    font-size: 0.84rem;
+    background-color: var(--surface-container-low);
+    color: var(--on-surface);
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+}
+
+.site-search-input:focus {
+    background-color: #ffffff;
+    border-color: var(--on-surface);
+    outline: 2px solid var(--primary-container);
+    outline-offset: 1px;
+}
+
+.site-search-icon {
+    position: absolute;
+    left: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 17px;
+    color: var(--secondary-stitch);
+    pointer-events: none;
+}
+
+.search-suggestions-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 320px;
+    max-height: 380px;
+    overflow-y: auto;
+    background-color: #ffffff;
+    border: 1px solid var(--border-stitch);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+    padding: 0.4rem;
+    box-sizing: border-box;
+}
+
+.search-suggestion-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.1s ease;
+}
+
+.search-suggestion-item:hover,
+.search-suggestion-item.is-highlighted {
+    background-color: var(--surface-container-low);
+}
+
+.search-suggestion-type-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-stitch);
+    background-color: #ffffff;
+    color: var(--secondary-stitch);
+}
+
+/* ==========================================================================
+   Help Chatbot & FAQ Concierge Widget
+   ========================================================================== */
+.help-bot-container {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 9999;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.help-bot-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.15rem;
+    background-color: var(--on-surface);
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.help-bot-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+}
+
+.help-bot-window {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    width: 380px;
+    max-width: calc(100vw - 2rem);
+    height: 520px;
+    max-height: calc(100vh - 100px);
+    background-color: #ffffff;
+    border: 1px solid var(--border-stitch);
+    border-radius: 16px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.16);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: botPopup 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes botPopup {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.help-bot-header {
+    padding: 0.9rem 1.15rem;
+    background-color: var(--surface-container-lowest);
+    border-bottom: 1px solid var(--border-stitch);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.help-bot-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background-color: var(--surface);
+}
+
+.help-bot-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-stitch);
+    background-color: #ffffff;
+}
+
+.chat-bubble-agent {
+    background-color: #ffffff;
+    border: 1px solid var(--border-stitch);
+    padding: 0.75rem 0.95rem;
+    border-radius: 12px 12px 12px 2px;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: var(--on-surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.chat-bubble-user {
+    align-self: flex-end;
+    background-color: var(--on-surface);
+    color: #ffffff;
+    padding: 0.65rem 0.95rem;
+    border-radius: 12px 12px 2px 12px;
+    font-size: 0.84rem;
+    max-width: 85%;
+    line-height: 1.4;
+}
+
+.chat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 9999px;
+    background-color: #ffffff;
+    border: 1px solid var(--border-stitch);
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--on-surface);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.chat-chip:hover {
+    border-color: var(--on-surface);
+    background-color: var(--surface-container-low);
+}
