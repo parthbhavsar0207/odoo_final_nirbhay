@@ -2,7 +2,6 @@
 
 import logging
 
-from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError
 from django.http import Http404, HttpResponse
@@ -47,21 +46,18 @@ def _counter_response(request, *, form=None, sale=None, error_message=None, stat
     return render(request, "commerce/index.html", context, status=status)
 
 
-@staff_member_required(login_url="admin:login")
 @require_safe
 @ensure_csrf_cookie
 def guest_counter(request):
     return _counter_response(request)
 
 
-@staff_member_required(login_url="admin:login")
 @require_safe
 @ensure_csrf_cookie
 def member_counter(request):
     return _counter_response(request, member_mode=True)
 
 
-@staff_member_required(login_url="admin:login")
 @require_POST
 @csrf_protect
 def member_sale_create(request):
@@ -86,7 +82,6 @@ def member_sale_create(request):
     return redirect("commerce:sale_detail", pk=sale.pk)
 
 
-@staff_member_required(login_url="admin:login")
 @require_POST
 @csrf_protect
 def sale_create(request):
@@ -110,7 +105,6 @@ def sale_create(request):
     return redirect("commerce:sale_detail", pk=sale.pk)
 
 
-@staff_member_required(login_url="admin:login")
 @require_safe
 @ensure_csrf_cookie
 def sale_detail(request, pk):
@@ -137,14 +131,12 @@ def _sale_action(request, pk, operation):
     return redirect("commerce:sale_detail", pk=sale.pk)
 
 
-@staff_member_required(login_url="admin:login")
 @require_POST
 @csrf_protect
 def sale_complete(request, pk):
     return _sale_action(request, pk, complete_sale)
 
 
-@staff_member_required(login_url="admin:login")
 @require_POST
 @csrf_protect
 def sale_cancel(request, pk):

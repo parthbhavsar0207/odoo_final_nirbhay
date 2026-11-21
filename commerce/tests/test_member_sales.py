@@ -282,9 +282,6 @@ class MemberCounterTests(TestCase):
             price=Decimal("12.50"), stock_quantity=10,
         )
 
-    def setUp(self):
-        self.client.force_login(self.staff)
-
     def data(self, **changes):
         values = {"member": str(self.member.pk), "product": str(self.product.pk),
                   "quantity": "2", "payment_method": "cash"}
@@ -299,18 +296,30 @@ class MemberCounterTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["member"], self.member)
 
-    def test_member_routes_require_staff(self):
-        for user in [None, self.nonstaff]:
-            client = Client()
-            if user is not None:
-                client.force_login(user)
-            for method, route in [("get", "commerce:member_counter"),
-                                  ("post", "commerce:member_sale_create")]:
-                with self.subTest(user=user, route=route):
-                    response = getattr(client, method)(reverse(route), self.data())
-                    self.assertEqual(response.status_code, 302)
-                    self.assertTrue(response.url.startswith(reverse("admin:login") + "?next="))
-        self.assertEqual(Sale.objects.count(), 0)
+    def test_member_routes_work_without_staff_authentication(self):
+        for user in [None, self.nonstaff, self.staff]:
+            with self.subTest(user=user):
+                client = Client()
+                if user is not None:
+                    client.force_login(user)
+                self.assertEqual(client.get(reverse("commerce:member_counter")).status_code, 200)
+                response = client.post(reverse("commerce:member_sale_create"), self.data())
+                sale = Sale.objects.latest("pk")
+                self.assertEqual(sale.member_id, self.member.pk)
+                detail_url = reverse("commerce:sale_detail", args=[sale.pk])
+                self.assertRedirects(response, detail_url, fetch_redirect_response=False)
+                self.assertEqual(client.get(detail_url).status_code, 200)
+                response = client.post(reverse("commerce:sale_complete", args=[sale.pk]))
+                self.assertRedirects(response, detail_url, fetch_redirect_response=False)
+                sale.refresh_from_db()
+                self.product.refresh_from_db()
+                self.assertEqual(sale.total, Decimal("22.50"))
+                self.assertEqual(self.product.stock_quantity, 8)
+                response = client.post(reverse("commerce:sale_cancel", args=[sale.pk]))
+                self.assertRedirects(response, detail_url, fetch_redirect_response=False)
+                self.product.refresh_from_db()
+                self.assertEqual(self.product.stock_quantity, 10)
+        self.assertEqual(Sale.objects.count(), 3)
 
     def test_member_screen_renders_real_form_and_named_post_with_csrf(self):
         response = self.client.get(reverse("commerce:member_counter"))
@@ -361,7 +370,6 @@ class MemberCounterTests(TestCase):
 
     def test_member_creation_requires_csrf_and_valid_token_allows_submission(self):
         client = Client(enforce_csrf_checks=True)
-        client.force_login(self.staff)
         response = client.post(reverse("commerce:member_sale_create"), self.data())
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Sale.objects.count(), 0)
