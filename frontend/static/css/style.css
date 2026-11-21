@@ -1479,22 +1479,29 @@ select.form-select:disabled,
 .help-bot-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.65rem 1.15rem;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    padding: 0;
     background-color: var(--on-surface);
     color: #ffffff;
-    border: none;
-    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
     cursor: pointer;
-    font-size: 0.88rem;
-    font-weight: 600;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform var(--motion-fast) var(--motion-ease),
+                box-shadow var(--motion-fast) var(--motion-ease),
+                background-color var(--motion-fast) ease;
 }
 
 .help-bot-toggle:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+    transform: translateY(-2px) scale(1.05);
+    background-color: #000000;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
+}
+
+.help-bot-toggle:active {
+    transform: translateY(0) scale(0.95);
 }
 
 .help-bot-window {

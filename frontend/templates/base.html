@@ -233,10 +233,9 @@
 
     <!-- Customer-Facing Help Chatbot Assistant (Requirement 5) -->
     <div class="help-bot-container" x-data="helpBot()" @click.outside="isOpen = false">
-        <!-- Floating Toggle Pill -->
-        <button type="button" class="help-bot-toggle" @click="toggle()" aria-label="Open concierge help assistant">
-            <span class="material-symbols-outlined" style="font-size: 20px;" x-text="isOpen ? 'close' : 'support_agent'">support_agent</span>
-            <span x-text="isOpen ? 'Close' : 'Concierge &amp; FAQs'">Concierge &amp; FAQs</span>
+        <!-- Floating Small Icon Button (Logo Only, No Name) -->
+        <button type="button" class="help-bot-toggle" @click="toggle()" aria-label="Champions Club Concierge Help" title="Concierge Help">
+            <span class="material-symbols-outlined" style="font-size: 22px;" x-text="isOpen ? 'close' : 'support_agent'">support_agent</span>
         </button>
 
         <!-- Chatbot Window -->
