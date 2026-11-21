@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Pro Shop &amp; Bar POS · Champions Club{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Section Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
+                Commerce Operations / Point-of-Sale &middot; Module owned by Utkarsh
+            </div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.02em;">
+                Pro Shop &amp; Clubhouse Bar POS
+            </h1>
+            <p style="color: var(--secondary-stitch); font-size: 0.88rem; margin-top: 0.2rem;">
+                Member merchandising, racquets, apparel, court essentials, and refreshment inventory
+            </p>
+        </div>
+
+        <div>
+            <button class="btn-accent" disabled style="opacity: 0.6; cursor: not-allowed;" title="Utkarsh is finalizing the Sale model">
+                <span class="material-symbols-outlined" style="font-size: 18px;">point_of_sale</span>
+                <span>+ New POS Sale (In Progress)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Backend Contract Status & Architecture Banner -->
+    <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-left: 4px solid var(--primary); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+            <span class="material-symbols-outlined" style="color: var(--primary); font-size: 20px;">info</span>
+            <strong style="font-size: 0.95rem; color: var(--on-surface);">Backend Integration Contract Status: Utkarsh (Commerce) &rarr; Pratik (UI)</strong>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--secondary-stitch); line-height: 1.5;">
+            The <code>commerce</code> app scaffold is active in <code>INSTALLED_APPS</code>. Utkarsh owns the <code>Product</code>, <code>Sale</code>, and <code>SaleItem</code> models. Per the root <strong>INTEGRATION_CONTRACT.md</strong>, completed sales will reference Nayan’s unified <code>club.Member</code> model to apply plan discounts (Gold: 20% shop / 15% bar; Silver: 10% shop / 5% bar; Junior: 15% shop / 0% bar). Stock will decrement atomically inside a single database transaction.
+        </p>
+    </div>
+
+    <!-- Category Filter Tabs & Search -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="chip-group">
+            <span class="chip-pill active">All Products</span>
+            <span class="chip-pill">Racquets &amp; Strings</span>
+            <span class="chip-pill">Apparel &amp; Polos</span>
+            <span class="chip-pill">Footwear</span>
+            <span class="chip-pill">Balls &amp; Accessories</span>
+            <span class="chip-pill">Clubhouse Bar &amp; Cafe</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="position: relative;">
+                <input type="text" placeholder="Search SKU, item, brand..." class="form-input" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; width: 220px; border-radius: 8px;">
+            </div>
+            <span class="chip-pill" style="cursor: pointer;">In Stock Only</span>
+        </div>
+    </div>
+
+    <!-- Live or Scaffold Catalog Display -->
+    {% if products %}
+        <div class="catalog-grid">
+            {% for product in products %}
+                <div class="catalog-card">
+                    <div class="catalog-image-box">
+                        <span class="material-symbols-outlined" style="font-size: 48px;">inventory_2</span>
+                    </div>
+                    <div class="catalog-body">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <span class="catalog-title">{{ product.name }}</span>
+                            <span class="pill-status pill-status-active">{{ product.category|capfirst }}</span>
+                        </div>
+                        <div class="catalog-sku">SKU: {{ product.sku|default:"PRD-LIVE" }}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                            <div class="catalog-price">₹{{ product.price }}</div>
+                            <span style="font-size: 0.8rem; color: var(--secondary-stitch);">
+                                {{ product.stock_quantity }} in stock
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Empty State with Design System Component Layout -->
+        <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 2rem 1.5rem; text-align: center; margin-bottom: 2rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🛍️</div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--on-surface); margin-bottom: 0.25rem;">
+                No Live Products in Database Yet
+            </h3>
+            <p style="font-size: 0.88rem; color: var(--secondary-stitch); max-width: 540px; margin: 0 auto 1.5rem auto;">
+                The database table for products is awaiting Utkarsh's model migration. Below is the responsive Stitch Pro Shop catalog component wireframe ready to render real products immediately upon model migration.
+            </p>
+        </div>
+
+        <!-- Wireframe Preview Grid (Design System Showcase) -->
+        <div style="margin-bottom: 1rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch);">
+            Design System Catalog Preview Wireframe (Ready for Commerce Models)
+        </div>
+
+        <div class="catalog-grid">
+            <!-- Item 1: Racquet -->
+            <div class="catalog-card">
+                <div class="catalog-image-box">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--secondary-stitch);">sports_tennis</span>
+                </div>
+                <div class="catalog-body">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <span class="catalog-title">Wilson Blade 98 v9 (16x19)</span>
+                        <span class="pill-tier tier-gold">Racquet</span>
+                    </div>
+                    <div class="catalog-sku">SKU: WLS-BL98-V9 &middot; 6 left</div>
+                    <div style="font-size: 0.78rem; color: var(--secondary-stitch); margin-bottom: 0.75rem;">
+                        Matte emerald green precision frame. Member discount applies.
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-stitch); padding-top: 0.75rem;">
+                        <div class="catalog-price">₹22,500.00</div>
+                        <button class="btn-secondary-low" disabled style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">Sell</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item 2: Apparel -->
+            <div class="catalog-card">
+                <div class="catalog-image-box">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--secondary-stitch);">apparel</span>
+                </div>
+                <div class="catalog-body">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <span class="catalog-title">Champions Club Heritage Polo</span>
+                        <span class="pill-tier tier-silver">Apparel</span>
+                    </div>
+                    <div class="catalog-sku">SKU: CC-POLO-HER &middot; 18 left</div>
+                    <div style="font-size: 0.78rem; color: var(--secondary-stitch); margin-bottom: 0.75rem;">
+                        Forest green technical pique polo with club crest.
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-stitch); padding-top: 0.75rem;">
+                        <div class="catalog-price">₹3,400.00</div>
+                        <button class="btn-secondary-low" disabled style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">Sell</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item 3: Balls -->
+            <div class="catalog-card">
+                <div class="catalog-image-box">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--secondary-stitch);">sports_baseball</span>
+                </div>
+                <div class="catalog-body">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <span class="catalog-title">US Open Extra Duty Can (4 Balls)</span>
+                        <span class="pill-tier tier-junior">Balls</span>
+                    </div>
+                    <div class="catalog-sku">SKU: CC-BALL-CAN &middot; 48 left</div>
+                    <div style="font-size: 0.78rem; color: var(--secondary-stitch); margin-bottom: 0.75rem;">
+                        Official tournament specification pressurized felt balls.
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-stitch); padding-top: 0.75rem;">
+                        <div class="catalog-price">₹750.00</div>
+                        <button class="btn-secondary-low" disabled style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">Sell</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item 4: Bar -->
+            <div class="catalog-card">
+                <div class="catalog-image-box">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--secondary-stitch);">local_cafe</span>
+                </div>
+                <div class="catalog-body">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <span class="catalog-title">Clubhouse Cold-Pressed Electrolyte</span>
+                        <span class="pill-status" style="background-color: #f1f5f9; color: var(--on-surface);">Bar</span>
+                    </div>
+                    <div class="catalog-sku">SKU: BAR-ELEC-01 &middot; 24 left</div>
+                    <div style="font-size: 0.78rem; color: var(--secondary-stitch); margin-bottom: 0.75rem;">
+                        Fresh coconut water, Himalayan pink salt &amp; lime.
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-stitch); padding-top: 0.75rem;">
+                        <div class="catalog-price">₹180.00</div>
+                        <button class="btn-secondary-low" disabled style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">Sell</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

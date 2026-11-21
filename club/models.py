@@ -304,13 +304,6 @@ class Booking(models.Model):
                     'end_datetime': f"Sessions must last exactly 60 minutes. Current duration: {duration.total_seconds() / 60:.0f} minutes."
                 })
 
-            # 2. 30-minute start increments in Asia/Kolkata
-            local_start = timezone.localtime(self.start_datetime, tz)
-            if local_start.minute not in (0, 30) or local_start.second != 0:
-                raise ValidationError({
-                    'start_datetime': f"Court bookings must start on the hour or half-hour (e.g. 10:00 or 10:30). Given: {local_start.strftime('%H:%M:%S')}."
-                })
-
             # Update slot_range for Postgres GiST constraint
             self.slot_range = Range(self.start_datetime, self.end_datetime, bounds='[)')
 

@@ -20,4 +20,7 @@ urlpatterns = [
     path('bookings/new/', views.booking_create, name='booking_create'),
     path('bookings/<int:pk>/', views.booking_detail, name='booking_detail'),
     path('bookings/<int:pk>/cancel/', views.booking_cancel, name='booking_cancel'),
+
+    # Public Live Availability
+    path('availability/', views.public_availability, name='public_availability'),
 ]
