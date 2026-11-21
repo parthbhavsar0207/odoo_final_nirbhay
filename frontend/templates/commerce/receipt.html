@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt #{{ sale.pk }} &middot; Champions Club</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --surface: #ffffff;
+            --on-surface: #0f172a;
+            --secondary-stitch: #64748b;
+            --border-stitch: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f8fafc;
+            color: var(--on-surface);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+        }
+        .receipt-container {
+            width: 100%;
+            max-width: 440px;
+            background: var(--surface);
+            border: 1px solid var(--border-stitch);
+            border-radius: 12px;
+            padding: 2rem 1.75rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
+        .header-title {
+            text-align: center;
+            border-bottom: 2px dashed var(--border-stitch);
+            padding-bottom: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+        .header-title h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .header-title p {
+            font-size: 0.78rem;
+            color: var(--secondary-stitch);
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .receipt-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            font-size: 0.82rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border-stitch);
+        }
+        .receipt-meta-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .receipt-meta-label { color: var(--secondary-stitch); }
+        .receipt-meta-value { font-weight: 600; }
+        .tabular { font-family: 'Geist Mono', monospace; font-variant-numeric: tabular-nums; }
+        table.receipt-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            margin-bottom: 1.25rem;
+        }
+        table.receipt-table th {
+            text-align: left;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-stitch);
+            color: var(--secondary-stitch);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+        }
+        table.receipt-table td {
+            padding: 0.6rem 0;
+            border-bottom: 1px dashed #f1f5f9;
+        }
+        .receipt-totals {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            font-size: 0.85rem;
+            border-top: 2px dashed var(--border-stitch);
+            padding-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .grand-total {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary);
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-stitch);
+        }
+        .receipt-footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--secondary-stitch);
+            border-top: 1px solid var(--border-stitch);
+            padding-top: 1rem;
+        }
+        .no-print-bar {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            width: 100%;
+            max-width: 440px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.55rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            flex: 1;
+        }
+        .btn-primary { background: #166534; color: #fff; }
+        .btn-secondary { background: #e2e8f0; color: #1e293b; }
+        @media print {
+            body { background: #fff; padding: 0; }
+            .receipt-container { border: none; box-shadow: none; padding: 0; max-width: 100%; }
+            .no-print-bar { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print-bar">
+        <button class="btn btn-primary" onclick="window.print()">
+            <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
+            <span>Print Receipt</span>
+        </button>
+        <a href="{% url 'commerce:guest_counter' %}" class="btn btn-secondary">
+            <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+            <span>Back to Counter</span>
+        </a>
+    </div>
+
+    <div class="receipt-container">
+        <div class="header-title">
+            <h1>CHAMPIONS CLUB</h1>
+            <p>Court &amp; Clubhouse Point of Sale</p>
+        </div>
+
+        <div class="receipt-meta">
+            <div class="receipt-meta-row">
+                <span class="receipt-meta-label">Receipt / Sale ID:</span>
+                <span class="receipt-meta-value tabular">#{{ sale.pk }}</span>
+            </div>
+            <div class="receipt-meta-row">
+                <span class="receipt-meta-label">Date &amp; Time:</span>
+                <span class="receipt-meta-value tabular">{{ sale.created_at|date:"d M Y, H:i" }} IST</span>
+            </div>
+            <div class="receipt-meta-row">
+                <span class="receipt-meta-label">Customer Profile:</span>
+                <span class="receipt-meta-value">
+                    {% if sale.member %}
+                        {{ sale.member.name }}
+                        {% if sale.member.plan %}({{ sale.member.plan.name }}){% endif %}
+                    {% else %}
+                        Walk-in Guest
+                    {% endif %}
+                </span>
+            </div>
+            <div class="receipt-meta-row">
+                <span class="receipt-meta-label">Payment Method:</span>
+                <span class="receipt-meta-value">{{ sale.get_payment_method_display }}</span>
+            </div>
+            <div class="receipt-meta-row">
+                <span class="receipt-meta-label">Status:</span>
+                <span class="receipt-meta-value" style="color: #166534;">{{ sale.get_status_display }}</span>
+            </div>
+        </div>
+
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th style="text-align: right;">Rate</th>
+                    <th style="text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 600;">{{ item.product.name }}</div>
+                        {% if item.discount > 0 %}
+                            <div style="font-size: 0.7rem; color: #166534;">Discount: -₹{{ item.discount }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="tabular" style="text-align: center;">{{ item.quantity }}</td>
+                    <td class="tabular" style="text-align: right;">₹{{ item.unit_price }}</td>
+                    <td class="tabular" style="text-align: right; font-weight: 600;">₹{{ item.line_total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="receipt-totals">
+            <div class="total-row">
+                <span style="color: var(--secondary-stitch);">Subtotal:</span>
+                <span class="tabular">₹{{ sale.subtotal }}</span>
+            </div>
+            {% if sale.discount > 0 %}
+            <div class="total-row" style="color: #166534;">
+                <span>Tier Discount:</span>
+                <span class="tabular">-₹{{ sale.discount }}</span>
+            </div>
+            {% endif %}
+            <div class="total-row grand-total">
+                <span>Total Paid:</span>
+                <span class="tabular">₹{{ sale.total }}</span>
+            </div>
+        </div>
+
+        <div class="receipt-footer">
+            <p>Thank you for visiting Champions Club!</p>
+            <p style="margin-top: 0.25rem;">For queries, contact support@championsclub.in</p>
+        </div>
+    </div>
+</body>
+</html>

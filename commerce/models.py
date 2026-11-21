@@ -51,6 +51,51 @@ class Product(models.Model):
     def is_low_stock(self):
         return self.stock_quantity <= self.low_stock_threshold
 
+    @property
+    def image_filename(self):
+        """Map product name/category to static image filename."""
+        name_lower = self.name.lower()
+        if 'coffee' in name_lower:
+            return 'images/products/cold-coffee.jpg'
+        elif 'fries' in name_lower:
+            return 'images/products/french-fries.jpg'
+        elif 'lime' in name_lower or 'lemon' in name_lower:
+            return 'images/products/fresh-lime-soda.jpg'
+        elif 'sandwich' in name_lower:
+            return 'images/products/grilled-sandwich.jpg'
+        elif 'tea' in name_lower or 'chai' in name_lower:
+            return 'images/products/masala-tea.jpg'
+        elif 'water' in name_lower and 'bottle' not in name_lower:
+            return 'images/products/mineral-water.jpg'
+        elif 'energy' in name_lower or 'drink' in name_lower:
+            return 'images/products/sports-energy-drink.jpg'
+        elif 'burger' in name_lower:
+            return 'images/products/veg-burger.jpg'
+        elif 'badminton' in name_lower and 'racket' in name_lower:
+            return 'images/products/badminton-racket.jpg'
+        elif 'shuttlecock' in name_lower:
+            return 'images/products/badminton-shuttlecocks.jpg'
+        elif 't-shirt' in name_lower or 'shirt' in name_lower:
+            return 'images/products/club-sports-t-shirt.jpg'
+        elif 'shoe' in name_lower or 'shoes' in name_lower:
+            return 'images/products/court-shoes.jpg'
+        elif 'grip' in name_lower:
+            return 'images/products/racket-grip.jpg'
+        elif 'bottle' in name_lower:
+            return 'images/products/sports-water-bottle.jpg'
+        elif 'sweatband' in name_lower:
+            return 'images/products/sweatband-set.jpg'
+        elif 'ball' in name_lower:
+            return 'images/products/tennis-balls.jpg'
+        elif 'tennis' in name_lower and 'racket' in name_lower:
+            return 'images/products/tennis-racket.jpg'
+        elif 'short' in name_lower or 'shorts' in name_lower:
+            return 'images/products/training-shorts.jpg'
+        elif self.category == 'bar':
+            return 'images/products/cold-coffee.jpg'
+        else:
+            return 'images/products/tennis-racket.jpg'
+
     def __str__(self):
         return self.name
 

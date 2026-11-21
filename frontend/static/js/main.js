@@ -1,33 +1,110 @@
 /**
- * Champions Club - Client Interactions & Custom Accessible Select System
- * Minimal Alpine/HTMX helper script & custom dropdown/combobox controller
+ * Champions Club - Client Interactions, Accessible Selects, and In-Web Popups
  */
+
+function getCsrfToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === ('csrftoken=')) {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+window.getCsrfToken = getCsrfToken;
+
+/**
+ * Displays an in-web floating popup toast.
+ * @param {string} title - Main headline
+ * @param {string} message - Descriptive detail
+ * @param {'success'|'error'|'warning'|'info'} [type='success']
+ * @param {number} [duration=5000] - Duration in ms before auto-dismiss
+ */
+function showClubToast(title, message, type = 'success', duration = 5000) {
+    let container = document.getElementById('club-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'club-toast-container';
+        document.body.appendChild(container);
+    }
+
+    const icons = {
+        success: 'check_circle',
+        error: 'error',
+        warning: 'warning',
+        info: 'info'
+    };
+    const iconName = icons[type] || 'info';
+
+    const toast = document.createElement('div');
+    toast.className = `club-toast club-toast-${type}`;
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'material-symbols-outlined club-toast-icon';
+    iconSpan.textContent = iconName;
+    toast.appendChild(iconSpan);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'club-toast-content';
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'club-toast-title';
+    titleDiv.textContent = title;
+    contentDiv.appendChild(titleDiv);
+
+    if (message) {
+        const bodyDiv = document.createElement('div');
+        bodyDiv.className = 'club-toast-body';
+        bodyDiv.textContent = message;
+        contentDiv.appendChild(bodyDiv);
+    }
+    toast.appendChild(contentDiv);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'club-toast-close';
+    closeBtn.title = 'Dismiss';
+    const closeIcon = document.createElement('span');
+    closeIcon.className = 'material-symbols-outlined';
+    closeIcon.style.fontSize = '16px';
+    closeIcon.textContent = 'close';
+    closeBtn.appendChild(closeIcon);
+    toast.appendChild(closeBtn);
+
+    const dismiss = () => {
+        if (toast.classList.contains('club-toast-closing')) return;
+        toast.classList.add('club-toast-closing');
+        setTimeout(() => {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 220);
+    };
+
+    closeBtn.addEventListener('click', dismiss);
+
+    container.appendChild(toast);
+
+    if (duration > 0) {
+        setTimeout(dismiss, duration);
+    }
+    return toast;
+}
+window.showClubToast = showClubToast;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Setup csrf token for HTMX requests
     document.body.addEventListener('htmx:configRequest', (event) => {
-        const getCookie = (name) => {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        };
-        
-        const csrfToken = getCookie('csrftoken');
+        const csrfToken = getCsrfToken();
         if (csrfToken) {
             event.detail.headers['X-CSRFToken'] = csrfToken;
         }
     });
 
-    console.log('Champions Club scaffold initialized. Ready for module integrations.');
+    console.log('Champions Club scaffold initialized with in-web real-time popups.');
 });
 
 /* ==========================================================================
@@ -852,3 +929,15 @@ if (document.readyState === 'loading') {
     initQuickSlotHelper();
 }
 document.addEventListener('htmx:load', initQuickSlotHelper);
+/**
+ * Updates page_size query parameter and resets page to 1.
+ * Preserves all active filters and search queries.
+ * @param {string|number} size
+ */
+function changePageSize(size) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page_size', size);
+    url.searchParams.set('page', '1');
+    window.location.href = url.toString();
+}
+window.changePageSize = changePageSize;

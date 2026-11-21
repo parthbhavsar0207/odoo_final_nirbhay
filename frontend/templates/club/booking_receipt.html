@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Voucher #{{ booking.id }} &middot; Champions Club</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #15803d;
+            --primary-dark: #166534;
+            --surface: #ffffff;
+            --on-surface: #0f172a;
+            --secondary-stitch: #64748b;
+            --border-stitch: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f8fafc;
+            color: var(--on-surface);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2.5rem 1rem;
+            min-height: 100vh;
+        }
+        .voucher-container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--surface);
+            border: 1px solid var(--border-stitch);
+            border-radius: 14px;
+            padding: 2.25rem 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .header-title {
+            text-align: center;
+            border-bottom: 2px dashed var(--border-stitch);
+            padding-bottom: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+        .header-title h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+        }
+        .header-title p {
+            font-size: 0.78rem;
+            color: var(--secondary-stitch);
+            margin-top: 0.25rem;
+        }
+        .voucher-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            background-color: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            margin-top: 0.6rem;
+        }
+        .voucher-meta {
+            font-size: 0.82rem;
+            border-bottom: 1px solid var(--border-stitch);
+            padding-bottom: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        .voucher-meta-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.45rem;
+        }
+        .voucher-meta-label {
+            color: var(--secondary-stitch);
+        }
+        .voucher-meta-value {
+            font-weight: 600;
+            text-align: right;
+        }
+        .section-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--secondary-stitch);
+            margin-bottom: 0.5rem;
+        }
+        .highlight-box {
+            background-color: #f8fafc;
+            border: 1px solid var(--border-stitch);
+            border-radius: 10px;
+            padding: 1rem 1.15rem;
+            margin-bottom: 1.25rem;
+        }
+        .highlight-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.35rem;
+            font-size: 0.82rem;
+        }
+        .highlight-row:last-child {
+            margin-bottom: 0;
+        }
+        .court-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--on-surface);
+        }
+        .court-time {
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+        .payment-breakdown {
+            border-top: 1px solid var(--border-stitch);
+            padding-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .pay-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            margin-bottom: 0.4rem;
+        }
+        .grand-total-row {
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-top: 1px dashed var(--border-stitch);
+            padding-top: 0.65rem;
+            margin-top: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            color: var(--on-surface);
+        }
+        .voucher-qr-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1.25rem;
+            background: #ffffff;
+            border: 1px dashed var(--border-stitch);
+            border-radius: 10px;
+            margin-bottom: 1.25rem;
+            text-align: center;
+        }
+        .voucher-footer {
+            text-align: center;
+            font-size: 0.72rem;
+            color: var(--secondary-stitch);
+            border-top: 1px solid var(--border-stitch);
+            padding-top: 1rem;
+        }
+        .actions-bar {
+            display: flex;
+            gap: 0.65rem;
+            width: 100%;
+            max-width: 480px;
+            margin-top: 1.25rem;
+        }
+        .action-btn {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.65rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-print {
+            background-color: var(--on-surface);
+            color: #ffffff;
+            border: 1px solid var(--on-surface);
+        }
+        .btn-print:hover {
+            opacity: 0.9;
+        }
+        .btn-return {
+            background-color: #ffffff;
+            color: var(--on-surface);
+            border: 1px solid var(--border-stitch);
+        }
+        .btn-return:hover {
+            background-color: #f1f5f9;
+        }
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .voucher-container {
+                border: none;
+                box-shadow: none;
+                max-width: 100%;
+                padding: 1rem;
+            }
+            .actions-bar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="voucher-container">
+        <!-- Header -->
+        <div class="header-title">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.4rem; margin-bottom: 0.25rem;">
+                <span class="material-symbols-outlined" style="font-size: 24px; color: var(--primary);">sports_tennis</span>
+                <h1>Champions Club</h1>
+            </div>
+            <p>Court Reservation Voucher &middot; Front Desk &middot; Gate Verification</p>
+            <div class="voucher-badge">
+                <span class="material-symbols-outlined" style="font-size: 14px;">verified</span>
+                <span>{{ booking.get_status_display }} &middot; Confirmed</span>
+            </div>
+        </div>
+
+        <!-- Meta -->
+        <div class="voucher-meta">
+            <div class="voucher-meta-row">
+                <span class="voucher-meta-label">Voucher Reference:</span>
+                <span class="voucher-meta-value" style="font-family: 'Geist Mono', monospace;">CC-BKG-{{ booking.id|stringformat:"05d" }}</span>
+            </div>
+            <div class="voucher-meta-row">
+                <span class="voucher-meta-label">Booking Date:</span>
+                <span class="voucher-meta-value">{{ local_start|date:"l, d M Y" }}</span>
+            </div>
+            <div class="voucher-meta-row">
+                <span class="voucher-meta-label">Issued At:</span>
+                <span class="voucher-meta-value">{{ booking.created_at|date:"d M Y, h:i A" }}</span>
+            </div>
+        </div>
+
+        <!-- Facility & Court Allocation -->
+        <div class="section-label">Facility &amp; Time Slot</div>
+        <div class="highlight-box">
+            <div class="highlight-row">
+                <div class="court-title">{{ booking.court.name }}</div>
+                <span style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; background: #e2e8f0; color: #334155;">
+                    {{ booking.court.get_sport_display }}
+                </span>
+            </div>
+            <div class="highlight-row" style="margin-top: 0.5rem;">
+                <span style="color: var(--secondary-stitch);">Reserved Time:</span>
+                <span class="court-time">{{ local_start|date:"h:i A" }} &rarr; {{ local_end|date:"h:i A" }}</span>
+            </div>
+            <div class="highlight-row">
+                <span style="color: var(--secondary-stitch);">Session Duration:</span>
+                <span style="font-weight: 600;">60 Minutes</span>
+            </div>
+        </div>
+
+        <!-- Player Details -->
+        <div class="section-label">Player Information</div>
+        <div class="highlight-box">
+            <div class="highlight-row">
+                <span style="color: var(--secondary-stitch);">Player / Member:</span>
+                <strong style="font-size: 0.9rem; color: var(--on-surface);">{{ player_name }}</strong>
+            </div>
+            <div class="highlight-row">
+                <span style="color: var(--secondary-stitch);">Membership Tier:</span>
+                <span style="font-weight: 600; color: var(--primary-dark);">{{ tier_name }}</span>
+            </div>
+            <div class="highlight-row">
+                <span style="color: var(--secondary-stitch);">Contact / Phone:</span>
+                <span style="font-family: 'Geist Mono', monospace; font-size: 0.8rem;">{{ player_contact }}</span>
+            </div>
+            <div class="highlight-row">
+                <span style="color: var(--secondary-stitch);">Play Type:</span>
+                <span style="font-weight: 600;">{{ booking.get_booking_type_display }}</span>
+            </div>
+        </div>
+
+        <!-- Payment Breakdown -->
+        <div class="section-label">Payment &amp; Settlement</div>
+        <div class="payment-breakdown">
+            <div class="pay-row">
+                <span style="color: var(--secondary-stitch);">Court Standard Rate:</span>
+                <span style="font-family: 'Geist Mono', monospace;">₹{{ standard_price|floatformat:2 }}</span>
+            </div>
+            {% if discount > 0 %}
+            <div class="pay-row" style="color: #166534;">
+                <span>Plan Entitlement Benefit:</span>
+                <span style="font-family: 'Geist Mono', monospace;">-₹{{ discount|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+            <div class="pay-row">
+                <span style="color: var(--secondary-stitch);">Payment Method:</span>
+                <span style="font-weight: 600;">{{ booking.get_payment_method_display }}</span>
+            </div>
+            <div class="pay-row">
+                <span style="color: var(--secondary-stitch);">Payment Status:</span>
+                <span style="font-weight: 700; color: {% if booking.payment_status == 'paid' or booking.payment_status == 'waived' %}#166534{% else %}#854d0e{% endif %};">
+                    {{ booking.get_payment_status_display }}
+                </span>
+            </div>
+            <div class="grand-total-row">
+                <span>Total Settled:</span>
+                <span style="font-family: 'Geist Mono', monospace; color: var(--primary-dark);">₹{{ booking.price|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <!-- Verification QR Code -->
+        <div class="voucher-qr-area">
+            <!-- Pure Scalable SVG QR Code Pattern -->
+            <svg width="110" height="110" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="33" height="33" fill="white"/>
+                <!-- Corner 1 (Top Left) -->
+                <rect x="2" y="2" width="7" height="7" fill="#0f172a"/>
+                <rect x="3" y="3" width="5" height="5" fill="white"/>
+                <rect x="4" y="4" width="3" height="3" fill="#0f172a"/>
+                <!-- Corner 2 (Top Right) -->
+                <rect x="24" y="2" width="7" height="7" fill="#0f172a"/>
+                <rect x="25" y="3" width="5" height="5" fill="white"/>
+                <rect x="26" y="4" width="3" height="3" fill="#0f172a"/>
+                <!-- Corner 3 (Bottom Left) -->
+                <rect x="2" y="24" width="7" height="7" fill="#0f172a"/>
+                <rect x="3" y="25" width="5" height="5" fill="white"/>
+                <rect x="4" y="26" width="3" height="3" fill="#0f172a"/>
+                <!-- Timing & Data Modules -->
+                <rect x="11" y="4" width="2" height="2" fill="#0f172a"/>
+                <rect x="15" y="4" width="2" height="2" fill="#0f172a"/>
+                <rect x="19" y="4" width="2" height="2" fill="#0f172a"/>
+                <rect x="11" y="8" width="2" height="2" fill="#0f172a"/>
+                <rect x="17" y="8" width="2" height="2" fill="#0f172a"/>
+                <rect x="20" y="8" width="2" height="2" fill="#0f172a"/>
+                <rect x="4" y="11" width="2" height="2" fill="#0f172a"/>
+                <rect x="8" y="11" width="2" height="2" fill="#0f172a"/>
+                <rect x="13" y="11" width="2" height="2" fill="#0f172a"/>
+                <rect x="16" y="11" width="2" height="2" fill="#0f172a"/>
+                <rect x="20" y="11" width="2" height="2" fill="#0f172a"/>
+                <rect x="25" y="11" width="2" height="2" fill="#0f172a"/>
+                <rect x="4" y="15" width="2" height="2" fill="#0f172a"/>
+                <rect x="10" y="15" width="2" height="2" fill="#0f172a"/>
+                <rect x="14" y="15" width="5" height="3" fill="#0f172a"/>
+                <rect x="21" y="15" width="2" height="2" fill="#0f172a"/>
+                <rect x="27" y="15" width="2" height="2" fill="#0f172a"/>
+                <rect x="4" y="19" width="2" height="2" fill="#0f172a"/>
+                <rect x="9" y="19" width="2" height="2" fill="#0f172a"/>
+                <rect x="13" y="19" width="3" height="2" fill="#0f172a"/>
+                <rect x="18" y="19" width="3" height="2" fill="#0f172a"/>
+                <rect x="24" y="19" width="2" height="2" fill="#0f172a"/>
+                <rect x="11" y="24" width="2" height="2" fill="#0f172a"/>
+                <rect x="15" y="24" width="3" height="2" fill="#0f172a"/>
+                <rect x="20" y="24" width="2" height="2" fill="#0f172a"/>
+                <rect x="25" y="24" width="3" height="2" fill="#0f172a"/>
+                <rect x="13" y="27" width="2" height="2" fill="#0f172a"/>
+                <rect x="17" y="27" width="2" height="2" fill="#0f172a"/>
+                <rect x="22" y="27" width="2" height="2" fill="#0f172a"/>
+                <rect x="26" y="27" width="2" height="2" fill="#0f172a"/>
+            </svg>
+            <div style="font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--secondary-stitch);">
+                GATE-PASS-AUTH-{{ booking.id }}-{{ booking.court.id }}
+            </div>
+            <div style="font-size: 0.65rem; color: #94a3b8;">Present QR to Court Marshal / Receptionist at Check-in</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="voucher-footer">
+            <p><strong>Champions Club Sports &amp; Wellness Facility</strong></p>
+            <p style="margin-top: 0.2rem;">Please arrive 10 minutes prior to your reserved slot time.</p>
+            <p style="margin-top: 0.2rem;">Cancellations must be made at least 2 hours in advance.</p>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-bar">
+        <button type="button" onclick="window.print()" class="action-btn btn-print">
+            <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
+            <span>Print Voucher</span>
+        </button>
+        <a href="{% url 'club:public_availability' %}" class="action-btn btn-return">
+            <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span>
+            <span>Availability Matrix</span>
+        </a>
+    </div>
+</body>
+</html>

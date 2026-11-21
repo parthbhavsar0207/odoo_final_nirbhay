@@ -66,12 +66,12 @@
                 <div class="tabular-nums" style="font-size: 1.45rem; font-weight: 800; color: var(--on-surface); margin-top: 0.25rem;">
                     ₹{{ booking.price }}
                 </div>
-                <div style="font-size: 0.75rem; color: var(--secondary-stitch);">Immutable historical rate</div>
+                <div style="font-size: 0.75rem; color: var(--secondary-stitch);">{{ booking.get_payment_method_display }} &middot; {{ booking.get_payment_status_display }}</div>
             </div>
         </div>
 
         <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-stitch); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 0.4rem;">
                     <span style="font-size: 0.8rem; color: var(--secondary-stitch);">Status:</span>
                     {% if booking.status == 'confirmed' %}
@@ -89,17 +89,30 @@
                         {{ booking.get_booking_type_display }}
                     </span>
                 </div>
+
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="font-size: 0.8rem; color: var(--secondary-stitch);">Payment:</span>
+                    <span class="pill-status" style="background-color: {% if booking.price == 0 %}#eff6ff{% else %}#f0fdf4{% endif %}; color: {% if booking.price == 0 %}#1d4ed8{% else %}#15803d{% endif %}; border: 1px solid {% if booking.price == 0 %}#bfdbfe{% else %}#bbf7d0{% endif %};">
+                        {{ booking.get_payment_method_display }} &middot; {{ booking.get_payment_status_display }}
+                    </span>
+                </div>
             </div>
 
-            {% if booking.status != 'cancelled' %}
-                <form method="post" action="{% url 'club:booking_cancel' booking.id %}" onsubmit="return confirm('Cancel this court reservation? This immediately frees the slot on the court grid.');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-secondary-low" style="color: var(--danger); border-color: #fecaca; background-color: #fff5f5;">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span>
-                        <span>Cancel Booking &amp; Free Slot</span>
-                    </button>
-                </form>
-            {% endif %}
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <a href="{% url 'club:booking_receipt' booking.id %}" target="_blank" class="btn-secondary-low" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">receipt_long</span>
+                    <span>View / Print Voucher</span>
+                </a>
+                {% if booking.status != 'cancelled' %}
+                    <form method="post" action="{% url 'club:booking_cancel' booking.id %}" onsubmit="return confirm('Cancel this court reservation? This immediately frees the slot on the court grid.');" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-secondary-low" style="color: var(--danger); border-color: #fecaca; background-color: #fff5f5;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span>
+                            <span>Cancel Booking &amp; Free Slot</span>
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
         </div>
     </div>
 

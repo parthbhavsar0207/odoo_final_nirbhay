@@ -183,6 +183,17 @@ class Court(models.Model):
         verbose_name = 'Court'
         verbose_name_plural = 'Courts'
 
+    @property
+    def image_filename(self):
+        """Map court sport to static image filename."""
+        sport_map = {
+            'tennis': 'images/courts/tennis.jpg',
+            'badminton': 'images/courts/badminton.jpg',
+            'squash': 'images/courts/squash.jpg',
+            'cricket': 'images/courts/cricket.jpg',
+        }
+        return sport_map.get(self.sport, 'images/courts/tennis.jpg')
+
     def __str__(self):
         return f"{self.name} ({self.get_sport_display()})"
 
@@ -217,6 +228,17 @@ class Booking(models.Model):
         ('social', 'Social Play'),
     ]
 
+    class PaymentMethod(models.TextChoices):
+        UPI = 'upi', 'UPI / QR Code'
+        CARD = 'card', 'Credit / Debit Card'
+        CASH = 'cash', 'Cash (Front Desk)'
+        MEMBER_TAB = 'member_tab', 'Member Account / Plan Tab'
+
+    class PaymentStatus(models.TextChoices):
+        PAID = 'paid', 'Paid'
+        PENDING = 'pending', 'Pending / Pay at Venue'
+        WAIVED = 'waived', 'Waived (Plan Included)'
+
     court = models.ForeignKey(Court, on_delete=models.PROTECT, related_name='bookings')
     booked_by_member = models.ForeignKey(
         Member,
@@ -240,6 +262,18 @@ class Booking(models.Model):
         help_text="Snapshotted booking fee at confirmation"
     )
     currency = models.CharField(max_length=10, default='INR')
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.UPI,
+        help_text="Payment method selected at booking"
+    )
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.PAID,
+        help_text="Settlement status of court booking fee"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -351,6 +385,14 @@ class Booking(models.Model):
         if self.start_datetime and not self.end_datetime:
             self.end_datetime = self.start_datetime + timedelta(minutes=60)
 
+        if self.start_datetime:
+            # 2. Slot minute alignment: bookings must start on the hour or half-hour
+            local_start = timezone.localtime(self.start_datetime, tz)
+            if local_start.minute not in (0, 30) or local_start.second != 0:
+                raise ValidationError({
+                    'start_datetime': "Bookings must start on the hour (e.g. 10:00) or half-hour (e.g. 10:30)."
+                })
+
         if self.start_datetime and self.end_datetime:
             # 1. 60-minute session duration
             duration = self.end_datetime - self.start_datetime
@@ -416,6 +458,12 @@ class Booking(models.Model):
             # A zero-price confirmed booking is still a saved historical snapshot.
             if self.status == 'confirmed' and not (persisted and persisted.status == 'confirmed'):
                 self.snapshot_price()
+
+            # Auto-set payment_status if waived under a free court plan
+            if self.price == Decimal('0.00') and self.booked_by_member:
+                self.payment_status = self.PaymentStatus.WAIVED
+                if self.payment_method == self.PaymentMethod.CASH:
+                    self.payment_method = self.PaymentMethod.MEMBER_TAB
 
             self.full_clean()
             super().save(*args, **kwargs)

@@ -20,13 +20,9 @@
 
         <!-- Quick Action / Operational Indicators -->
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <a href="{% url 'club:public_availability' %}" class="btn-secondary-low">
-                <span class="material-symbols-outlined" style="font-size: 18px;">grid_view</span>
-                <span>Live Court Matrix</span>
-            </a>
-            <a href="{% url 'club:booking_create' %}" class="btn-accent">
-                <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
-                <span>New Reservation</span>
+            <a href="{% url 'club:public_availability' %}" class="btn-accent">
+                <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span>
+                <span>Reserve Court</span>
             </a>
         </div>
     </div>
@@ -192,7 +188,7 @@
                                 <div style="font-size: 2rem; margin-bottom: 0.5rem;">📅</div>
                                 <div style="font-weight: 600; margin-bottom: 0.25rem;">No Bookings Recorded Yet</div>
                                 <p style="font-size: 0.85rem; margin-bottom: 1rem;">Reserve a court to see live activity appear on this ledger.</p>
-                                <a href="{% url 'club:booking_create' %}" class="btn-accent">+ Reserve First Court</a>
+                                <a href="{% url 'club:public_availability' %}" class="btn-accent">+ Reserve First Court</a>
                             </td>
                         </tr>
                     {% endif %}
@@ -270,6 +266,7 @@
                     {% endfor %}
                 </div>
             </div>
+
         </div>
     </div>
 </div>

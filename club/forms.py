@@ -63,6 +63,8 @@ class BookingForm(forms.ModelForm):
             'walkin_contact',
             'start_datetime',
             'booking_type',
+            'payment_method',
+            'payment_status',
         ]
         widgets = {
             'court': forms.Select(attrs={'class': 'form-select'}),
@@ -78,6 +80,8 @@ class BookingForm(forms.ModelForm):
                 format='%Y-%m-%dT%H:%M'
             ),
             'booking_type': forms.Select(attrs={'class': 'form-select'}),
+            'payment_method': forms.Select(attrs={'class': 'form-select'}),
+            'payment_status': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -87,6 +91,10 @@ class BookingForm(forms.ModelForm):
         # inactive members automatically receive the walk-in rate.
         self.fields['booked_by_member'].queryset = Member.objects.all()
         self.fields['booked_by_member'].required = False
+        self.fields['payment_method'].required = False
+        self.fields['payment_status'].required = False
+        self.fields['payment_method'].initial = Booking.PaymentMethod.UPI
+        self.fields['payment_status'].initial = Booking.PaymentStatus.PAID
 
     def clean(self):
         cleaned_data = super().clean()
@@ -95,6 +103,11 @@ class BookingForm(forms.ModelForm):
 
         if not booked_by and not walkin_name:
             raise forms.ValidationError("Please select a registered member or enter a walk-in guest name.")
+
+        if not cleaned_data.get('payment_method'):
+            cleaned_data['payment_method'] = Booking.PaymentMethod.UPI
+        if not cleaned_data.get('payment_status'):
+            cleaned_data['payment_status'] = Booking.PaymentStatus.PAID
 
         return cleaned_data
 

@@ -30,7 +30,10 @@ urlpatterns = [
     # Bookings
     path('bookings/', views.booking_list, name='booking_list'),
     path('bookings/new/', views.booking_create, name='booking_create'),
+    path('bookings/export/', views.booking_export_csv, name='booking_export_csv'),
+    path('bookings/export/csv/', views.booking_export_csv, name='booking_export_csv_alias'),
     path('bookings/<int:pk>/', views.booking_detail, name='booking_detail'),
+    path('bookings/<int:pk>/receipt/', views.booking_receipt, name='booking_receipt'),
     path('bookings/<int:pk>/cancel/', views.booking_cancel, name='booking_cancel'),
 
     # Public Live Availability
@@ -39,4 +42,7 @@ urlpatterns = [
     # Interactive APIs (Search Suggestions & Help Bot)
     path('api/suggestions/', views.search_suggestions_api, name='search_suggestions'),
     path('api/faq/', views.help_bot_faq_api, name='help_bot_faq'),
+
+    # Real-time Pricing and Availability API
+    path('api/calculate-price/', views.api_calculate_price, name='api_calculate_price'),
 ]

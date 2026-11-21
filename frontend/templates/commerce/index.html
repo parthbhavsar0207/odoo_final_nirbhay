@@ -84,6 +84,12 @@
                 <button class="btn-accent" type="submit">Complete sale</button>
             </form>
             {% endif %}
+            {% if sale.status == 'completed' %}
+            <a href="{% url 'commerce:sale_receipt' sale.pk %}" target="_blank" class="btn-accent" style="display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">receipt_long</span>
+                <span>Print Receipt Slip</span>
+            </a>
+            {% endif %}
             {% if sale.status == 'draft' or sale.status == 'completed' %}
             <form method="post" action="{% url 'commerce:sale_cancel' sale.pk %}">
                 {% csrf_token %}
@@ -126,7 +132,10 @@
         {% for product in products %}
         <article class="catalog-card" data-product-id="{{ product.pk }}">
             <div class="catalog-image-box">
-                <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 48px;">{% if product.category == 'bar' %}local_cafe{% else %}sports_tennis{% endif %}</span>
+                <img src="{% static product.image_filename %}" alt="{{ product.name }}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s ease;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="catalog-image-fallback" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background-color: var(--surface-container-low);">
+                    <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 48px;">{% if product.category == 'bar' %}local_cafe{% else %}sports_tennis{% endif %}</span>
+                </div>
             </div>
             <div class="catalog-body">
                 <div class="commerce-card-heading">

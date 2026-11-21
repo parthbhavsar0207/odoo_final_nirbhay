@@ -19,8 +19,8 @@
         </div>
 
         <div>
-            <a href="{% url 'club:booking_create' %}" class="btn-accent">
-                <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+            <a href="{% url 'club:public_availability' %}" class="btn-accent">
+                <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span>
                 <span>Reserve Court</span>
             </a>
         </div>
@@ -113,10 +113,16 @@
             {% endif %}
         </form>
 
-        <div style="display: flex; align-items: center; gap: 0.65rem;">
-            <span class="badge-pill">
-                Showing {{ bookings|length }} Reservation{{ bookings|length|pluralize }}
-            </span>
+<div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <span class="badge-pill">Showing {{ bookings|length }} Reservation{{ bookings|length|pluralize }}</span>
+            <a href="{% url 'club:booking_export_csv' %}" class="btn-secondary-low" style="font-size: 0.82rem; padding: 0.4rem 0.8rem; display: flex; align-items: center; gap: 0.35rem; text-decoration: none;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">download</span>
+                <span>Export CSV</span>
+            </a>
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--secondary-stitch);">
+                <span class="pulse-indicator"></span>
+                <span>Enforced: Max 2 confirmed bookings/member</span>
+            </div>
         </div>
     </div>
 
@@ -208,8 +214,13 @@
                                     {{ booking.get_booking_type_display }}
                                 </span>
                             </td>
-                            <td class="tabular-nums" style="font-weight: 700; font-size: 0.95rem;">
-                                ₹{{ booking.price }}
+                            <td class="tabular-nums">
+                                <div style="font-weight: 700; color: var(--on-surface);">₹{{ booking.price }}</div>
+                                <div style="font-size: 0.72rem; color: var(--secondary-stitch); display: flex; align-items: center; gap: 0.25rem; margin-top: 2px;">
+                                    <span class="material-symbols-outlined" style="font-size: 13px; color: {% if booking.price == 0 %}#2563eb{% else %}#166534{% endif %};">check_circle</span>
+                                    <span>{{ booking.get_payment_method_display }} &middot; {{ booking.get_payment_status_display }}</span>
+                                </div>
+
                             </td>
                             <td>
                                 {% if booking.status == 'confirmed' %}
@@ -224,20 +235,38 @@
                                 {% endif %}
                             </td>
                             <td style="text-align: right;">
-                                <div style="display: inline-flex; gap: 0.4rem; align-items: center;">
-                                    <a href="{% url 'club:booking_detail' booking.id %}" class="btn-secondary-low" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;">
-                                        <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
-                                        <span>Details</span>
-                                    </a>
-                                    {% if booking.status != 'cancelled' %}
-                                        <form method="post" action="{% url 'club:booking_cancel' booking.id %}" onsubmit="return confirm('Cancel this court reservation? This will free the slot immediately for other players.');" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn-secondary-low" style="padding: 0.35rem 0.65rem; font-size: 0.78rem; color: var(--danger); border-color: #fecaca; background-color: #fff5f5;">
-                                                <span class="material-symbols-outlined" style="font-size: 15px;">cancel</span>
-                                                <span>Cancel</span>
-                                            </button>
-                                        </form>
-                                    {% endif %}
+                                <div x-data="{ open: false }" @click.outside="open = false" style="position: relative; display: inline-block;">
+                                    <button type="button" @click="open = !open" class="btn-secondary-low" style="padding: 0.3rem 0.65rem; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                                        <span>Actions</span>
+                                        <span class="material-symbols-outlined" style="font-size: 15px; transition: transform 0.2s ease;" :style="open ? 'transform: rotate(180deg)' : ''">expand_more</span>
+                                    </button>
+                                    <div x-show="open" x-cloak class="club-dropdown-menu" style="position: absolute; right: 0; top: 100%; margin-top: 0.3rem; z-index: 100; min-width: 195px; text-align: left;">
+                                        <a href="{% url 'club:booking_detail' booking.id %}" class="club-dropdown-item">
+                                            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--primary);">info</span>
+                                            <span>Booking Details</span>
+                                        </a>
+                                        <a href="{% url 'club:public_availability' %}" class="club-dropdown-item">
+                                            <span class="material-symbols-outlined" style="font-size: 16px; color: #166534;">calendar_month</span>
+                                            <span>Live Court Matrix</span>
+                                        </a>
+                                        {% if booking.booked_by_member %}
+                                            <a href="{% url 'club:member_edit' booking.booked_by_member.id %}" class="club-dropdown-item">
+                                                <span class="material-symbols-outlined" style="font-size: 16px; color: #475569;">person</span>
+                                                <span>Member Profile</span>
+                                            </a>
+                                        {% endif %}
+                                        {% if booking.status != 'cancelled' %}
+                                            <div class="club-dropdown-divider"></div>
+                                            <form method="post" action="{% url 'club:booking_cancel' booking.id %}" onsubmit="return confirm('Cancel this court reservation? This will free the slot immediately for other players.');" style="margin: 0;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="club-dropdown-item" style="width: 100%; border: none; background: transparent; text-align: left; color: var(--danger); cursor: pointer;">
+                                                    <span class="material-symbols-outlined" style="font-size: 16px; color: var(--danger);">cancel</span>
+                                                    <span>Cancel Booking</span>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+
                                 </div>
                             </td>
                         </tr>
@@ -254,17 +283,77 @@
                                     No court reservations have been scheduled yet. Click below to book a court slot.
                                 {% endif %}
                             </p>
-                            <div style="display: inline-flex; gap: 0.75rem;">
+<div style="display: inline-flex; gap: 0.75rem;">
                                 {% if selected_court or selected_status or search_query or date_filter %}
                                     <a href="{% url 'club:booking_list' %}" class="btn-secondary-low">Reset Filters</a>
                                 {% endif %}
-                                <a href="{% url 'club:booking_create' %}" class="btn-accent">+ Reserve Court</a>
+                                <a href="{% url 'club:public_availability' %}" class="btn-accent">+ Reserve Court</a>
                             </div>
                         </td>
                     </tr>
                 {% endif %}
             </tbody>
         </table>
+
+        <!-- Bookings Table Pagination Toolbar -->
+        {% if paginator %}
+            <div class="table-pagination-toolbar">
+                <div class="table-pagination-info">
+                    <span>
+                        Showing <strong>{{ page_obj.start_index|default:0 }}</strong> to <strong>{{ page_obj.end_index|default:0 }}</strong> of <strong>{{ paginator.count }}</strong> reservations
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 0.35rem; margin-left: 0.5rem;">
+                        <label for="booking-page-size" style="font-size: 0.78rem;">Per page:</label>
+                        <select id="booking-page-size" class="page-size-select" onchange="changePageSize(this.value)">
+                            <option value="5" {% if page_size == 5 %}selected{% endif %}>5</option>
+                            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        </select>
+                    </div>
+                </div>
+
+                {% if page_obj.has_other_pages %}
+                    <div class="table-pagination-controls">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1{% if selected_court %}&court={{ selected_court }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}&page_size={{ page_size }}" class="pagination-btn" title="First Page">
+                                &laquo;
+                            </a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if selected_court %}&court={{ selected_court }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}&page_size={{ page_size }}" class="pagination-btn" title="Previous Page">
+                                &lsaquo;
+                            </a>
+                        {% else %}
+                            <span class="pagination-btn disabled">&laquo;</span>
+                            <span class="pagination-btn disabled">&lsaquo;</span>
+                        {% endif %}
+
+                        {% for p in paginator.get_elided_page_range %}
+                            {% if p == page_obj.number %}
+                                <span class="pagination-btn active">{{ p }}</span>
+                            {% elif p == paginator.ELLIPSIS %}
+                                <span class="pagination-ellipsis">&hellip;</span>
+                            {% else %}
+                                <a href="?page={{ p }}{% if selected_court %}&court={{ selected_court }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}&page_size={{ page_size }}" class="pagination-btn">
+                                    {{ p }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if selected_court %}&court={{ selected_court }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}&page_size={{ page_size }}" class="pagination-btn" title="Next Page">
+                                &rsaquo;
+                            </a>
+                            <a href="?page={{ paginator.num_pages }}{% if selected_court %}&court={{ selected_court }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}&page_size={{ page_size }}" class="pagination-btn" title="Last Page">
+                                &raquo;
+                            </a>
+                        {% else %}
+                            <span class="pagination-btn disabled">&rsaquo;</span>
+                            <span class="pagination-btn disabled">&raquo;</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -4,14 +4,22 @@ Owned by Nayan (Backend: Membership and Bookings)
 Styled by Pratik (Frontend templates & styling)
 """
 
+import csv
+import json
 from decimal import Decimal
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.utils import timezone
+from django.core.paginator import Paginator
+from django.http import HttpResponse, JsonResponse, Http404
+from django.db import transaction
 from django.db.models import Sum, Count, Q
-from django.http import JsonResponse, Http404
+from django.utils import timezone
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_POST
 
 from .models import Member, MembershipPlan, Court, Booking, BookingParticipant
 from .forms import (
@@ -25,29 +33,38 @@ from commerce.models import Product
 from .availability import availability_date, availability_grid
 
 
+
 def member_list(request):
     """
     Lists registered club members with their assigned plan and active status.
-    Handoff to Pratik:
-    - Route name: 'club:member_list'
-    - Template path: 'club/members.html'
-    - Context keys: 'page_title', 'members', 'plans'
+    Supports live search (name, email, phone), filtering by tier and status,
+    and server-side pagination with selectable page size (5, 10, 25, 50).
     """
     search_query = request.GET.get('q', '').strip()
     tier_filter = request.GET.get('tier', '').strip()
     status_filter = request.GET.get('status', '').strip()
 
+    page_number = request.GET.get('page', 1)
+    page_size = request.GET.get('page_size', '10').strip()
+
+    try:
+        page_size_int = int(page_size)
+        if page_size_int not in (5, 10, 25, 50):
+            page_size_int = 10
+    except (ValueError, TypeError):
+        page_size_int = 10
+
     members = Member.objects.select_related('plan').all()
 
+    # Search by member name, email, or phone
     if search_query:
         members = members.filter(
             Q(name__icontains=search_query) |
             Q(email__icontains=search_query) |
             Q(phone__icontains=search_query)
         )
-    if tier_filter:
-        members = [m for m in members if m.current_plan and m.current_plan.tier == tier_filter]
 
+    # Membership statistics
     all_members = list(Member.objects.select_related('plan').all())
     eligible_member_ids = set()
     for member in all_members:
@@ -55,34 +72,63 @@ def member_list(request):
         if member.is_club_member and member.is_active_member and plan is not None and plan.active:
             eligible_member_ids.add(member.pk)
     active_count = len(eligible_member_ids)
-    suspended_count = sum(1 for m in all_members if m.is_suspended)
-    expired_count = sum(1 for m in all_members if m.status_label == 'Expired')
 
+    if tier_filter:
+        tier_member_ids = {
+            member.pk for member in all_members
+            if member.current_plan and member.current_plan.tier == tier_filter
+        }
+        members = members.filter(pk__in=tier_member_ids)
+
+    suspended_count = sum(1 for m in all_members if m.is_suspended)
+    expired_count = sum(
+        1 for m in all_members if m.status_label == 'Expired'
+    )
+
+    # Status filtering
     if status_filter == 'active':
-        members = [m for m in members if m.pk in eligible_member_ids]
+        members = members.filter(pk__in=eligible_member_ids)
     elif status_filter == 'suspended':
-        members = [m for m in members if m.is_suspended]
+        members = members.filter(is_suspended=True)
+
     elif status_filter == 'expired':
-        members = [m for m in members if m.status_label == 'Expired']
+        today = timezone.localdate()
+        members = members.filter(
+            membership_end__lt=today,
+            is_suspended=False
+        )
+
+    # Sorting and pagination
+    members = members.order_by('name', 'id')
+
+    paginator = Paginator(members, page_size_int)
+    page_obj = paginator.get_page(page_number)
 
     plans = MembershipPlan.objects.filter(active=True)
     form = MemberForm()
 
     context = {
         'page_title': 'Club Members',
-        'members': members,
+        'members': page_obj,
+        'page_obj': page_obj,
+        'paginator': paginator,
         'plans': plans,
         'form': form,
         'search_query': search_query,
         'tier_filter': tier_filter,
         'tier_choices': MembershipPlan.TIER_CHOICES,
         'status_filter': status_filter,
+        'selected_tier': tier_filter,
+        'selected_status': status_filter,
         'active_count': active_count,
         'suspended_count': suspended_count,
         'expired_count': expired_count,
         'total_members_count': len(all_members),
+        'page_size': page_size_int,
     }
+
     return render(request, 'club/members.html', context)
+
 
 
 def member_create(request):
@@ -140,6 +186,7 @@ def member_edit(request, pk):
 def booking_list(request):
     """
     Lists court reservations with status, price snapshots, and player names.
+    Supports filtering by court and status, and server-side pagination with selectable page size.
     Handoff to Pratik:
     - Route name: 'club:booking_list'
     - Template path: 'club/bookings.html'
@@ -149,6 +196,16 @@ def booking_list(request):
     status_filter = request.GET.get('status')
     search_query = request.GET.get('q', '').strip()
     date_filter = request.GET.get('date', '').strip()
+
+    page_number = request.GET.get('page', 1)
+    page_size = request.GET.get('page_size', '10').strip()
+
+    try:
+        page_size_int = int(page_size)
+        if page_size_int not in (5, 10, 25, 50):
+            page_size_int = 10
+    except (ValueError, TypeError):
+        page_size_int = 10
 
     bookings = Booking.objects.select_related('court', 'booked_by_member', 'booked_by_member__plan')
 
@@ -172,6 +229,10 @@ def booking_list(request):
     if date_filter == 'today':
         bookings = bookings.filter(start_datetime__gte=today_start, start_datetime__lte=today_end)
 
+    bookings = bookings.order_by('-start_datetime', '-id')
+    paginator = Paginator(bookings, page_size_int)
+    page_obj = paginator.get_page(page_number)
+
     courts = Court.objects.filter(active=True)
     booking_form = BookingForm()
 
@@ -183,7 +244,9 @@ def booking_list(request):
 
     context = {
         'page_title': 'Court Bookings',
-        'bookings': bookings,
+        'bookings': page_obj,
+        'page_obj': page_obj,
+        'paginator': paginator,
         'courts': courts,
         'selected_court': court_id,
         'selected_status': status_filter,
@@ -194,52 +257,270 @@ def booking_list(request):
         'active_courts_count': active_courts_count,
         'confirmed_revenue': confirmed_revenue,
         'form': booking_form,
+        'page_size': page_size_int,
     }
     return render(request, 'club/bookings.html', context)
+
+
+def _get_courts_and_members_data(today=None):
+    """
+    Serializes active courts and members with plan details for live reactive calculators.
+    """
+    if today is None:
+        today = timezone.localdate()
+    courts_data = {
+        str(c.id): {
+            'id': c.id,
+            'name': c.name,
+            'sport': c.get_sport_display(),
+            'hourly_rate': float(c.hourly_rate),
+        }
+        for c in Court.objects.filter(active=True).order_by('id')
+    }
+    members_data = {
+        str(m.id): {
+            'id': m.id,
+            'name': m.name,
+            'tier': m.plan.tier if m.plan else 'none',
+            'plan_name': m.plan.name if m.plan else 'No Plan',
+            'plan_court_rate': float(m.plan.court_hourly_rate) if m.plan else None,
+            'is_active': m.is_active_on_date(today),
+        }
+        for m in Member.objects.select_related('plan').all().order_by('name')
+    }
+    return courts_data, members_data
+
+
+def api_calculate_price(request):
+    """
+    AJAX endpoint: Real-time price, member benefits, time difference, and conflict calculation.
+    Enables instant in-page updates with zero page refresh when any dependent variable changes.
+    """
+    court_id = request.GET.get('court')
+    member_id = request.GET.get('member')
+    start_param = request.GET.get('start')
+    today = timezone.localdate()
+
+    if not court_id:
+        return JsonResponse({'error': 'Missing court_id'}, status=400)
+
+    try:
+        court_id_int = int(court_id)
+        court = Court.objects.get(id=court_id_int, active=True)
+    except (ValueError, TypeError, Court.DoesNotExist):
+        return JsonResponse({'error': 'Court not found or invalid court_id'}, status=404)
+
+    member = None
+    if member_id:
+        try:
+            member_id_int = int(member_id)
+            member = Member.objects.select_related('plan').get(id=member_id_int)
+        except (ValueError, TypeError, Member.DoesNotExist):
+            member = None
+
+    standard_rate = float(court.hourly_rate)
+    final_price = standard_rate
+    savings = 0.0
+    rate_basis = f"Standard Rate (₹{standard_rate:.2f}/hr)"
+    benefit_text = "Standard Rate Applied"
+
+    if member and member.is_active_on_date(today) and member.plan:
+        final_price = float(member.plan.court_hourly_rate)
+        savings = max(0.0, standard_rate - final_price)
+        rate_basis = f"{member.plan.name} Court Entitlement"
+        if final_price == 0:
+            benefit_text = f"100% Free · {member.plan.name}"
+        else:
+            benefit_text = f"₹{final_price:.2f}/hr · {member.plan.name}"
+    elif member and not member.is_active_on_date(today):
+        rate_basis = "Standard Rate (Member Inactive/Expired)"
+        benefit_text = "Inactive: No Plan Benefit"
+
+    # Time Difference & Duration
+    time_diff = "--:-- → --:-- (60 min)"
+    start_display = ""
+    end_display = ""
+    is_conflict = False
+    conflict_message = ""
+
+    if start_param:
+        try:
+            # Handle YYYY-MM-DDTHH:MM format
+            tz = timezone.get_current_timezone()
+            if 'T' in start_param:
+                from datetime import datetime
+                naive_dt = datetime.fromisoformat(start_param)
+                start_dt = timezone.make_aware(naive_dt, tz)
+            else:
+                from datetime import datetime
+                naive_dt = datetime.strptime(start_param, '%Y-%m-%d %H:%M')
+                start_dt = timezone.make_aware(naive_dt, tz)
+
+            end_dt = start_dt + timedelta(minutes=60)
+            start_local = timezone.localtime(start_dt, tz)
+            end_local = timezone.localtime(end_dt, tz)
+            start_display = start_local.strftime('%I:%M %p')
+            end_display = end_local.strftime('%I:%M %p')
+            time_diff = f"{start_display} → {end_display} (60 min)"
+
+            # Real-time overlap conflict check
+            conflict_qs = Booking.objects.filter(
+                court=court,
+                status='confirmed',
+                start_datetime__lt=end_dt,
+                end_datetime__gt=start_dt,
+            )
+            if conflict_qs.exists():
+                is_conflict = True
+                conflict_message = f"Warning: {court.name} already has a confirmed booking at {start_local.strftime('%H:%M')}!"
+        except Exception:
+            pass
+
+    return JsonResponse({
+        'court_id': court.id,
+        'court_name': court.name,
+        'sport': court.get_sport_display(),
+        'standard_rate': standard_rate,
+        'final_price': final_price,
+        'savings': savings,
+        'rate_basis': rate_basis,
+        'benefit_text': benefit_text,
+        'time_diff': time_diff,
+        'start_display': start_display,
+        'end_display': end_display,
+        'is_conflict': is_conflict,
+        'conflict_message': conflict_message,
+    })
 
 
 def booking_create(request):
     """
     Creates and validates a new court booking for a member or walk-in.
+    Supports both traditional POST redirection and real-time AJAX modal submissions.
     Enforces:
     - 60-minute duration on 30-minute start increments
     - GiST exclusion / no-overlap constraint on the same court
     - Max 2 confirmed bookings per member per club date (across standard & social play)
     - Backend controlled status (auto-confirms valid reservation)
     - Price calculated and snapshotted by backend from member plan or court standard rate
-    Handoff to Pratik:
-    - Route name: 'club:booking_create'
-    - Form fields: 'court', 'booked_by_member', 'walkin_name', 'walkin_contact',
-                   'start_datetime', 'booking_type'
     """
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+        request.POST.get('ajax') == '1' or
+        'application/json' in request.headers.get('accept', '')
+    )
+
     if request.method == 'POST':
         form = BookingForm(request.POST)
         if form.is_valid():
             booking = form.save(commit=False)
             booking.status = 'confirmed'
             booking.price = booking.calculate_price()
+
+            # Process payment method and status
+            pay_method = request.POST.get('payment_method')
+            if pay_method and pay_method in Booking.PaymentMethod.values:
+                booking.payment_method = pay_method
+            elif not booking.payment_method:
+                booking.payment_method = Booking.PaymentMethod.UPI
+
+            # Enforce that member_tab can only be chosen when a valid member is attached
+            if booking.payment_method == Booking.PaymentMethod.MEMBER_TAB and not booking.booked_by_member:
+                booking.payment_method = Booking.PaymentMethod.UPI
+
+            if booking.price == Decimal('0.00') and booking.booked_by_member:
+                booking.payment_status = Booking.PaymentStatus.WAIVED
+                booking.payment_method = Booking.PaymentMethod.MEMBER_TAB
+            else:
+                pay_status = request.POST.get('payment_status')
+                # Never permit arbitrary waiver if price > 0
+                if pay_status and pay_status in (Booking.PaymentStatus.PAID, Booking.PaymentStatus.PENDING):
+                    booking.payment_status = pay_status
+                else:
+                    booking.payment_status = Booking.PaymentStatus.PAID
+
             try:
-                # Snapshots the price if confirmed and clean validations
-                booking.full_clean()
-                booking.save()
-                messages.success(
-                    request,
+                with transaction.atomic():
+                    # Concurrency safety: acquire row lock on member if booking for a member
+                    if booking.booked_by_member_id:
+                        Member.objects.select_for_update().get(id=booking.booked_by_member_id)
+
+                    # Snapshots the price if confirmed and clean validations
+                    booking.full_clean()
+                    booking.save()
+                local_start = timezone.localtime(booking.start_datetime)
+                local_end = timezone.localtime(booking.end_datetime)
+                pay_detail = f"Settled ₹{booking.price:.2f} via {booking.get_payment_method_display()}"
+                success_msg = (
                     f"Booking #{booking.id} confirmed for {booking.court.name} at "
-                    f"{timezone.localtime(booking.start_datetime).strftime('%Y-%m-%d %H:%M')}. "
-                    f"Price snapshotted at ₹{booking.price}."
+                    f"{local_start.strftime('%Y-%m-%d %H:%M')}. "
+                    f"{pay_detail}."
                 )
+
+                if is_ajax:
+                    player_name = (
+                        booking.booked_by_member.name
+                        if booking.booked_by_member
+                        else (booking.walkin_name or "Walk-in Guest")
+                    )
+                    return JsonResponse({
+                        'success': True,
+                        'booking_id': booking.id,
+                        'court_id': booking.court.id,
+                        'court_name': booking.court.name,
+                        'price': float(booking.price),
+                        'payment_method': booking.payment_method,
+                        'payment_method_display': booking.get_payment_method_display(),
+                        'payment_status': booking.payment_status,
+                        'payment_status_display': booking.get_payment_status_display(),
+                        'slot_hour': local_start.strftime('%H:%M'),
+                        'start_time': local_start.strftime('%H:%M'),
+                        'end_time': local_end.strftime('%H:%M'),
+                        'time_diff': f"{local_start.strftime('%H:%M')} → {local_end.strftime('%H:%M')}",
+                        'player_display': player_name,
+                        'booking_type': booking.get_booking_type_display(),
+                        'message': success_msg,
+                    })
+
+                messages.success(request, success_msg)
                 return redirect('club:booking_list')
             except ValidationError as err:
+                error_list = []
                 if hasattr(err, 'message_dict'):
                     for field, errors in err.message_dict.items():
                         for error in errors:
                             form.add_error(field if field in form.fields else None, error)
+                            error_list.append(str(error))
                 else:
-                    form.add_error(None, err)
+                    for error in err.messages:
+                        form.add_error(None, error)
+                        error_list.append(str(error))
+                if is_ajax:
+                    return JsonResponse({
+                        'success': False,
+                        'message': " ".join(error_list) if error_list else "Validation failed.",
+                        'errors': error_list,
+                    }, status=400)
                 messages.error(request, "Booking validation failed. See errors below.")
             except Exception as exc:
+                if is_ajax:
+                    return JsonResponse({
+                        'success': False,
+                        'message': f"Database constraint violation: {exc}",
+                        'errors': [str(exc)],
+                    }, status=400)
                 messages.error(request, f"Database constraint violation: {exc}")
         else:
+            error_list = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_list.append(f"{field}: {error}" if field != '__all__' else str(error))
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': " ".join(error_list) if error_list else "Invalid form submission.",
+                    'errors': error_list,
+                }, status=400)
             messages.error(request, "Please correct the errors in the booking form.")
     else:
         initial = {}
@@ -258,33 +539,94 @@ def booking_create(request):
             initial['start_datetime'] = now_local.replace(minute=0, second=0).strftime('%Y-%m-%dT%H:%M')
         form = BookingForm(initial=initial)
 
+    today = timezone.localdate()
+    courts_data, members_data = _get_courts_and_members_data(today)
+
     context = {
         'page_title': 'Reserve Court',
         'form': form,
+        'courts_json': json.dumps(courts_data),
+        'members_json': json.dumps(members_data),
     }
     return render(request, 'club/booking_form.html', context)
 
 
+@require_POST
 def booking_cancel(request, pk):
     """
     Cancels a confirmed booking, immediately releasing the slot for other members.
+    Supports both traditional POST redirect and in-web real-time AJAX cancellations.
     Handoff to Pratik:
     - Route name: 'club:booking_cancel'
     """
     booking = get_object_or_404(Booking, pk=pk)
-    if request.method == 'POST':
-        booking.status = 'cancelled'
-        booking.save()
-        messages.success(
-            request,
-            f"Booking #{booking.id} for {booking.court.name} was cancelled and the slot is now free."
-        )
+    booking.status = 'cancelled'
+    booking.save()
+
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+        request.POST.get('ajax') == '1' or
+        'application/json' in request.headers.get('accept', '')
+    )
+
+    local_start = timezone.localtime(booking.start_datetime)
+    msg = f"Booking #{booking.id} for {booking.court.name} at {local_start.strftime('%H:%M')} was cancelled and the slot is now free."
+
+    if is_ajax:
+        return JsonResponse({
+            'success': True,
+            'booking_id': booking.id,
+            'court_id': booking.court.id,
+            'court_name': booking.court.name,
+            'standard_price': float(booking.court.hourly_rate),
+            'slot_hour': local_start.strftime('%H:%M'),
+            'message': msg,
+        })
+
+    messages.success(request, msg)
     return redirect('club:booking_list')
+
+
+def booking_export_csv(request):
+    """
+    Exports court reservations to a clean CSV file for accounting and operations.
+    """
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="champions_club_bookings.csv"'
+    writer = csv.writer(response)
+    writer.writerow([
+        'Booking ID', 'Court', 'Sport', 'Player / Member', 'Member Tier',
+        'Start Time', 'End Time', 'Price (INR)', 'Payment Method', 'Payment Status', 'Status', 'Booking Type'
+    ])
+
+    bookings = Booking.objects.select_related(
+        'court', 'booked_by_member', 'booked_by_member__plan'
+    ).order_by('-start_datetime')
+
+    for b in bookings:
+        player = b.booked_by_member.name if b.booked_by_member else (b.walkin_name or "Walk-in Guest")
+        tier = b.booked_by_member.plan.name if b.booked_by_member and b.booked_by_member.plan else "N/A"
+        writer.writerow([
+            b.id,
+            b.court.name,
+            b.court.get_sport_display(),
+            player,
+            tier,
+            timezone.localtime(b.start_datetime).strftime('%Y-%m-%d %H:%M'),
+            timezone.localtime(b.end_datetime).strftime('%Y-%m-%d %H:%M'),
+            b.price,
+            b.get_payment_method_display(),
+            b.get_payment_status_display(),
+            b.get_status_display(),
+            b.get_booking_type_display(),
+        ])
+    return response
 
 
 def booking_detail(request, pk):
     """
     Displays booking details and manages participants for social play.
+    Supports both standard HTML view and AJAX JSON queries for modal inspection.
     Handoff to Pratik:
     - Route name: 'club:booking_detail'
     - Context keys: 'booking', 'participants', 'participant_form'
@@ -293,6 +635,49 @@ def booking_detail(request, pk):
         Booking.objects.select_related('court', 'booked_by_member', 'booked_by_member__plan'),
         pk=pk
     )
+
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+        request.GET.get('ajax') == '1' or
+        'application/json' in request.headers.get('accept', '')
+    )
+
+    tz = timezone.get_current_timezone()
+    local_start = timezone.localtime(booking.start_datetime, tz)
+    local_end = timezone.localtime(booking.end_datetime, tz)
+    player_name = booking.booked_by_member.name if booking.booked_by_member else (booking.walkin_name or "Walk-in Guest")
+    player_contact = booking.booked_by_member.phone if booking.booked_by_member else (booking.walkin_contact or "N/A")
+    tier_name = booking.booked_by_member.plan.name if booking.booked_by_member and booking.booked_by_member.plan else "Walk-in (Standard)"
+    tier_code = booking.booked_by_member.plan.tier if booking.booked_by_member and booking.booked_by_member.plan else "none"
+
+    if is_ajax:
+        return JsonResponse({
+            'success': True,
+            'id': booking.id,
+            'court_id': booking.court.id,
+            'court_name': booking.court.name,
+            'sport': booking.court.get_sport_display(),
+            'hourly_rate': float(booking.court.hourly_rate),
+            'start_datetime': local_start.strftime('%Y-%m-%d %H:%M'),
+            'end_datetime': local_end.strftime('%Y-%m-%d %H:%M'),
+            'date_display': local_start.strftime('%A, %d %B %Y'),
+            'time_diff': f"{local_start.strftime('%I:%M %p')} → {local_end.strftime('%I:%M %p')} (60 min)",
+            'player_name': player_name,
+            'player_contact': player_contact,
+            'tier_name': tier_name,
+            'tier_code': tier_code,
+            'price': float(booking.price),
+            'payment_method': booking.payment_method,
+            'payment_method_display': booking.get_payment_method_display(),
+            'payment_status': booking.payment_status,
+            'payment_status_display': booking.get_payment_status_display(),
+            'status': booking.status,
+            'status_display': booking.get_status_display(),
+            'booking_type': booking.get_booking_type_display(),
+            'receipt_url': reverse('club:booking_receipt', kwargs={'pk': booking.id}),
+            'cancel_url': reverse('club:booking_cancel', kwargs={'pk': booking.id}),
+        })
+
     participants = booking.participants.select_related('member').all()
     participant_form = BookingParticipantForm()
 
@@ -324,6 +709,39 @@ def booking_detail(request, pk):
     return render(request, 'club/booking_detail.html', context)
 
 
+def booking_receipt(request, pk):
+    """
+    Renders an official print-ready booking confirmation receipt / voucher for court reservations.
+    """
+    booking = get_object_or_404(
+        Booking.objects.select_related('court', 'booked_by_member', 'booked_by_member__plan'),
+        pk=pk
+    )
+    tz = timezone.get_current_timezone()
+    local_start = timezone.localtime(booking.start_datetime, tz)
+    local_end = timezone.localtime(booking.end_datetime, tz)
+    player_name = booking.booked_by_member.name if booking.booked_by_member else (booking.walkin_name or "Walk-in Guest")
+    player_contact = booking.booked_by_member.phone if booking.booked_by_member else (booking.walkin_contact or "N/A")
+    tier_name = booking.booked_by_member.plan.name if booking.booked_by_member and booking.booked_by_member.plan else "Walk-in Guest"
+
+    standard_price = booking.court.hourly_rate
+    discount = max(Decimal('0.00'), standard_price - booking.price)
+
+    context = {
+        'page_title': f"Booking Voucher #{booking.id}",
+        'booking': booking,
+        'local_start': local_start,
+        'local_end': local_end,
+        'player_name': player_name,
+        'player_contact': player_contact,
+        'tier_name': tier_name,
+        'standard_price': standard_price,
+        'discount': discount,
+    }
+    return render(request, 'club/booking_receipt.html', context)
+
+
+@ensure_csrf_cookie
 def public_availability(request):
     """Show honest public availability for 60-minute, half-hour-start sessions."""
     today = timezone.localdate()
@@ -346,14 +764,37 @@ def public_availability(request):
         courts = courts.filter(id=int(selected_court))
     courts = list(courts)
     operating_hours, court_grid, total_confirmed = availability_grid(courts, selected_date)
+
+    plans = MembershipPlan.objects.filter(active=True).order_by('id')
+    tier_rates = {plan.tier: float(plan.court_hourly_rate) for plan in plans}
+    tier_rates.setdefault('gold', 0.0)
+    tier_rates.setdefault('silver', 200.0)
+    tier_rates.setdefault('junior', 150.0)
+    operating_slots = []
+    for start in operating_hours:
+        slot_start = datetime.combine(
+            selected_date, datetime.strptime(start, '%H:%M').time()
+        )
+        slot_end = slot_start + timedelta(minutes=60)
+        hour = slot_start.hour
+        time_band = "Morning" if hour < 12 else ("Afternoon" if hour < 17 else "Evening Prime")
+        operating_slots.append({
+            'start': start,
+            'end': slot_end.strftime('%H:%M'),
+            'time_band': time_band,
+            'label': f"{start} → {slot_end.strftime('%H:%M')}",
+        })
+    all_sports = get_all_sports_with_facilities()
     context = {
         'page_title': 'Champions Club Live Court Availability',
         'courts': courts,
         'operating_hours': operating_hours,
+        'operating_slots': operating_slots,
         'court_grid': court_grid,
         'selected_date': selected_date,
         'today': today,
-        'plans': MembershipPlan.objects.filter(active=True).order_by('id'),
+        'plans': plans,
+        'tier_rates': tier_rates,
         'total_confirmed_today': total_confirmed,
         'all_sports': get_all_sports_with_facilities(),
         'selected_sport': selected_sport,
