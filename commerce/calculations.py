@@ -1,7 +1,7 @@
 """Guest-sale arithmetic and inventory validation, without database access."""
 
 from dataclasses import dataclass
-from decimal import Decimal, localcontext
+from decimal import Decimal, ROUND_HALF_UP, localcontext
 
 from django.core.exceptions import ValidationError
 from django.core.validators import DecimalValidator
@@ -87,3 +87,30 @@ def calculate_guest_totals(lines):
         subtotal = sum((line.subtotal for line in lines), ZERO).quantize(CENT)
     DecimalValidator(max_digits=14, decimal_places=2)(subtotal)
     return SaleAmounts(subtotal, ZERO, subtotal)
+
+
+def calculate_sale_line(*, unit_price, quantity, discount_percent=ZERO):
+    """Round the discount on a whole line, once, to paise."""
+    line = calculate_guest_line(unit_price=unit_price, quantity=quantity)
+    if (
+        not isinstance(discount_percent, Decimal)
+        or not discount_percent.is_finite()
+        or not ZERO <= discount_percent <= Decimal("100.00")
+    ):
+        raise ValidationError("Plan discounts must be Decimal percentages from 0 to 100.", code="invalid_discount")
+    DecimalValidator(max_digits=5, decimal_places=2)(discount_percent)
+    with localcontext() as context:
+        context.prec = 28
+        discount = (line.subtotal * discount_percent / Decimal("100")).quantize(
+            CENT, rounding=ROUND_HALF_UP,
+        )
+    return LineAmounts(unit_price, quantity, line.subtotal, discount, line.subtotal - discount)
+
+
+def calculate_sale_totals(lines):
+    lines = tuple(lines)
+    subtotal = calculate_guest_totals(lines).subtotal
+    with localcontext() as context:
+        context.prec = 28
+        discount = sum((line.discount for line in lines), ZERO).quantize(CENT)
+    return SaleAmounts(subtotal, discount, subtotal - discount)

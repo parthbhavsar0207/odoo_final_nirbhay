@@ -13,12 +13,13 @@
         <div>
             <div class="commerce-eyebrow">Commerce Operations / Point-of-Sale</div>
             <h1>Pro Shop &amp; Clubhouse Bar POS</h1>
-            <p class="commerce-copy">Sporting essentials and refreshments. Create and manage guest counter sales.</p>
+            <p class="commerce-copy">Sporting essentials and refreshments. Create and manage counter sales.</p>
         </div>
         <a class="btn-accent" href="{% url 'commerce:guest_counter' %}#guest-sale-form">
             <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 18px;">point_of_sale</span>
             <span>New Sale</span>
         </a>
+        <a class="btn-secondary-low" href="{% url 'commerce:member_counter' %}#guest-sale-form">Member sale</a>
     </div>
 
     {% if error_message %}
@@ -28,11 +29,11 @@
     {% if sale %}
     <section class="commerce-panel" aria-labelledby="sale-heading">
         <div class="commerce-card-heading">
-            <h2 id="sale-heading">Guest Sale #{{ sale.pk }}</h2>
+            <h2 id="sale-heading">{% if sale.member_id %}Member{% else %}Guest{% endif %} Sale #{{ sale.pk }}</h2>
             <span class="pill-status {% if sale.status == 'completed' %}pill-status-active{% elif sale.status == 'cancelled' %}pill-status-suspended{% endif %}">{{ sale.get_status_display }}</span>
         </div>
         <dl class="commerce-meta">
-            <div><dt>Customer</dt><dd>Walk-in guest</dd></div>
+            <div><dt>Customer</dt><dd>{% if sale.member_id %}{{ sale.member.name }}{% else %}Walk-in guest{% endif %}</dd></div>
             <div><dt>Payment method</dt><dd>{{ sale.get_payment_method_display }}</dd></div>
             <div><dt>Created</dt><dd>{{ sale.created_at|date:"d M Y, H:i" }} IST</dd></div>
         </dl>
@@ -94,9 +95,9 @@
     {% endif %}
 
     <section class="commerce-panel" aria-labelledby="guest-form-heading">
-        <h2 id="guest-form-heading">New guest sale</h2>
+        <h2 id="guest-form-heading">New {% if member_mode %}member{% else %}guest{% endif %} sale</h2>
         <p class="commerce-copy">Choose one product and a payment method. Review the draft before completing it.</p>
-        <form id="guest-sale-form" method="post" action="{% url 'commerce:sale_create' %}">
+        <form id="guest-sale-form" method="post" action="{% if member_mode %}{% url 'commerce:member_sale_create' %}{% else %}{% url 'commerce:sale_create' %}{% endif %}">
             {% csrf_token %}
             {% if form.errors %}
             <div class="commerce-feedback commerce-feedback-error" role="alert">
@@ -113,7 +114,7 @@
                 </div>
                 {% endfor %}
             </div>
-            <button class="btn-accent" type="submit">Create guest sale</button>
+            <button class="btn-accent" type="submit">Create {% if member_mode %}member{% else %}guest{% endif %} sale</button>
         </form>
     </section>
 
