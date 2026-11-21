@@ -40,21 +40,27 @@ def dashboard_view(request):
     # Recent live bookings
     recent_bookings = Booking.objects.select_related(
         'court', 'booked_by_member', 'booked_by_member__plan'
-    ).order_by('-start_datetime')[:6]
+    ).order_by('-start_datetime')[:5]
 
     # Today's bookings
     tz = timezone.get_current_timezone()
     today_start = timezone.make_aware(datetime.combine(today, time.min), tz)
     today_end = timezone.make_aware(datetime.combine(today + timedelta(days=1), time.min), tz)
-    today_bookings_count = confirmed_bookings.filter(
+    today_confirmed_bookings = confirmed_bookings.filter(
         start_datetime__gte=today_start,
         start_datetime__lt=today_end
-    ).count()
+    )
+    today_bookings_count = today_confirmed_bookings.count()
+    today_booked_hours = sum(
+        (end - start).total_seconds() / 3600
+        for start, end in today_confirmed_bookings.values_list('start_datetime', 'end_datetime')
+        if start and end
+    )
 
     # Calculate utilization for today (assuming 16 operating hours per court: 06:00 to 22:00)
     total_bookable_hours_today = total_courts * 16
     utilization_rate = (
-        round((today_bookings_count / total_bookable_hours_today) * 100, 1)
+        round((today_booked_hours / total_bookable_hours_today) * 100, 1)
         if total_bookable_hours_today else 0
     )
 
@@ -69,6 +75,7 @@ def dashboard_view(request):
         'total_bookings_count': total_bookings_count,
         'confirmed_booking_value': confirmed_booking_value,
         'today_bookings_count': today_bookings_count,
+        'today_booked_hours': today_booked_hours,
         'total_bookable_hours_today': total_bookable_hours_today,
         'utilization_rate': utilization_rate,
         'recent_bookings': recent_bookings,

@@ -3,43 +3,43 @@
 {% block title %}Owner Overview Dashboard · Champions Club{% endblock %}
 
 {% block content %}
-<div class="app-container">
+<div class="app-container dashboard-container">
     <!-- Section Header -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+    <div class="dashboard-heading">
         <div>
-            <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
+            <div class="dashboard-eyebrow">
                 Facility Operations / Executive Overview
             </div>
-            <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.02em;">
+            <h1 class="dashboard-title">
                 Financial &amp; Facility Performance
             </h1>
-            <p style="color: var(--secondary-stitch); font-size: 0.88rem; margin-top: 0.2rem;">
+            <p class="dashboard-subtitle">
                 Facility operations and daily performance &middot; {{ today_date|date:"l, F j, Y" }}
             </p>
         </div>
 
         <!-- Quick Action / Operational Indicators -->
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <a href="{% url 'club:public_availability' %}" class="btn-accent">
-                <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span>
+        <div class="dashboard-heading-action">
+            <a href="{% url 'club:booking_create' %}" class="btn-accent">
+                <span class="material-symbols-outlined">calendar_month</span>
                 <span>Reserve Court</span>
             </a>
         </div>
     </div>
 
     <!-- Live Summary Metric Cards -->
-    <div class="metrics-row">
+    <div class="metrics-row dashboard-metrics">
         <!-- Confirmed booking value is kept separate from completed sales. -->
         <div class="metric-card">
             <div class="metric-header">
-                <span>Confirmed Booking Value</span>
+                <span>Court Booking Value</span>
                 <span class="material-symbols-outlined" style="font-size: 18px;">payments</span>
             </div>
             <div>
                 <div class="metric-value">₹{{ confirmed_booking_value }}</div>
                 <div class="metric-footer">
-                    <span>{{ total_confirmed_count }} confirmed reservations</span>
-                    <span>&middot; payment collection not recorded</span>
+                    <span class="metric-positive">{{ total_confirmed_count }} confirmed</span>
+                    <span>&middot; snapshot value</span>
                 </div>
             </div>
         </div>
@@ -47,41 +47,17 @@
         <!-- Total completed commerce transactions, never manually maintained dues. -->
         <div class="metric-card">
             <div class="metric-header">
-                <span>Completed Commerce Sales</span>
+                <span>Shop &amp; Bar Sales</span>
                 <span class="material-symbols-outlined" style="font-size: 18px;">account_balance_wallet</span>
             </div>
             <div>
                 <div class="metric-value">₹{{ completed_sales_total }}</div>
                 <div class="metric-footer">
-                    <span>{{ completed_sales_count }} completed transactions</span>
-                    <span>&middot; drafts and cancellations excluded</span>
+                    <span class="metric-positive">{{ completed_sales_count }} completed transactions</span>
                 </div>
             </div>
         </div>
 
-        <div class="metric-card">
-            <div class="metric-header">
-                <span>Completed Shop Sales</span>
-                <span class="material-symbols-outlined" style="font-size: 18px;">shopping_bag</span>
-            </div>
-            <div>
-                <div class="metric-value">₹{{ shop_sales_total }}</div>
-                <div class="metric-footer"><span>{{ shop_sales_count }} transactions containing shop items</span></div>
-            </div>
-        </div>
-
-        <div class="metric-card">
-            <div class="metric-header">
-                <span>Completed Bar Sales</span>
-                <span class="material-symbols-outlined" style="font-size: 18px;">local_cafe</span>
-            </div>
-            <div>
-                <div class="metric-value">₹{{ bar_sales_total }}</div>
-                <div class="metric-footer"><span>{{ bar_sales_count }} transactions containing bar items</span></div>
-            </div>
-        </div>
-
-        <!-- Metric 3: Court Utilization -->
         <div class="metric-card">
             <div class="metric-header">
                 <span>Court Utilization (Today)</span>
@@ -90,13 +66,12 @@
             <div>
                 <div class="metric-value">{{ utilization_rate }}%</div>
                 <div class="metric-footer">
-                    <span>{{ today_bookings_count }} / {{ total_bookable_hours_today }} bookable court hrs</span>
+                    <span>{{ today_booked_hours|floatformat:"-1" }} / {{ total_bookable_hours_today }} booked court hrs</span>
                     <span>&middot; {{ total_courts }} courts</span>
                 </div>
             </div>
         </div>
 
-        <!-- Metric 4: Active Members -->
         <div class="metric-card">
             <div class="metric-header">
                 <span>Active Member Profiles</span>
@@ -106,24 +81,24 @@
                 <div class="metric-value">{{ active_members }}</div>
                 <div class="metric-footer">
                     <span>{{ total_members }} total records</span>
-                    <span>&middot; valid membership and active plan</span>
+                    <span>&middot; active today</span>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- 2-Column Operational Grid -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 1.75rem; align-items: start;">
+    <div class="dashboard-grid">
         <!-- Left: Live Recent Bookings Ledger -->
-        <div class="modern-table-container">
-            <div style="padding: 1.15rem 1.25rem; border-bottom: 1px solid var(--border-stitch); display: flex; justify-content: space-between; align-items: center; background-color: var(--surface-container-lowest);">
+        <div class="modern-table-container dashboard-ledger">
+            <div class="dashboard-panel-heading">
                 <div>
                     <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--on-surface);">Court Activity Ledger</h2>
-                    <p style="font-size: 0.78rem; color: var(--secondary-stitch); margin-top: 0.1rem;">
+                    <p class="dashboard-panel-description">
                         Real-time court reservations and price snapshots
                     </p>
                 </div>
-                <a href="{% url 'club:booking_list' %}" style="font-size: 0.8rem; font-weight: 600; color: var(--primary); text-decoration: none;">
+                <a href="{% url 'club:booking_list' %}" class="dashboard-panel-link">
                     View All ({{ total_bookings_count }}) &rarr;
                 </a>
             </div>
@@ -196,68 +171,23 @@
             </table>
         </div>
 
-        <!-- Right: Modules & Architecture Overview -->
-        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-            <div class="metric-card">
-                <div class="metric-header">
-                    <span>Inventory Alerts</span>
-                    <span class="material-symbols-outlined" style="font-size: 18px;">inventory_2</span>
+        <!-- Right: membership tiers and stock alerts -->
+        <div class="dashboard-side-panels">
+            <section class="dashboard-side-card" aria-labelledby="membership-tiers-title">
+                <div class="dashboard-panel-heading dashboard-side-heading">
+                    <h2 id="membership-tiers-title">Active Membership Tiers</h2>
+                    <a href="{% url 'club:plan_list' %}" class="dashboard-panel-link">Plans &rarr;</a>
                 </div>
-                <div class="metric-value">{{ inventory_alert_count }}</div>
-                <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;">
-                    {% for product in inventory_alerts %}
-                    <a href="{{ product.get_absolute_url }}" style="display: flex; justify-content: space-between; gap: 1rem; color: var(--on-surface); text-decoration: none; font-size: 0.82rem;">
-                        <span>{{ product.name }}</span>
-                        <span class="tabular-nums">{{ product.stock_quantity }} left / threshold {{ product.low_stock_threshold }}</span>
-                    </a>
-                    {% empty %}
-                    <p style="font-size: 0.82rem; color: var(--secondary-stitch);">No active products at or below their low-stock threshold.</p>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="metric-card">
-                <h3 style="font-size: 0.95rem; font-weight: 700;">Completed Sales by Creation Date</h3>
-                <p style="font-size: 0.78rem; color: var(--secondary-stitch); margin: 0.35rem 0 0.75rem;">Last seven club dates. Grouped by draft creation date; completion time is not recorded.</p>
-                <table class="modern-table">
-                    <thead><tr><th scope="col">Date</th><th scope="col">Sales</th><th scope="col">Completed value</th></tr></thead>
-                    <tbody>
-                        {% for point in sales_creation_trend %}
-                        <tr><td>{{ point.date|date:"d M" }}</td><td>{{ point.count }}</td><td class="tabular-nums">₹{{ point.total }}</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="metric-card">
-                <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Recent Completed Commerce</h3>
-                {% for sale in recent_completed_sales %}
-                <a href="{% url 'commerce:sale_detail' sale.pk %}" style="display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 0.65rem; text-decoration: none; color: var(--on-surface); font-size: 0.82rem;">
-                    <span>#{{ sale.pk }} &middot; {% if sale.member_id %}{{ sale.member.name }}{% else %}Walk-in guest{% endif %}</span>
-                    <strong class="tabular-nums">₹{{ sale.total }}</strong>
-                </a>
-                {% empty %}
-                <p style="font-size: 0.82rem; color: var(--secondary-stitch);">No completed sales yet.</p>
-                {% endfor %}
-                <p style="font-size: 0.72rem; color: var(--secondary-stitch);">Shop/bar grouping follows each product's current category; amounts use saved sale snapshots.</p>
-            </div>
-
-            <!-- Membership Tiers Card -->
-            <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
-                    <h3 style="font-size: 0.95rem; font-weight: 700;">Active Membership Tiers</h3>
-                    <a href="{% url 'club:member_list' %}" style="font-size: 0.75rem; color: var(--primary); text-decoration: none; font-weight: 600;">Ledger &rarr;</a>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div class="tier-list">
                     {% for plan in plans %}
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.75rem; background-color: var(--surface-container-low); border-radius: 8px;">
+                        <div class="tier-row">
                             <div>
-                                <div style="font-weight: 600; font-size: 0.85rem;">{{ plan.name }}</div>
-                                <div style="font-size: 0.72rem; color: var(--secondary-stitch);">
+                                <div class="tier-name">{{ plan.name }}</div>
+                                <div class="tier-details">
                                     Court: {% if plan.court_hourly_rate == 0 %}Free{% else %}₹{{ plan.court_hourly_rate }}/hr{% endif %} &middot; Shop: {{ plan.shop_discount_percent }}% &middot; Bar: {{ plan.bar_discount_percent }}%
                                 </div>
                             </div>
-                            <div class="tabular-nums" style="font-weight: 700; font-size: 0.88rem;">
+                            <div class="tier-price tabular-nums">
                                 ₹{{ plan.membership_fee }}
                             </div>
                         </div>
@@ -265,9 +195,65 @@
                         <p style="font-size: 0.85rem; color: var(--secondary-stitch);">No plans seeded.</p>
                     {% endfor %}
                 </div>
-            </div>
+            </section>
 
+            <section class="dashboard-side-card inventory-card" id="inventory-alerts" aria-labelledby="inventory-alerts-title">
+                <div class="dashboard-panel-heading dashboard-side-heading">
+                    <h2 id="inventory-alerts-title"><span class="material-symbols-outlined">inventory_2</span>Low Inventory Alerts</h2>
+                    <a href="{% url 'admin:commerce_product_changelist' %}" class="dashboard-panel-link">Inventory &rarr;</a>
+                </div>
+                <div class="inventory-alert-list">
+                    {% for product in inventory_alerts %}
+                    <a href="{% url 'admin:commerce_product_change' product.pk %}" class="inventory-alert-row">
+                        <span>{{ product.name }}</span>
+                        <span class="inventory-quantity">{{ product.stock_quantity }} left (min: {{ product.low_stock_threshold }})</span>
+                    </a>
+                    {% empty %}
+                    <p class="dashboard-empty-state">All active products are above their low-stock thresholds.</p>
+                    {% endfor %}
+                </div>
+            </section>
         </div>
     </div>
+
+    <section class="commerce-performance" id="commerce-performance" aria-labelledby="commerce-performance-title">
+        <div class="commerce-performance-heading">
+            <div>
+                <div class="dashboard-eyebrow">Shop &amp; Bar Operations</div>
+                <h2 id="commerce-performance-title">Sales Performance</h2>
+                <p>Completed sales use saved transaction totals. Daily grouping follows sale creation date.</p>
+            </div>
+            <a href="{% url 'commerce:guest_counter' %}" class="btn-secondary-low">Open POS</a>
+        </div>
+        <div class="commerce-performance-grid">
+            <section class="dashboard-side-card">
+                <h3>Completed Sales by Creation Date</h3>
+                <p class="dashboard-panel-description">Last seven club dates. Completion time is not recorded.</p>
+                <div class="dashboard-table-scroll">
+                    <table class="modern-table">
+                        <thead><tr><th scope="col">Date</th><th scope="col">Sales</th><th scope="col">Completed value</th></tr></thead>
+                        <tbody>
+                            {% for point in sales_creation_trend %}
+                            <tr><td>{{ point.date|date:"d M" }}</td><td>{{ point.count }}</td><td class="tabular-nums">₹{{ point.total }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            <section class="dashboard-side-card">
+                <h3>Recent Completed Sales</h3>
+                <div class="recent-sales-list">
+                    {% for sale in recent_completed_sales %}
+                    <a href="{% url 'commerce:sale_detail' sale.pk %}" class="recent-sale-row">
+                        <span>#{{ sale.pk }} &middot; {% if sale.member_id %}{{ sale.member.name }}{% else %}Walk-in guest{% endif %}</span>
+                        <strong class="tabular-nums">₹{{ sale.total }}</strong>
+                    </a>
+                    {% empty %}
+                    <p class="dashboard-empty-state">No completed sales yet.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </section>
 </div>
 {% endblock %}

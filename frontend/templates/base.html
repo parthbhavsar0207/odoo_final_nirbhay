@@ -24,200 +24,117 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body x-data="{ mobileMenuOpen: false }">
-    <!-- Top System Strip: Staff Terminal Switcher -->
-    <div class="top-notice-strip" style="background-color: var(--on-surface); color: #e2e8f0; font-size: 0.75rem; padding: 0.35rem 0;">
-        <div class="app-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span class="pulse-indicator"></span>
-                <span>Champions Club &middot; Master Surface Circuit &middot; Est. 1928</span>
-            </div>
-            <!-- Staff Operations Quick Links (Clearly distinguished from Public pages) -->
-            <div class="desktop-only" style="display: flex; align-items: center; gap: 0.65rem;">
-                <span style="color: var(--secondary-stitch); text-transform: uppercase; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;">Staff Operations:</span>
-                <a href="{% url 'dashboard' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Dashboard</a>
-                <span style="color: var(--secondary-stitch);">&middot;</span>
-                <a href="{% url 'club:booking_list' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Bookings Ledger</a>
-                <span style="color: var(--secondary-stitch);">&middot;</span>
-                <a href="{% url 'club:member_list' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Members</a>
-                <span style="color: var(--secondary-stitch);">&middot;</span>
-                <a href="{% url 'club:plan_list' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Plan Subscriptions</a>
-                <span style="color: var(--secondary-stitch);">&middot;</span>
-                <a href="{% url 'commerce:guest_counter' %}" style="color: #cbd5e1; text-decoration: none; font-weight: 500;">Shop &amp; Bar POS</a>
-            </div>
+    <div class="top-notice-strip">
+        <div class="app-container top-notice-inner">
+            <div class="top-notice-brand"><span class="pulse-indicator"></span>Staff Operations Terminal &middot; Champions Club</div>
         </div>
     </div>
 
-    <!-- Main Navigation Bar (Customer-First & Public-Friendly) -->
-    <header class="navbar" style="background-color: var(--surface-container-lowest); border-bottom: 1px solid var(--border-stitch); padding: 0.75rem 0; box-shadow: 0 1px 4px rgba(0,0,0,0.03); position: sticky; top: 0; z-index: 50;">
-        <div class="app-container" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-            <!-- Brand Logo -->
-            <div style="display: flex; align-items: center; gap: 1.25rem;">
-                <a href="{% url 'club:sports_directory' %}" style="display: flex; align-items: center; gap: 0.65rem; text-decoration: none; color: var(--on-surface);">
-                    <div style="width: 38px; height: 38px; border-radius: 9px; background-color: var(--primary-container); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
-                        <span class="material-symbols-outlined" style="font-size: 22px; color: var(--on-primary-fixed);">sports_tennis</span>
-                    </div>
-                    <div>
-                        <div style="font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15;">CHAMPIONS CLUB</div>
-                        <div style="font-size: 0.68rem; font-weight: 600; color: var(--secondary-stitch); text-transform: uppercase; letter-spacing: 0.06em;">Multi-Sport Facility</div>
-                    </div>
-                </a>
+    <header class="navbar club-navbar">
+        <div class="app-container club-navbar-inner">
+            <a href="{% url 'dashboard' %}" class="club-brand">
+                <span class="club-brand-icon material-symbols-outlined">sports_tennis</span>
+                <span class="club-brand-copy">
+                    <strong>CHAMPIONS CLUB</strong>
+                    <small>COURT &amp; CLUB OPERATIONS</small>
+                </span>
+            </a>
 
-                <!-- Customer-Facing Navigation Links (Desktop) -->
-                <nav class="nav-links desktop-only" style="display: flex; gap: 0.4rem; margin-left: 0.5rem;">
-                    <a href="{% url 'club:sports_directory' %}" class="chip-pill {% if 'sports' in request.path %}active{% endif %}">
-                        Activities
-                    </a>
-                    <a href="{% url 'club:public_availability' %}" class="chip-pill {% if 'availability' in request.path %}active{% endif %}">
-                        Court Schedule
-                    </a>
-                    <a href="{% url 'club:public_plans' %}" class="chip-pill {% if 'plans' in request.path and 'public' in request.path %}active{% endif %}">
-                        Memberships
-                    </a>
-                    <a href="{% url 'commerce:shop' %}" class="chip-pill {% if 'commerce' in request.path %}active{% endif %}">
-                        Pro Shop &amp; Bar
-                    </a>
-                </nav>
-            </div>
+            <nav class="staff-nav desktop-only" aria-label="Staff operations">
+                <a href="{% url 'dashboard' %}" class="chip-pill staff-nav-link {% if request.path == '/' %}active{% endif %}">Dashboard</a>
 
-            <!-- Real-Time Site Search with Suggestions & Actions -->
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <!-- Search Suggestions Bar (Accessible, Debounced) -->
-                <div class="site-search-wrapper desktop-only" x-data="siteSearch()" @click.outside="close()" @keydown="onKeyDown($event)">
-                    <span class="material-symbols-outlined site-search-icon">search</span>
-                    <input 
-                        type="text" 
-                        class="site-search-input" 
-                        placeholder="Search sports, courts, products..." 
-                        x-model="query" 
-                        @input="onInput()" 
-                        @focus="if (query.trim().length > 0) isOpen = true"
-                        aria-autocomplete="list"
-                        aria-expanded="isOpen"
-                        aria-label="Site Search for sports, facilities, and products"
-                    >
-
-                    <!-- Suggestions Dropdown Pane -->
-                    <div class="search-suggestions-dropdown" x-show="isOpen" x-cloak x-ref="suggestionsList">
-                        <template x-if="isLoading">
-                            <div style="padding: 0.75rem; text-align: center; color: var(--secondary-stitch); font-size: 0.8rem;">
-                                Searching club facilities &amp; catalog...
-                            </div>
-                        </template>
-
-                        <template x-if="!isLoading && suggestions.length > 0">
-                            <div>
-                                <template x-for="(item, idx) in suggestions" :key="idx">
-                                    <div 
-                                        class="search-suggestion-item" 
-                                        :class="{ 'is-highlighted': selectedIndex === idx }"
-                                        @click="selectItem(item.url)"
-                                        @mouseenter="selectedIndex = idx"
-                                    >
-                                        <div style="display: flex; align-items: center; gap: 0.5rem; overflow: hidden;">
-                                            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--secondary-stitch);" x-text="item.icon || 'arrow_forward'"></span>
-                                            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                                <div style="font-weight: 600; font-size: 0.84rem; color: var(--on-surface);" x-text="item.title"></div>
-                                                <div style="font-size: 0.72rem; color: var(--secondary-stitch);" x-text="item.subtitle"></div>
-                                            </div>
-                                        </div>
-                                        <span class="search-suggestion-type-badge" x-text="item.type"></span>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-
-                        <template x-if="!isLoading && suggestions.length === 0 && query.trim().length > 0">
-                            <div style="padding: 1rem 0.75rem; text-align: center; color: var(--secondary-stitch); font-size: 0.82rem;">
-                                <div style="font-weight: 600; color: var(--on-surface); margin-bottom: 0.2rem;">No matches found</div>
-                                <div>No sports, facilities, or products match "<span x-text="query"></span>".</div>
-                            </div>
-                        </template>
+                <div class="staff-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
+                    <button type="button" class="chip-pill staff-nav-trigger {% if '/bookings/' in request.path or '/availability/' in request.path or '/sports/' in request.path %}active{% endif %}" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true">
+                        Courts &amp; Bookings <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                    <div x-show="open" x-cloak class="club-dropdown-menu staff-nav-menu">
+                        <a href="{% url 'club:booking_list' %}" class="club-dropdown-item"><span class="material-symbols-outlined">calendar_view_week</span><span>Bookings Ledger</span></a>
+                        <a href="{% url 'club:booking_create' %}" class="club-dropdown-item"><span class="material-symbols-outlined">event_available</span><span>New Booking</span></a>
+                        <a href="{% url 'club:public_availability' %}" class="club-dropdown-item"><span class="material-symbols-outlined">grid_view</span><span>Live Court Availability</span></a>
+                        <a href="{% url 'club:sports_directory' %}" class="club-dropdown-item"><span class="material-symbols-outlined">sports_tennis</span><span>Activities &amp; Facilities</span></a>
+                        <a href="{% url 'club:booking_export_csv' %}" class="club-dropdown-item"><span class="material-symbols-outlined">download</span><span>Export Bookings CSV</span></a>
                     </div>
                 </div>
 
-                <!-- Reserve Court CTA -->
-                <a href="{% url 'club:booking_create' %}" class="btn-accent desktop-only">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
-                    <span>Reserve Slot</span>
-                </a>
-
-                <!-- Mobile Toggle -->
-                <button type="button" class="mobile-nav-toggle mobile-only" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle navigation menu" style="display: none; background: none; border: 1px solid var(--border-stitch); border-radius: 8px; padding: 0.4rem 0.6rem; cursor: pointer; color: var(--on-surface);">
-                    <span class="material-symbols-outlined" style="font-size: 22px;" x-text="mobileMenuOpen ? 'close' : 'menu'">menu</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Mobile Navigation Drawer -->
-        <div class="mobile-nav-drawer" x-show="mobileMenuOpen" x-cloak @click.outside="mobileMenuOpen = false" style="background-color: var(--surface-container-lowest); border-top: 1px solid var(--border-stitch); padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
-            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.2rem;">Public Club Pages</div>
-            <a href="{% url 'club:sports_directory' %}" class="chip-pill {% if 'sports' in request.path %}active{% endif %}" style="text-align: left; padding: 0.6rem 0.85rem;">
-                Activities &amp; Facilities
-            </a>
-            <a href="{% url 'club:public_availability' %}" class="chip-pill {% if 'availability' in request.path %}active{% endif %}" style="text-align: left; padding: 0.6rem 0.85rem;">
-                Court Schedule
-            </a>
-            <a href="{% url 'club:public_plans' %}" class="chip-pill {% if 'plans' in request.path and 'public' in request.path %}active{% endif %}" style="text-align: left; padding: 0.6rem 0.85rem;">
-                Memberships
-            </a>
-            <a href="{% url 'commerce:shop' %}" class="chip-pill {% if 'commerce' in request.path %}active{% endif %}" style="text-align: left; padding: 0.6rem 0.85rem;">
-                Pro Shop &amp; Bar
-            </a>
-
-            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); margin-top: 0.75rem; margin-bottom: 0.2rem;">Staff Operations</div>
-            <a href="{% url 'dashboard' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
-                Dashboard Overview
-            </a>
-            <a href="{% url 'club:booking_list' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
-                Bookings Ledger
-            </a>
-            <a href="{% url 'club:member_list' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
-                Members Directory
-            </a>
-            <a href="{% url 'club:plan_list' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
-                Plans Management
-            </a>
-            <a href="{% url 'commerce:guest_counter' %}" class="chip-pill" style="text-align: left; padding: 0.5rem 0.85rem; font-size: 0.82rem;">
-                Shop &amp; Bar POS
-            </a>
-
-            <div style="padding-top: 0.75rem; border-top: 1px solid var(--border-stitch); margin-top: 0.25rem;">
-                <a href="{% url 'club:booking_create' %}" class="btn-accent" style="width: 100%; justify-content: center; padding: 0.6rem 1rem;">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">event_available</span>
-
-                    <span>Reserve Court</span>
-                </a>
-
-                <!-- Staff Profile / Operations Dropdown -->
-                <div x-data="{ open: false }" @click.outside="open = false" style="position: relative;">
-                    <button type="button" @click="open = !open" class="btn-secondary-low" style="padding: 0.45rem 0.65rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
-                        <span class="material-symbols-outlined" style="font-size: 18px;">account_circle</span>
-                        <span style="font-size: 0.8rem; font-weight: 600;">Admin</span>
-                        <span class="material-symbols-outlined" style="font-size: 16px; transition: transform 0.2s ease;" :style="open ? 'transform: rotate(180deg)' : ''">expand_more</span>
+                <div class="staff-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
+                    <button type="button" class="chip-pill staff-nav-trigger {% if '/members/' in request.path or '/plans/' in request.path %}active{% endif %}" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true">
+                        Members Ledger <span class="material-symbols-outlined">expand_more</span>
                     </button>
-                    <div x-show="open" x-cloak class="club-dropdown-menu" style="position: absolute; top: 100%; right: 0; margin-top: 0.4rem; z-index: 1000; min-width: 220px;">
-                        <div style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-stitch); background-color: var(--surface-container-low); border-top-left-radius: 10px; border-top-right-radius: 10px;">
-                            <div style="font-size: 0.78rem; font-weight: 700; color: var(--on-surface);">Terminal #1 &middot; Front Desk</div>
-                            <div style="font-size: 0.7rem; color: #166534; display: flex; align-items: center; gap: 0.35rem; margin-top: 2px;">
-                                <span class="pulse-indicator"></span> Session Active
+                    <div x-show="open" x-cloak class="club-dropdown-menu staff-nav-menu">
+                        <a href="{% url 'club:member_list' %}" class="club-dropdown-item"><span class="material-symbols-outlined">groups</span><span>Members Directory</span></a>
+                        <a href="{% url 'club:member_create' %}" class="club-dropdown-item"><span class="material-symbols-outlined">person_add</span><span>Add Member</span></a>
+                        <a href="{% url 'club:plan_list' %}" class="club-dropdown-item"><span class="material-symbols-outlined">loyalty</span><span>Membership Plans</span></a>
+                        <a href="{% url 'club:public_plans' %}" class="club-dropdown-item"><span class="material-symbols-outlined">card_membership</span><span>Public Plan Catalog</span></a>
+                    </div>
+                </div>
+
+                <div class="staff-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
+                    <button type="button" class="chip-pill staff-nav-trigger {% if '/commerce/' in request.path %}active{% endif %}" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true">
+                        Shop &amp; Bar POS <span class="material-symbols-outlined">expand_more</span>
+                    </button>
+                    <div x-show="open" x-cloak class="club-dropdown-menu staff-nav-menu staff-nav-menu-right">
+                        <a href="{% url 'commerce:guest_counter' %}" class="club-dropdown-item"><span class="material-symbols-outlined">point_of_sale</span><span>Guest Counter</span></a>
+                        <a href="{% url 'commerce:member_counter' %}" class="club-dropdown-item"><span class="material-symbols-outlined">badge</span><span>Member Counter</span></a>
+                        <a href="{% url 'commerce:shop' %}" class="club-dropdown-item"><span class="material-symbols-outlined">storefront</span><span>Shop &amp; Bar Catalog</span></a>
+                        <a href="{% url 'dashboard' %}#commerce-performance" class="club-dropdown-item"><span class="material-symbols-outlined">monitoring</span><span>Sales Performance</span></a>
+                        <a href="{% url 'dashboard' %}#inventory-alerts" class="club-dropdown-item"><span class="material-symbols-outlined">inventory_2</span><span>Low Inventory Alerts</span></a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="club-navbar-actions">
+                <a href="{% url 'club:booking_create' %}" class="btn-accent desktop-only"><span class="material-symbols-outlined">calendar_month</span><span>Reserve Court</span></a>
+
+                <div class="staff-menu desktop-only admin-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
+                    <button type="button" class="btn-secondary-low admin-trigger" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true">
+                        <span class="material-symbols-outlined">account_circle</span><span>Admin</span><span class="material-symbols-outlined admin-chevron" :class="{ 'is-open': open }">expand_more</span>
+                    </button>
+                    <div x-show="open" x-cloak class="club-dropdown-menu staff-nav-menu staff-nav-menu-right admin-dropdown">
+                        <div class="admin-menu-heading">Quick Search</div>
+                        <div class="site-search-wrapper admin-search" x-data="siteSearch()" @click.outside="close()" @keydown="onKeyDown($event)">
+                            <span class="material-symbols-outlined site-search-icon">search</span>
+                            <input type="text" class="site-search-input" placeholder="Sports, courts, products..." x-model="query" @input="onInput()" @focus="if (query.trim().length > 0) isOpen = true" aria-autocomplete="list" :aria-expanded="isOpen.toString()" aria-label="Search sports, facilities, and products">
+                            <div class="search-suggestions-dropdown" x-show="isOpen" x-cloak x-ref="suggestionsList">
+                                <template x-if="isLoading"><div class="search-empty-state">Searching club facilities &amp; catalog...</div></template>
+                                <template x-if="!isLoading &amp;&amp; suggestions.length &gt; 0"><div>
+                                    <template x-for="(item, idx) in suggestions" :key="idx">
+                                        <div class="search-suggestion-item" :class="{ 'is-highlighted': selectedIndex === idx }" @click="selectItem(item.url)" @mouseenter="selectedIndex = idx">
+                                            <div class="search-suggestion-copy"><span class="material-symbols-outlined" x-text="item.icon || 'arrow_forward'"></span><span><strong x-text="item.title"></strong><small x-text="item.subtitle"></small></span></div>
+                                            <span class="search-suggestion-type-badge" x-text="item.type"></span>
+                                        </div>
+                                    </template>
+                                </div></template>
+                                <template x-if="!isLoading &amp;&amp; suggestions.length === 0 &amp;&amp; query.trim().length &gt; 0"><div class="search-empty-state"><strong>No matches found</strong><span>No sports, facilities, or products match this search.</span></div></template>
                             </div>
                         </div>
-                        <a href="{% url 'dashboard' %}" class="club-dropdown-item">
-                            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">dashboard</span>
-                            <span>Executive Dashboard</span>
-                        </a>
-                        <a href="{% url 'club:booking_export_csv' %}" class="club-dropdown-item">
-                            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">download</span>
-                            <span>Export Bookings CSV</span>
-                        </a>
-                        <a href="{% url 'club:public_availability' %}" class="club-dropdown-item">
-                            <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary);">grid_view</span>
-                            <span>Live Court Schedule</span>
-                        </a>
+                        <div class="club-dropdown-divider"></div>
+                        <a href="{% url 'dashboard' %}" class="club-dropdown-item"><span class="material-symbols-outlined">dashboard</span><span>Executive Dashboard</span></a>
+                        <a href="{% url 'admin:index' %}" class="club-dropdown-item"><span class="material-symbols-outlined">settings</span><span>Django Admin</span></a>
                     </div>
                 </div>
+
+                <button type="button" class="mobile-nav-toggle mobile-only" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle navigation menu"><span class="material-symbols-outlined" x-text="mobileMenuOpen ? 'close' : 'menu'">menu</span></button>
             </div>
         </div>
+
+        <nav class="mobile-nav-drawer" x-show="mobileMenuOpen" x-cloak aria-label="Staff and public pages">
+            <a href="{% url 'dashboard' %}" class="mobile-nav-link">Dashboard Overview</a>
+            <a href="{% url 'club:booking_list' %}" class="mobile-nav-link">Bookings Ledger</a>
+            <a href="{% url 'club:booking_create' %}" class="mobile-nav-link">New Booking</a>
+            <a href="{% url 'club:public_availability' %}" class="mobile-nav-link">Live Court Availability</a>
+            <a href="{% url 'club:sports_directory' %}" class="mobile-nav-link">Activities &amp; Facilities</a>
+            <a href="{% url 'club:booking_export_csv' %}" class="mobile-nav-link">Export Bookings CSV</a>
+            <a href="{% url 'club:member_list' %}" class="mobile-nav-link">Members Directory</a>
+            <a href="{% url 'club:member_create' %}" class="mobile-nav-link">Add Member</a>
+            <a href="{% url 'club:plan_list' %}" class="mobile-nav-link">Membership Plans</a>
+            <a href="{% url 'club:public_plans' %}" class="mobile-nav-link">Public Plan Catalog</a>
+            <a href="{% url 'commerce:guest_counter' %}" class="mobile-nav-link">Guest Counter</a>
+            <a href="{% url 'commerce:member_counter' %}" class="mobile-nav-link">Member Counter</a>
+            <a href="{% url 'dashboard' %}#commerce-performance" class="mobile-nav-link">Sales Performance</a>
+            <a href="{% url 'dashboard' %}#inventory-alerts" class="mobile-nav-link">Low Inventory Alerts</a>
+            <a href="{% url 'admin:index' %}" class="mobile-nav-link">Django Admin</a>
+            <a href="{% url 'club:booking_create' %}" class="btn-accent mobile-reserve"><span class="material-symbols-outlined">calendar_month</span>Reserve Court</a>
+        </nav>
     </header>
 
     <!-- Operational Content Main -->
