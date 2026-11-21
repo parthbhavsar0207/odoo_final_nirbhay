@@ -695,7 +695,7 @@ def search_suggestions_api(request):
             'type': 'Shop & Bar',
             'title': p.name,
             'subtitle': f"{p.get_category_display()} · ₹{p.price} in stock ({p.stock_quantity})",
-            'url': "/commerce/",
+            'url': p.get_absolute_url(),
             'icon': 'shopping_bag',
         })
 
@@ -766,7 +766,7 @@ def help_bot_faq_api(request):
         {
             'id': 'commerce',
             'topic': 'Pro Shop & Bar',
-            'keywords': ['shop', 'bar', 'drink', 'water', 'racquet', 'racket', 'equipment', 'refreshment', 'pos', 'balls', 'food'],
+            'keywords': ['commerce', 'shop', 'bar', 'cafe', 'cafeteria', 'drink', 'water', 'racquet', 'racket', 'equipment', 'refreshment', 'pos', 'balls', 'food'],
             'question': 'What equipment and refreshments are sold on site?',
             'answer': 'Our Pro Shop stocks premium racquets, tour balls, grip tape, and accessories. The Clubhouse Bar provides electrolyte hydration, fresh juices, and specialty espresso. Member discounts apply automatically at checkout.',
             'action_label': 'Visit Club Pro Shop & Bar',
