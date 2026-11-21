@@ -1,176 +1,164 @@
 {% extends 'base.html' %}
+{% load static l10n %}
 
-{% block title %}Pro Shop &amp; Bar POS · Champions Club{% endblock %}
+{% block title %}{{ page_title }} &middot; Champions Club{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/commerce.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="app-container">
-    <!-- Section Header -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+{% localize off %}
+<div class="app-container commerce-page">
+    <div class="commerce-heading">
         <div>
-            <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
-                Commerce Operations / Point-of-Sale
-            </div>
-            <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--on-surface); letter-spacing: -0.02em;">
-                Pro Shop &amp; Clubhouse Bar POS
-            </h1>
-            <p style="color: var(--secondary-stitch); font-size: 0.88rem; margin-top: 0.2rem;">
-                Member merchandising, racquets, apparel, court essentials, and refreshment inventory
-            </p>
+            <div class="commerce-eyebrow">Commerce Operations / Point-of-Sale</div>
+            <h1>Pro Shop &amp; Clubhouse Bar POS</h1>
+            <p class="commerce-copy">Sporting essentials and refreshments. Create and manage counter sales.</p>
         </div>
-
-        <div>
-            <button class="btn-accent" disabled style="opacity: 0.6; cursor: not-allowed;" title="New sales flow">
-                <span class="material-symbols-outlined" style="font-size: 18px;">point_of_sale</span>
-                <span>+ New POS Sale</span>
-            </button>
-        </div>
+        <a class="btn-accent" href="{% url 'commerce:guest_counter' %}#guest-sale-form">
+            <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 18px;">point_of_sale</span>
+            <span>New Sale</span>
+        </a>
+        <a class="btn-secondary-low" href="{% url 'commerce:member_counter' %}#guest-sale-form">Member sale</a>
     </div>
 
-    <!-- Category Filter Tabs & Search -->
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
-        <div class="chip-group">
-            <span class="chip-pill active">All Products</span>
-            <span class="chip-pill">Racquets &amp; Strings</span>
-            <span class="chip-pill">Apparel &amp; Polos</span>
-            <span class="chip-pill">Footwear</span>
-            <span class="chip-pill">Balls &amp; Accessories</span>
-            <span class="chip-pill">Clubhouse Bar &amp; Cafe</span>
-        </div>
-
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <div style="position: relative;">
-                <input type="text" placeholder="Search SKU, item, brand..." class="form-input" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; width: 220px; border-radius: 8px;">
-            </div>
-            <span class="chip-pill" style="cursor: pointer;">In Stock Only</span>
-        </div>
-    </div>
-
-    <!-- Live or Scaffold Catalog Display -->
-    {% if products %}
-        <div class="catalog-grid">
-            {% for product in products %}
-                <div class="catalog-card">
-                    <div class="catalog-image-box">
-                        <span class="material-symbols-outlined" style="font-size: 48px;">inventory_2</span>
-                    </div>
-                    <div class="catalog-body">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <span class="catalog-title">{{ product.name }}</span>
-                            <span class="pill-status pill-status-active">{{ product.category|capfirst }}</span>
-                        </div>
-                        <div class="catalog-sku">SKU: {{ product.sku|default:"PRD-LIVE" }}</div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-                            <div class="catalog-price">₹{{ product.price }}</div>
-                            <span style="font-size: 0.8rem; color: var(--secondary-stitch);">
-                                {{ product.stock_quantity }} in stock
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <!-- Empty State with Design System Component Layout -->
-        <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 2rem 1.5rem; text-align: center; margin-bottom: 2rem;">
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🛍️</div>
-            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--on-surface); margin-bottom: 0.25rem;">
-                No Live Products in Database Yet
-            </h3>
-            <p style="font-size: 0.88rem; color: var(--secondary-stitch); max-width: 540px; margin: 0 auto 1.5rem auto;">
-                Registered items and stock inventory will appear here. Below is the pro shop catalog showcase.
-            </p>
-        </div>
-
-        <!-- Catalog Preview Grid -->
-        <div style="margin-bottom: 1rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-stitch);">
-            Pro Shop &amp; Bar Catalog Preview
-        </div>
-
-        <div class="catalog-grid">
-            <!-- Item 1: Racquet -->
-            <div class="catalog-card">
-                <div class="catalog-image-box">
-                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--secondary-stitch);">sports_tennis</span>
-                </div>
-                <div class="catalog-body">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <span class="catalog-title">Wilson Blade 98 v9 (16x19)</span>
-                        <span class="pill-tier tier-gold">Racquet</span>
-                    </div>
-                    <div class="catalog-sku">SKU: WLS-BL98-V9 &middot; 6 left</div>
-                    <div style="font-size: 0.78rem; color: var(--secondary-stitch); margin-bottom: 0.75rem;">
-                        Matte emerald green precision frame. Member discount applies.
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-stitch); padding-top: 0.75rem;">
-                        <div class="catalog-price">₹22,500.00</div>
-                        <button class="btn-secondary-low" disabled style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">Sell</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 2: Apparel -->
-            <div class="catalog-card">
-                <div class="catalog-image-box">
-                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--secondary-stitch);">apparel</span>
-                </div>
-                <div class="catalog-body">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <span class="catalog-title">Champions Club Heritage Polo</span>
-                        <span class="pill-tier tier-silver">Apparel</span>
-                    </div>
-                    <div class="catalog-sku">SKU: CC-POLO-HER &middot; 18 left</div>
-                    <div style="font-size: 0.78rem; color: var(--secondary-stitch); margin-bottom: 0.75rem;">
-                        Forest green technical pique polo with club crest.
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-stitch); padding-top: 0.75rem;">
-                        <div class="catalog-price">₹3,400.00</div>
-                        <button class="btn-secondary-low" disabled style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">Sell</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 3: Balls -->
-            <div class="catalog-card">
-                <div class="catalog-image-box">
-                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--secondary-stitch);">sports_baseball</span>
-                </div>
-                <div class="catalog-body">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <span class="catalog-title">US Open Extra Duty Can (4 Balls)</span>
-                        <span class="pill-tier tier-junior">Balls</span>
-                    </div>
-                    <div class="catalog-sku">SKU: CC-BALL-CAN &middot; 48 left</div>
-                    <div style="font-size: 0.78rem; color: var(--secondary-stitch); margin-bottom: 0.75rem;">
-                        Official tournament specification pressurized felt balls.
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-stitch); padding-top: 0.75rem;">
-                        <div class="catalog-price">₹750.00</div>
-                        <button class="btn-secondary-low" disabled style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">Sell</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Item 4: Bar -->
-            <div class="catalog-card">
-                <div class="catalog-image-box">
-                    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--secondary-stitch);">local_cafe</span>
-                </div>
-                <div class="catalog-body">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <span class="catalog-title">Clubhouse Cold-Pressed Electrolyte</span>
-                        <span class="pill-status" style="background-color: #f1f5f9; color: var(--on-surface);">Bar</span>
-                    </div>
-                    <div class="catalog-sku">SKU: BAR-ELEC-01 &middot; 24 left</div>
-                    <div style="font-size: 0.78rem; color: var(--secondary-stitch); margin-bottom: 0.75rem;">
-                        Fresh coconut water, Himalayan pink salt &amp; lime.
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-stitch); padding-top: 0.75rem;">
-                        <div class="catalog-price">₹180.00</div>
-                        <button class="btn-secondary-low" disabled style="padding: 0.3rem 0.65rem; font-size: 0.78rem;">Sell</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    {% if error_message %}
+    <div class="commerce-feedback commerce-feedback-error" role="alert">{{ error_message }}</div>
     {% endif %}
+
+    {% if sale %}
+    <section class="commerce-panel" aria-labelledby="sale-heading">
+        <div class="commerce-card-heading">
+            <h2 id="sale-heading">{% if sale.member_id %}Member{% else %}Guest{% endif %} Sale #{{ sale.pk }}</h2>
+            <span class="pill-status {% if sale.status == 'completed' %}pill-status-active{% elif sale.status == 'cancelled' %}pill-status-suspended{% endif %}">{{ sale.get_status_display }}</span>
+        </div>
+        <dl class="commerce-meta">
+            <div><dt>Customer</dt><dd>{% if sale.member_id %}{{ sale.member.name }}{% else %}Walk-in guest{% endif %}</dd></div>
+            <div><dt>Payment method</dt><dd>{{ sale.get_payment_method_display }}</dd></div>
+            <div><dt>Created</dt><dd>{{ sale.created_at|date:"d M Y, H:i" }} IST</dd></div>
+        </dl>
+        <div class="commerce-feedback commerce-feedback-success" role="status">
+            {% if sale.status == 'draft' %}
+                Draft created. Stock changes only when you complete the sale.
+            {% elif sale.status == 'completed' %}
+                Sale completed. Inventory has been deducted.
+            {% elif sale.status == 'cancelled' %}
+                Sale cancelled. Any deducted inventory has been restored.
+            {% endif %}
+        </div>
+        {% if sale.status == 'draft' %}
+        <p class="commerce-copy">Prices are saved when the sale completes. Draft amounts have not been priced yet.</p>
+        {% else %}
+        <p class="commerce-copy">Saved sale amounts are retained after cancellation. A draft cancelled before completion has zero amounts.</p>
+        {% endif %}
+        <div class="commerce-table-scroll">
+            <table class="modern-table">
+                <caption class="commerce-copy">Sale items and saved price snapshots</caption>
+                <thead><tr><th scope="col">Product</th><th scope="col">Quantity</th><th scope="col">Unit price</th><th scope="col">Discount</th><th scope="col">Line total</th></tr></thead>
+                <tbody>
+                    {% for item in sale_items %}
+                    <tr>
+                        <td>{{ item.product.name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        {% if sale.status == 'draft' %}
+                        <td>Pending</td><td>Pending</td><td>Pending</td>
+                        {% else %}
+                        <td>&#8377;{{ item.unit_price }}</td><td>&#8377;{{ item.discount }}</td><td>&#8377;{{ item.line_total }}</td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">No items recorded for this sale.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <dl class="commerce-totals">
+            <div><dt>Subtotal</dt><dd>{% if sale.status == 'draft' %}Pending{% else %}&#8377;{{ sale.subtotal }}{% endif %}</dd></div>
+            <div><dt>Discount</dt><dd>{% if sale.status == 'draft' %}Pending{% else %}&#8377;{{ sale.discount }}{% endif %}</dd></div>
+            <div class="commerce-total"><dt>Total</dt><dd>{% if sale.status == 'draft' %}Pending{% else %}&#8377;{{ sale.total }}{% endif %}</dd></div>
+        </dl>
+        <div class="commerce-actions">
+            {% if sale.status == 'draft' %}
+            <form method="post" action="{% url 'commerce:sale_complete' sale.pk %}">
+                {% csrf_token %}
+                <button class="btn-accent" type="submit">Complete sale</button>
+            </form>
+            {% endif %}
+            {% if sale.status == 'draft' or sale.status == 'completed' %}
+            <form method="post" action="{% url 'commerce:sale_cancel' sale.pk %}">
+                {% csrf_token %}
+                <button class="btn-secondary-low" type="submit">Cancel sale</button>
+            </form>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="commerce-panel" aria-labelledby="guest-form-heading">
+        <h2 id="guest-form-heading">New {% if member_mode %}member{% else %}guest{% endif %} sale</h2>
+        <p class="commerce-copy">Choose one product and a payment method. Review the draft before completing it.</p>
+        <form id="guest-sale-form" method="post" action="{% if member_mode %}{% url 'commerce:member_sale_create' %}{% else %}{% url 'commerce:sale_create' %}{% endif %}">
+            {% csrf_token %}
+            {% if form.errors %}
+            <div class="commerce-feedback commerce-feedback-error" role="alert">
+                <p>Please correct the sale details below.</p>
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+            <div class="commerce-form-grid">
+                {% for field in form %}
+                <div class="commerce-field">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {{ field.errors }}
+                </div>
+                {% endfor %}
+            </div>
+            <button class="btn-accent" type="submit">Create {% if member_mode %}member{% else %}guest{% endif %} sale</button>
+        </form>
+    </section>
+
+    <div class="commerce-heading">
+        <h2 class="commerce-catalog-title">Shop &amp; Bar products</h2>
+        <span class="chip-pill active">Active catalogue</span>
+    </div>
+    <div class="catalog-grid">
+        {% for product in products %}
+        <article class="catalog-card" data-product-id="{{ product.pk }}">
+            <div class="catalog-image-box">
+                <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 48px;">{% if product.category == 'bar' %}local_cafe{% else %}sports_tennis{% endif %}</span>
+            </div>
+            <div class="catalog-body">
+                <div class="commerce-card-heading">
+                    <h3 class="catalog-title">{{ product.name }}</h3>
+                    <span class="pill-status pill-status-active">{{ product.get_category_display }}</span>
+                </div>
+                <div class="commerce-card-price">
+                    <span class="catalog-price">&#8377;{{ product.price }}</span>
+                    <span class="commerce-stock">{{ product.stock_quantity }} in stock</span>
+                </div>
+                <div class="commerce-actions">
+                    <a class="btn-secondary-low" href="{% url 'commerce:guest_counter' %}#guest-sale-form" data-sell-product="{{ product.pk }}">Sell</a>
+                    {% if product.stock_quantity == 0 %}
+                    <span class="pill-status pill-status-expired">Out of stock</span>
+                    {% elif product.is_low_stock %}
+                    <span class="pill-status pill-status-expired">Low stock</span>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+        {% empty %}
+        <div class="commerce-panel commerce-empty">
+            <h2>No active products</h2>
+            <p class="commerce-copy">Add or activate products in the product admin to begin counter sales.</p>
+            <a class="btn-secondary-low" href="{% url 'admin:commerce_product_changelist' %}">Open product admin</a>
+        </div>
+        {% endfor %}
+    </div>
 </div>
+{% endlocalize %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/commerce.js' %}" defer></script>
 {% endblock %}
