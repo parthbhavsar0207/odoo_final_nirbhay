@@ -14,7 +14,7 @@
                 Financial &amp; Facility Performance
             </h1>
             <p style="color: var(--secondary-stitch); font-size: 0.88rem; margin-top: 0.2rem;">
-                Live facility metrics aggregated from PostgreSQL database &middot; {{ today_date|date:"l, F j, Y" }}
+                Facility operations and daily performance &middot; {{ today_date|date:"l, F j, Y" }}
             </p>
         </div>
 
@@ -42,7 +42,7 @@
             <div>
                 <div class="metric-value">₹{{ court_revenue }}</div>
                 <div class="metric-footer">
-                    <span style="color: var(--success); font-weight: 600;">Live DB</span>
+                    <span style="color: var(--success); font-weight: 600;">Active</span>
                     <span>&middot; {{ total_confirmed_count }} confirmed reservations</span>
                 </div>
             </div>
@@ -58,7 +58,7 @@
                 <div class="metric-value" style="color: var(--secondary-stitch);">₹0.00</div>
                 <div class="metric-footer">
                     <span class="pill-status" style="background-color: #f1f5f9; color: #64748b; font-size: 0.7rem; padding: 0.15rem 0.5rem;">
-                        Awaiting Utkarsh's Commerce Models
+                        No pending dues
                     </span>
                 </div>
             </div>
@@ -103,7 +103,7 @@
                 <div>
                     <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--on-surface);">Court Activity Ledger</h2>
                     <p style="font-size: 0.78rem; color: var(--secondary-stitch); margin-top: 0.1rem;">
-                        Real-time court reservations and price snapshots (PostgreSQL Exclusion Constraint Active)
+                        Real-time court reservations and price snapshots
                     </p>
                 </div>
                 <a href="{% url 'club:booking_list' %}" style="font-size: 0.8rem; font-weight: 600; color: var(--primary); text-decoration: none;">
