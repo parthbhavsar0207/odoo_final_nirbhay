@@ -39,6 +39,12 @@ class MemberForm(forms.ModelForm):
             'is_suspended': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk and self.instance.plan_changes.exists():
+            self.fields['plan'].disabled = True
+            self.fields['plan'].help_text = 'This is the original plan. Use Change Plan to update the dated assignment.'
+
 
 class BookingForm(forms.ModelForm):
     """
@@ -162,3 +168,9 @@ class MemberChangePlanForm(forms.Form):
         label="I confirm this member plan transition without altering past historical records",
         widget=forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
     )
+
+    def clean_effective_date(self):
+        value = self.cleaned_data['effective_date']
+        if value < timezone.localdate():
+            raise forms.ValidationError('Choose today or a future effective date.')
+        return value

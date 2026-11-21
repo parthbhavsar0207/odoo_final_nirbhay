@@ -4,6 +4,7 @@ Club Django Admin Registration
 
 from django.contrib import admin
 from .models import MembershipPlan, Member, Court, Booking, BookingParticipant
+from .forms import MemberForm
 
 
 @admin.register(MembershipPlan)
@@ -15,7 +16,8 @@ class MembershipPlanAdmin(admin.ModelAdmin):
 
 @admin.register(Member)
 class MemberAdmin(admin.ModelAdmin):
-    list_display = ('name', 'plan', 'phone', 'membership_start', 'membership_end', 'is_active_member', 'is_suspended')
+    form = MemberForm
+    list_display = ('name', 'current_plan', 'phone', 'membership_start', 'membership_end', 'is_active_member', 'is_suspended')
     list_filter = ('plan', 'is_club_member', 'is_suspended')
     search_fields = ('name', 'email', 'phone')
 

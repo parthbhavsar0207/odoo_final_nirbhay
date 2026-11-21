@@ -32,19 +32,19 @@
             <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.35rem;">
                 Current Plan Profile
             </div>
-            {% if member.plan %}
+            {% if member.current_plan %}
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span class="pill-tier tier-{{ member.plan.tier }}">
-                            {{ member.plan.get_tier_display }}
+                        <span class="pill-tier tier-{{ member.current_plan.tier }}">
+                            {{ member.current_plan.get_tier_display }}
                         </span>
-                        <strong style="color: var(--on-surface);">{{ member.plan.name }}</strong>
+                        <strong style="color: var(--on-surface);">{{ member.current_plan.name }}</strong>
                     </div>
                     <div style="font-size: 0.82rem; color: var(--secondary-stitch); display: flex; gap: 1rem;">
-                        <span>Fee: <strong class="tabular-nums">₹{{ member.plan.membership_fee }}</strong></span>
-                        <span>Court: <strong class="tabular-nums">{% if member.plan.court_hourly_rate == 0 %}Free{% else %}₹{{ member.plan.court_hourly_rate }}/hr{% endif %}</strong></span>
-                        <span>Shop: <strong class="tabular-nums">{{ member.plan.shop_discount_percent }}%</strong></span>
-                        <span>Bar: <strong class="tabular-nums">{{ member.plan.bar_discount_percent }}%</strong></span>
+                        <span>Fee: <strong class="tabular-nums">₹{{ member.current_plan.membership_fee }}</strong></span>
+                        <span>Court: <strong class="tabular-nums">{% if member.current_plan.court_hourly_rate == 0 %}Free{% else %}₹{{ member.current_plan.court_hourly_rate }}/hr{% endif %}</strong></span>
+                        <span>Shop: <strong class="tabular-nums">{{ member.current_plan.shop_discount_percent }}%</strong></span>
+                        <span>Bar: <strong class="tabular-nums">{{ member.current_plan.bar_discount_percent }}%</strong></span>
                     </div>
                 </div>
             {% else %}
@@ -53,6 +53,9 @@
                 </div>
             {% endif %}
         </div>
+        {% for change in member.pending_plan_changes %}
+            <p style="font-size: 0.82rem; margin-top: 0.75rem; color: var(--secondary-stitch);">Scheduled: {{ change.plan.name }} from {{ change.effective_date }}.</p>
+        {% endfor %}
     </div>
 
     <!-- Transition Form Card -->
@@ -123,7 +126,7 @@
                             Confirm Plan Transition
                         </label>
                         <small style="color: var(--secondary-stitch); font-size: 0.78rem; display: block; margin-top: 0.2rem;">
-                            I confirm updating {{ member.name }}'s active plan. Backend pricing rules snapshot booking fees at confirmation time; existing historical records will not be altered.
+                            I confirm this plan assignment from the selected date. Today's benefits remain in effect until a future change begins; previous transaction amounts stay unchanged.
                         </small>
                         {% if form.confirm_change.errors %}
                             <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.25rem;">{{ form.confirm_change.errors }}</div>

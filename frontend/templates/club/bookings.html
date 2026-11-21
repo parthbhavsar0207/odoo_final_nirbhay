@@ -57,7 +57,7 @@
 
         <div class="kpi-card">
             <div class="kpi-card-header">
-                <span>Confirmed Court Revenue</span>
+                <span>Confirmed Booking Value</span>
                 <span class="material-symbols-outlined" style="font-size: 18px; color: #854d0e;">payments</span>
             </div>
             <div class="kpi-card-value">₹{{ confirmed_revenue|default:"0.00" }}</div>
@@ -173,10 +173,10 @@
                                             <a href="{% url 'club:member_edit' booking.booked_by_member.id %}" style="font-weight: 600; color: var(--on-surface); text-decoration: none;">
                                                 {{ booking.booked_by_member.name }}
                                             </a>
-                                            {% if booking.booked_by_member.plan %}
+                                            {% if booking.booked_by_member.current_plan %}
                                                 <div>
-                                                    <span class="pill-tier tier-{{ booking.booked_by_member.plan.tier }}">
-                                                        {{ booking.booked_by_member.plan.name }}
+                                                    <span class="pill-tier tier-{{ booking.booked_by_member.current_plan.tier }}">
+                                                        {{ booking.booked_by_member.current_plan.name }}
                                                     </span>
                                                 </div>
                                             {% endif %}
