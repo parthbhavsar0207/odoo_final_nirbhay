@@ -398,12 +398,12 @@ def public_availability(request):
 
 
 # ==========================================================================
-# Section for Ten Sports (Data-Driven Shared Architecture)
+# Activities Section (Data-Driven Shared Architecture)
 # ==========================================================================
 
 def sports_directory(request):
     """
-    Public Sports Directory showing all 10 sports.
+    Public Activities Directory showing all sports and facilities.
     Data-driven listing with real facility availability counts.
     """
     search_q = request.GET.get('q', '').strip().lower()
@@ -422,7 +422,7 @@ def sports_directory(request):
     categories = sorted(list(set(s['category'] for s in SPORTS_CATALOG.values())))
 
     context = {
-        'page_title': 'Sports & Athletic Facilities · Champions Club',
+        'page_title': 'Activities & Facilities · Champions Club',
         'sports': all_sports,
         'categories': categories,
         'selected_category': selected_category,
@@ -733,7 +733,7 @@ def help_bot_faq_api(request):
             'keywords': ['sport', 'sports', 'court', 'courts', 'tennis', 'badminton', 'squash', 'cricket', 'football', 'basketball', 'volleyball', 'table tennis', 'pickleball', 'swimming', 'facility', 'pool'],
             'question': 'What sports and athletic facilities are available at Champions Club?',
             'answer': 'Champions Club features 10 world-class sports: Tennis (French Red Clay & Hardcourt), Badminton (BWF Mat), Squash (WSF Glass Back), Cricket practice nets, Football turf, Basketball, Volleyball, Table Tennis, Pickleball, and a 25-meter heated Lap Pool.',
-            'action_label': 'Explore All 10 Sports',
+            'action_label': 'Explore Activities',
             'action_url': '/club/sports/',
         },
         {

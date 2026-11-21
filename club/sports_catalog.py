@@ -1,5 +1,5 @@
 """
-Sports Catalog - Centralized Shared Data for 10 Sports
+Sports Catalog - Centralized Shared Data for Club Activities
 Champions Club Multi-Sport Facility
 """
 
@@ -156,7 +156,7 @@ def get_sport_data(slug: str) -> Dict[str, Any] | None:
 
 def get_all_sports_with_facilities(court_queryset=None) -> List[Dict[str, Any]]:
     """
-    Returns list of all 10 sports annotated with real database facilities.
+    Returns list of all activities annotated with real database facilities.
     """
     from club.models import Court
 

@@ -23,7 +23,7 @@ urlpatterns = [
     path('plans/<int:pk>/toggle-active/', views.plan_toggle_active, name='plan_toggle_active'),
     path('plans/public/', views.public_plans, name='public_plans'),
 
-    # 10 Sports Section & Shared Detail Flow
+    # Activities Section & Shared Detail Flow
     path('sports/', views.sports_directory, name='sports_directory'),
     path('sports/<str:sport_slug>/', views.sport_detail, name='sport_detail'),
 

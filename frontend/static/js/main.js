@@ -582,7 +582,7 @@ document.addEventListener('alpine:init', () => {
                     role: 'agent',
                     text: 'Hello! I am your Champions Club Concierge. How can I assist you with sports, court reservations, or membership plans today?',
                     chips: [
-                        { label: '🎾 10 Sports & Facilities', query: 'sports' },
+                        { label: '🎾 Activities & Facilities', query: 'sports' },
                         { label: '📅 Live Court Availability', query: 'availability' },
                         { label: '🏷️ Membership Plans & Perks', query: 'plans' },
                         { label: '⏰ Booking Rules & Hours', query: 'booking' },

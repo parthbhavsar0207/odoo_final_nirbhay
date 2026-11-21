@@ -65,7 +65,7 @@
                 <!-- Customer-Facing Navigation Links (Desktop) -->
                 <nav class="nav-links desktop-only" style="display: flex; gap: 0.4rem; margin-left: 0.5rem;">
                     <a href="{% url 'club:sports_directory' %}" class="chip-pill {% if 'sports' in request.path %}active{% endif %}">
-                        10 Sports
+                        Activities
                     </a>
                     <a href="{% url 'club:public_availability' %}" class="chip-pill {% if 'availability' in request.path %}active{% endif %}">
                         Court Schedule
@@ -152,7 +152,7 @@
         <div class="mobile-nav-drawer" x-show="mobileMenuOpen" x-cloak @click.outside="mobileMenuOpen = false" style="background-color: var(--surface-container-lowest); border-top: 1px solid var(--border-stitch); padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
             <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); margin-bottom: 0.2rem;">Public Club Pages</div>
             <a href="{% url 'club:sports_directory' %}" class="chip-pill {% if 'sports' in request.path %}active{% endif %}" style="text-align: left; padding: 0.6rem 0.85rem;">
-                10 Sports &amp; Facilities
+                Activities &amp; Facilities
             </a>
             <a href="{% url 'club:public_availability' %}" class="chip-pill {% if 'availability' in request.path %}active{% endif %}" style="text-align: left; padding: 0.6rem 0.85rem;">
                 Court Schedule
