@@ -307,9 +307,12 @@ def booking_detail(request, pk):
                 messages.success(request, f"Participant added to booking #{booking.id}.")
                 return redirect('club:booking_detail', pk=booking.id)
             except ValidationError as err:
-                for field, errors in err.message_dict.items():
-                    for error in errors:
-                        participant_form.add_error(field if field != '__all__' else None, error)
+                if hasattr(err, 'message_dict'):
+                    for field, errors in err.message_dict.items():
+                        for error in errors:
+                            participant_form.add_error(field if field in participant_form.fields else None, error)
+                else:
+                    participant_form.add_error(None, err)
                 messages.error(request, "Participant validation failed.")
 
     context = {

@@ -7,7 +7,7 @@ from decimal import Decimal
 from datetime import timedelta, datetime, time
 import zoneinfo
 
-from django.db import models
+from django.db import models, transaction
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
@@ -380,40 +380,52 @@ class Booking(models.Model):
                 )
 
             # 4. Daily limit check: max 2 confirmed bookings per member per local club date
-            if self.booked_by_member:
-                local_date = timezone.localtime(self.start_datetime, tz).date()
+            member_ids = set()
+            if self.booked_by_member_id:
+                member_ids.add(self.booked_by_member_id)
+            if self.pk:
+                member_ids.update(self.participants.filter(member__isnull=False).values_list('member_id', flat=True))
+            local_date = timezone.localtime(self.start_datetime, tz).date()
+            for member in Member.objects.filter(pk__in=member_ids).order_by('pk'):
                 member_bookings_count = self.count_member_daily_plays(
-                    self.booked_by_member,
+                    member,
                     local_date,
                     exclude_booking_id=self.pk
                 )
 
                 if member_bookings_count >= 2:
                     raise ValidationError(
-                        f"Member '{self.booked_by_member.name}' already has {member_bookings_count} confirmed "
+                        f"Member '{member.name}' already has {member_bookings_count} confirmed "
                         f"bookings on {local_date}. Maximum allowed is 2 per club day."
                     )
 
     def save(self, *args, **kwargs):
-        if self.start_datetime and not self.end_datetime:
-            self.end_datetime = self.start_datetime + timedelta(minutes=60)
-        if self.start_datetime and self.end_datetime:
-            self.slot_range = Range(self.start_datetime, self.end_datetime, bounds='[)')
+        with transaction.atomic():
+            # Existing parent first, then member IDs in one consistent order.
+            # All booking/roster saves use these locks before counting plays.
+            persisted = type(self).objects.select_for_update().filter(pk=self.pk).first() if self.pk else None
+            member_ids = {value for value in (self.booked_by_member_id, persisted.booked_by_member_id if persisted else None) if value}
+            if persisted:
+                member_ids.update(self.participants.filter(member__isnull=False).values_list('member_id', flat=True))
+            list(Member.objects.select_for_update().filter(pk__in=member_ids).order_by('pk'))
+            if self.start_datetime and not self.end_datetime:
+                self.end_datetime = self.start_datetime + timedelta(minutes=60)
+            if self.start_datetime and self.end_datetime:
+                self.slot_range = Range(self.start_datetime, self.end_datetime, bounds='[)')
 
-        # A zero-price confirmed booking is still a saved historical snapshot.
-        was_confirmed = bool(self.pk and type(self).objects.filter(pk=self.pk, status='confirmed').exists())
-        if self.status == 'confirmed' and not was_confirmed:
-            self.snapshot_price()
+            # A zero-price confirmed booking is still a saved historical snapshot.
+            if self.status == 'confirmed' and not (persisted and persisted.status == 'confirmed'):
+                self.snapshot_price()
 
-        self.full_clean()
-        super().save(*args, **kwargs)
+            self.full_clean()
+            super().save(*args, **kwargs)
 
-        # Ensure the booking member is added as a participant
-        if self.booked_by_member:
-            BookingParticipant.objects.get_or_create(
-                booking=self,
-                member=self.booked_by_member
-            )
+            # The booking and its primary participant succeed or roll back together.
+            if self.booked_by_member_id:
+                BookingParticipant.objects.get_or_create(
+                    booking=self,
+                    member_id=self.booked_by_member_id,
+                )
 
 
 class BookingParticipant(models.Model):
@@ -469,5 +481,11 @@ class BookingParticipant(models.Model):
                 )
 
     def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            # Re-read the locked parent so a stale draft cannot bypass a newly
+            # confirmed booking's daily limit. Match Booking.save's lock order.
+            self.booking = Booking.objects.select_for_update().get(pk=self.booking_id)
+            member_ids = {value for value in (self.member_id, self.booking.booked_by_member_id) if value}
+            list(Member.objects.select_for_update().filter(pk__in=member_ids).order_by('pk'))
+            self.full_clean()
+            super().save(*args, **kwargs)
