@@ -3,6 +3,10 @@
 
 {% block title %}Live Court Availability · Champions Club{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/availability_checkout.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="app-container">
     <!-- Hero Banner -->
@@ -14,7 +18,7 @@
             </span>
         </div>
 
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: center;">
+        <div class="availability-hero-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: center;">
             <div>
                 <h1 style="font-size: 2.25rem; font-weight: 800; color: var(--on-surface); line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 0.75rem;">
                     Championship Play.<br>
@@ -256,6 +260,7 @@
 
         <!-- Modal Form Body -->
         <form id="modal-booking-form" onsubmit="handleModalSubmit(event)" style="padding: 1.5rem;">
+            {% if razorpay_test_enabled or demo_gateway_enabled %}<input type="hidden" name="demo_gateway" value="1">{% endif %}
             <!-- Modal In-Web Alert Box -->
             <div id="modal-error-alert" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.85rem; background-color: #fef2f2; border: 1px solid #fca5a5; color: #991b1b;"></div>
 
@@ -274,7 +279,7 @@
                 </div>
 
                 <!-- Schedule & Session Settings -->
-                <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 0.85rem;">
+                <div class="availability-booking-grid" style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 0.85rem;">
                     <div>
                         <label for="modal-start-input" style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--secondary-stitch); margin-bottom: 0.35rem;">
                             Date &amp; Start Time *
@@ -309,7 +314,7 @@
                         </select>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                    <div class="availability-booking-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
                         <div>
                             <label for="modal-walkin-name" style="display: block; font-size: 0.75rem; font-weight: 600; color: var(--secondary-stitch); margin-bottom: 0.25rem;">
                                 Walk-in Guest Name
@@ -453,24 +458,19 @@
                                 </svg>
                             </div>
                             <div style="flex: 1;">
-                                <div style="font-weight: 700; color: var(--on-surface); font-size: 0.8rem;">Champions Club Fast UPI</div>
-                                <div style="color: var(--secondary-stitch); font-family: monospace; font-size: 0.72rem; margin: 0.15rem 0;">VPA: championsclub@okaxis</div>
+                                <div style="font-weight: 700; color: var(--on-surface); font-size: 0.8rem;">{% if razorpay_test_enabled %}Razorpay Test UPI Checkout{% elif demo_gateway_enabled %}Simulated UPI Checkout{% else %}UPI Payment Record{% endif %}</div>
+                                <div style="color: var(--secondary-stitch); font-size: 0.72rem; margin: 0.15rem 0;">Demo only. Do not scan or transfer money.</div>
                                 <div style="color: #166534; font-size: 0.7rem; display: flex; align-items: center; gap: 0.25rem;">
                                     <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
-                                    <span>Instant payment webhook verification active</span>
+                                    <span>{% if razorpay_test_enabled %}Continue to hosted Test Mode checkout after reserving. No real money charged.{% elif demo_gateway_enabled %}Choose success, failure or cancel in the demo gateway.{% else %}Record payment at the club counter.{% endif %}</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Card View -->
                         <div id="pay-view-card" style="display: none;">
-                            <div style="font-weight: 700; color: var(--on-surface); margin-bottom: 0.35rem;">POS Card Terminal Simulation</div>
-                            <div style="display: flex; gap: 0.45rem;">
-                                <input type="text" value="•••• •••• •••• 4242" readonly style="flex: 2; padding: 0.35rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--border-stitch); border-radius: 6px; background: white; font-family: monospace;">
-                                <input type="text" value="12/28" readonly style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--border-stitch); border-radius: 6px; background: white; font-family: monospace; text-align: center;">
-                                <input type="text" value="•••" readonly style="width: 50px; padding: 0.35rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--border-stitch); border-radius: 6px; background: white; font-family: monospace; text-align: center;">
-                            </div>
-                            <div style="font-size: 0.68rem; color: var(--secondary-stitch); margin-top: 0.35rem;">Swipe / Tap member Visa, Mastercard, or RuPay card at the reception counter.</div>
+                            <div style="font-weight: 700; color: var(--on-surface); margin-bottom: 0.35rem;">{% if razorpay_test_enabled %}Razorpay Test Card Checkout{% elif demo_gateway_enabled %}Simulated Card Checkout{% else %}Card Payment Record{% endif %}</div>
+                            <div style="font-size: 0.75rem; color: var(--secondary-stitch); line-height: 1.5;">{% if razorpay_test_enabled %}Only use documented test details inside Razorpay's hosted checkout. No real money charged.{% elif demo_gateway_enabled %}Choose a demo outcome after reserving the court. No card number, expiry or CVV is collected.{% else %}Record card payment at the club counter.{% endif %}</div>
                         </div>
 
                         <!-- Cash View -->
@@ -874,6 +874,10 @@ async function handleModalSubmit(event) {
         const data = await response.json();
 
         if (response.ok && data.success) {
+            if (data.payment_url) {
+                window.location.assign(data.payment_url);
+                return;
+            }
             closeBookingModal();
 
             // 1. Prioritize In-Web Pop-up Toast

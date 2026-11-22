@@ -6,6 +6,7 @@ Styled by Pratik (Frontend templates & styling)
 
 import csv
 import json
+from django.conf import settings
 from decimal import Decimal
 from datetime import datetime, time, timedelta
 
@@ -448,9 +449,19 @@ def booking_create(request):
             if booking.payment_method == Booking.PaymentMethod.MEMBER_TAB and not booking.booked_by_member:
                 booking.payment_method = Booking.PaymentMethod.UPI
 
+            use_demo_gateway = (
+                (settings.DEMO_PAYMENT_GATEWAY_ENABLED or settings.RAZORPAY_TEST_MODE_ENABLED)
+                and request.POST.get('demo_gateway') == '1'
+                and booking.price > Decimal('0.00')
+                and booking.payment_method in (Booking.PaymentMethod.UPI, Booking.PaymentMethod.CARD)
+            )
             if booking.price == Decimal('0.00') and booking.booked_by_member:
                 booking.payment_status = Booking.PaymentStatus.WAIVED
                 booking.payment_method = Booking.PaymentMethod.MEMBER_TAB
+            elif use_demo_gateway:
+                # The booking reserves its slot, but browser-submitted payment
+                # status cannot claim success before the simulator completes.
+                booking.payment_status = Booking.PaymentStatus.PENDING
             else:
                 pay_status = request.POST.get('payment_status')
                 # Never permit arbitrary waiver if price > 0
@@ -470,7 +481,18 @@ def booking_create(request):
                     booking.save()
                 local_start = timezone.localtime(booking.start_datetime)
                 local_end = timezone.localtime(booking.end_datetime)
-                pay_detail = f"Settled ₹{booking.price:.2f} via {booking.get_payment_method_display()}"
+                payment_url = (
+                    reverse(
+                        'commerce:razorpay_payment' if settings.RAZORPAY_TEST_MODE_ENABLED
+                        else 'commerce:demo_payment', args=['booking', booking.pk],
+                    )
+                    if use_demo_gateway else None
+                )
+                pay_detail = (
+                    f"Demo payment pending: ₹{booking.price:.2f} via {booking.get_payment_method_display()}. No real charge."
+                    if use_demo_gateway
+                    else f"Settled ₹{booking.price:.2f} via {booking.get_payment_method_display()}"
+                )
                 success_msg = (
                     f"Booking #{booking.id} confirmed for {booking.court.name} at "
                     f"{local_start.strftime('%Y-%m-%d %H:%M')}. "
@@ -493,6 +515,7 @@ def booking_create(request):
                         'payment_method_display': booking.get_payment_method_display(),
                         'payment_status': booking.payment_status,
                         'payment_status_display': booking.get_payment_status_display(),
+                        'payment_url': payment_url,
                         'slot_hour': local_start.strftime('%H:%M'),
                         'start_time': local_start.strftime('%H:%M'),
                         'end_time': local_end.strftime('%H:%M'),
@@ -503,6 +526,8 @@ def booking_create(request):
                     })
 
                 messages.success(request, success_msg)
+                if payment_url:
+                    return redirect(payment_url)
                 return redirect('club:booking_list')
             except ValidationError as err:
                 error_list = []
@@ -565,6 +590,8 @@ def booking_create(request):
 
     context = {
         'page_title': 'Reserve Court',
+        'demo_gateway_enabled': settings.DEMO_PAYMENT_GATEWAY_ENABLED,
+        'razorpay_test_enabled': settings.RAZORPAY_TEST_MODE_ENABLED,
         'form': form,
         'courts_json': json.dumps(courts_data),
         'members_json': json.dumps(members_data),
@@ -580,9 +607,12 @@ def booking_cancel(request, pk):
     Handoff to Pratik:
     - Route name: 'club:booking_cancel'
     """
-    booking = get_object_or_404(Booking, pk=pk)
-    booking.status = 'cancelled'
-    booking.save()
+    # Serialize cancellation with demo checkout, preserving any payment result
+    # committed before this cancellation acquires the booking lock.
+    with transaction.atomic():
+        booking = get_object_or_404(Booking.objects.select_for_update(), pk=pk)
+        booking.status = 'cancelled'
+        booking.save()
 
     is_ajax = (
         request.headers.get('x-requested-with') == 'XMLHttpRequest' or
@@ -726,6 +756,8 @@ def booking_detail(request, pk):
         'booking': booking,
         'participants': participants,
         'participant_form': participant_form,
+        'demo_gateway_enabled': settings.DEMO_PAYMENT_GATEWAY_ENABLED,
+        'razorpay_test_enabled': settings.RAZORPAY_TEST_MODE_ENABLED,
     }
     return render(request, 'club/booking_detail.html', context)
 
@@ -759,6 +791,8 @@ def booking_receipt(request, pk):
         'tier_name': tier_name,
         'standard_price': standard_price,
         'discount': discount,
+        'demo_gateway_enabled': settings.DEMO_PAYMENT_GATEWAY_ENABLED,
+        'razorpay_test_enabled': settings.RAZORPAY_TEST_MODE_ENABLED,
     }
     return render(request, 'club/booking_receipt.html', context)
 

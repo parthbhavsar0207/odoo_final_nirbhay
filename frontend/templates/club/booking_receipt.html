@@ -244,7 +244,7 @@
             <p>Court Reservation Voucher &middot; Front Desk &middot; Gate Verification</p>
             <div class="voucher-badge">
                 <span class="material-symbols-outlined" style="font-size: 14px;">verified</span>
-                <span>{{ booking.get_status_display }} &middot; Confirmed</span>
+                <span>{{ booking.get_status_display }}{% if booking.status == 'cancelled' %} &middot; Slot Released{% endif %}</span>
             </div>
         </div>
 
@@ -328,9 +328,19 @@
                 </span>
             </div>
             <div class="grand-total-row">
-                <span>Total Settled:</span>
+                <span>{% if booking.payment_is_simulated %}Simulated Amount:{% elif booking.payment_status == 'pending' %}Amount Due:{% else %}Booking Total:{% endif %}</span>
                 <span style="font-family: 'Geist Mono', monospace; color: var(--primary-dark);">₹{{ booking.price|floatformat:2 }}</span>
             </div>
+            {% if booking.razorpay_payment_id %}
+            <p style="font-size: 0.78rem; line-height: 1.5; overflow-wrap: anywhere;">Razorpay Test Mode. Payment: {{ booking.razorpay_payment_id }}. Order: {{ booking.razorpay_order_id }}. No real money charged.</p>
+            {% elif booking.payment_is_simulated %}
+            <div class="pay-row" style="margin-top: 0.75rem; gap: 0.75rem;">
+                <span style="color: var(--secondary-stitch);">Demo Reference:</span>
+                <span style="max-width: 65%; min-width: 0; font-family: 'Geist Mono', monospace; font-size: 0.75rem; overflow-wrap: anywhere;">{{ booking.demo_payment_reference }}</span>
+            </div>
+            <p style="font-size: 0.78rem; line-height: 1.5; margin-top: 0.5rem;">Simulated payment. No money was charged or transferred.</p>
+            {% if booking.status == 'cancelled' %}<p style="font-size: 0.78rem;">Reservation cancelled. The demo reference is retained for history; no real refund was processed.</p>{% endif %}
+            {% endif %}
         </div>
 
         <!-- Verification QR Code -->
@@ -398,6 +408,15 @@
 
     <!-- Actions -->
     <div class="actions-bar">
+        {% if booking.status == 'confirmed' and booking.payment_status == 'pending' and booking.price > 0 %}
+        {% if booking.payment_method == 'upi' or booking.payment_method == 'card' %}
+        {% if razorpay_test_enabled %}
+        <a href="{% url 'commerce:razorpay_payment' 'booking' booking.pk %}" class="action-btn btn-print">Pay with Razorpay (Test)</a>
+        {% elif demo_gateway_enabled %}
+        <a href="{% url 'commerce:demo_payment' 'booking' booking.pk %}" class="action-btn btn-print">Open demo checkout</a>
+        {% endif %}
+        {% endif %}
+        {% endif %}
         <button type="button" onclick="window.print()" class="action-btn btn-print">
             <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
             <span>Print Voucher</span>

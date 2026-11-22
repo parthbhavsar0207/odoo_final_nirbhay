@@ -51,13 +51,17 @@ def dashboard_view(request):
         start_datetime__lt=today_end
     )
     today_bookings_count = today_confirmed_bookings.count()
+    opening = timezone.make_aware(datetime.combine(today, time(6)), tz)
+    closing = timezone.make_aware(datetime.combine(today, time(22)), tz)
+    utilization_bookings = confirmed_bookings.filter(
+        court__active=True, start_datetime__lt=closing, end_datetime__gt=opening,
+    )
     today_booked_hours = sum(
-        (end - start).total_seconds() / 3600
-        for start, end in today_confirmed_bookings.values_list('start_datetime', 'end_datetime')
-        if start and end
+        (min(end, closing) - max(start, opening)).total_seconds() / 3600
+        for start, end in utilization_bookings.values_list('start_datetime', 'end_datetime')
     )
 
-    # Calculate utilization for today (assuming 16 operating hours per court: 06:00 to 22:00)
+    # Count only confirmed active-court time within the 06:00-22:00 window.
     total_bookable_hours_today = total_courts * 16
     utilization_rate = (
         round((today_booked_hours / total_bookable_hours_today) * 100, 1)

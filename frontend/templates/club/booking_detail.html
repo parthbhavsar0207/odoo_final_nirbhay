@@ -114,6 +114,14 @@
                 {% endif %}
             </div>
         </div>
+        {% if booking.razorpay_payment_id %}
+        <p role="note" style="overflow-wrap: anywhere;">Razorpay Test Mode. Payment: {{ booking.razorpay_payment_id }}. Order: {{ booking.razorpay_order_id }}. No real money charged.</p>
+        {% elif booking.payment_is_simulated %}
+        <div role="note" style="margin-top: 1rem; padding: 1rem; border-radius: 8px; background-color: var(--surface-container-low); font-size: 0.82rem; line-height: 1.6; overflow-wrap: anywhere;">
+            Simulated payment &middot; Demo reference: <strong>{{ booking.demo_payment_reference }}</strong>.
+            No money was charged or transferred.
+        </div>
+        {% endif %}
     </div>
 
     <!-- Social Play Participants Roster -->

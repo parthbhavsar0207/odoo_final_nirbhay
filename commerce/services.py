@@ -100,48 +100,23 @@ def _locked_items_and_products(sale):
     return items, products
 
 
-def complete_sale(sale_id):
+def complete_sale(sale_id, *, verified_razorpay_order_id=None):
     """Snapshot prices/benefits and deduct stock once in one transaction."""
     _require_postgresql()
     with transaction.atomic():
         sale = Sale.objects.select_for_update().get(pk=sale_id)
         if not completion_required(sale.status):
             return sale
+        if sale.razorpay_order_id and sale.razorpay_order_id != verified_razorpay_order_id:
+            raise ValidationError(
+                "Verify the saved Razorpay test payment before completing this sale.",
+                code="unverified_provider_payment",
+            )
         if sale.payment_method not in Sale.PaymentMethod.values:
             raise ValidationError("Choose cash, card or UPI.", code="invalid_payment_method")
-        # Lock separate queries: a nullable member/plan outer join cannot be
-        # locked safely by PostgreSQL. Retry returns above before repricing.
-        plan = None
-        if sale.member_id is not None:
-            member = Member.objects.select_for_update().get(pk=sale.member_id)
-            completion_date = timezone.localdate()
-            effective_plan = member.effective_plan_on_date(completion_date)
-            if effective_plan is not None:
-                candidate = MembershipPlan.objects.select_for_update().get(pk=effective_plan.pk)
-                if (
-                    member.is_club_member
-                    and member.is_active_on_date(completion_date)
-                    and candidate.active
-                ):
-                    plan = candidate
+        plan = _locked_plan(sale)
         items, products = _locked_items_and_products(sale)
-        amounts = []
-        for item in items:
-            product = products[item.product_id]
-            validate_stock(
-                quantity=item.quantity,
-                available=product.stock_quantity,
-                is_active=product.is_active,
-            )
-            rate = ZERO
-            if plan is not None:
-                rate = (
-                    plan.shop_discount_percent if product.category == Product.Category.SHOP
-                    else plan.bar_discount_percent
-                )
-            amounts.append(calculate_sale_line(
-                unit_price=product.price, quantity=item.quantity, discount_percent=rate,
-            ))
+        amounts = _sale_line_amounts(items, products, plan)
         totals = calculate_sale_totals(amounts)
 
         # Validate every line before any deduction. Conditional F updates are an
@@ -164,6 +139,55 @@ def complete_sale(sale_id):
         sale.status = Sale.Status.COMPLETED
         sale.save(update_fields=["subtotal", "discount", "total", "status"])
         return sale
+
+
+def _locked_plan(sale):
+    # Nullable relations are locked separately. Ordering matches completion.
+    if sale.member_id is None:
+        return None
+    member = Member.objects.select_for_update().get(pk=sale.member_id)
+    day = timezone.localdate()
+    effective_plan = member.effective_plan_on_date(day)
+    if effective_plan is None:
+        return None
+    candidate = MembershipPlan.objects.select_for_update().get(pk=effective_plan.pk)
+    if member.is_club_member and member.is_active_on_date(day) and candidate.active:
+        return candidate
+    return None
+
+
+def _sale_line_amounts(items, products, plan):
+    amounts = []
+    for item in items:
+        product = products[item.product_id]
+        validate_stock(
+            quantity=item.quantity, available=product.stock_quantity,
+            is_active=product.is_active,
+        )
+        rate = ZERO
+        if plan is not None:
+            rate = (
+                plan.shop_discount_percent if product.category == Product.Category.SHOP
+                else plan.bar_discount_percent
+            )
+        amounts.append(calculate_sale_line(
+            unit_price=product.price, quantity=item.quantity, discount_percent=rate,
+        ))
+    return amounts
+
+
+def quote_sale(sale_id):
+    """Read the payable Decimal total without reserving or deducting stock."""
+    _require_postgresql()
+    with transaction.atomic():
+        sale = Sale.objects.select_for_update().get(pk=sale_id)
+        if sale.status == Sale.Status.COMPLETED:
+            return sale.total
+        if sale.status != Sale.Status.DRAFT:
+            raise ValidationError("Cancelled sales cannot be paid.", code="invalid_sale_state")
+        plan = _locked_plan(sale)
+        items, products = _locked_items_and_products(sale)
+        return calculate_sale_totals(_sale_line_amounts(items, products, plan)).total
 
 
 def cancel_sale(sale_id):

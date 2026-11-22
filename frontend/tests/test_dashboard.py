@@ -134,10 +134,11 @@ class OwnerDashboardTests(TestCase):
         response = self.client.get(reverse("dashboard"))
         self.assertEqual(response.context["confirmed_booking_value"], Decimal("500.00"))
         self.assertEqual(response.context["completed_sales_total"], Decimal("25.00"))
-        self.assertContains(response, "Confirmed Booking Value")
-        self.assertContains(response, "payment collection not recorded")
-        self.assertContains(response, "Completed Shop Sales")
-        self.assertContains(response, "Completed Bar Sales")
+        self.assertContains(response, "Court Booking Value")
+        self.assertContains(response, "snapshot value")
+        self.assertContains(response, "Shop &amp; Bar Sales")
+        self.assertEqual(response.context["shop_sales_total"], Decimal("25.00"))
+        self.assertEqual(response.context["bar_sales_total"], Decimal("0.00"))
         self.assertNotContains(response, "Court Booking Revenue")
         self.assertNotContains(response, "Outstanding Dues")
         self.assertNotContains(response, "No pending dues")
@@ -165,7 +166,7 @@ class OwnerDashboardTests(TestCase):
         sale = complete_sale(self.guest_sale({self.bar.pk: 2}).pk)
         response = self.client.get(reverse("dashboard"))
         self.assertContains(response, "Dashboard racket")
-        self.assertContains(response, self.shop.get_absolute_url())
+        self.assertContains(response, reverse("admin:commerce_product_change", args=[self.shop.pk]))
         self.assertContains(response, reverse("commerce:sale_detail", args=[sale.pk]))
         self.assertContains(response, "Completed Sales by Creation Date")
 
@@ -178,3 +179,37 @@ class OwnerDashboardTests(TestCase):
         self.assertEqual(response.context["active_members"], 1)
         member.refresh_from_db()
         self.assertEqual(member.plan_id, inactive.pk)
+
+    def test_utilization_excludes_inactive_courts_and_clips_operating_hours(self):
+        active = Court.objects.create(name="Active utilization", sport="tennis", hourly_rate=Decimal("500.00"))
+        inactive = Court.objects.create(name="Retired utilization", sport="tennis", hourly_rate=Decimal("500.00"), active=False)
+        for court, hour, minute in [(active, 4, 0), (active, 5, 30), (active, 9, 0), (active, 21, 30), (inactive, 11, 0)]:
+            Booking.objects.create(court=court, walkin_name="Guest", status="confirmed",
+                start_datetime=timezone.make_aware(datetime.combine(self.today, time(hour, minute))))
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.context["total_courts"], 1)
+        self.assertEqual(response.context["today_booked_hours"], 2)
+        self.assertEqual(response.context["utilization_rate"], 12.5)
+
+    def test_utilization_excludes_drafts_cancellations_and_other_dates(self):
+        court = Court.objects.create(name="Utilization court", sport="tennis", hourly_rate=Decimal("500.00"))
+        for day, hour, status in [
+            (self.today, 9, "confirmed"), (self.today, 11, "confirmed"),
+            (self.today, 13, "cancelled"), (self.today, 15, "draft"),
+            (self.today + timedelta(days=1), 9, "confirmed"),
+        ]:
+            Booking.objects.create(court=court, walkin_name="Guest", status=status,
+                start_datetime=timezone.make_aware(datetime.combine(day, time(hour))))
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.context["today_booked_hours"], 2)
+        self.assertEqual(response.context["total_bookable_hours_today"], 16)
+        self.assertContains(response, "2 / 16 booked court hrs")
+
+    def test_latest_five_booking_display_preserves_full_totals(self):
+        court = Court.objects.create(name="Ledger court", sport="tennis", hourly_rate=Decimal("500.00"))
+        for hour in range(6, 13):
+            Booking.objects.create(court=court, walkin_name="Guest", status="confirmed",
+                start_datetime=timezone.make_aware(datetime.combine(self.today, time(hour))))
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(len(response.context["recent_bookings"]), 5)
+        self.assertEqual(response.context["confirmed_booking_value"], Decimal("3500.00"))

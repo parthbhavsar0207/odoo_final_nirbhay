@@ -23,6 +23,7 @@
     <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
         <form method="post" novalidate>
             {% csrf_token %}
+            {% if razorpay_test_enabled or demo_gateway_enabled %}<input type="hidden" name="demo_gateway" value="1">{% endif %}
 
             {% if form.non_field_errors %}
                 <div class="alert alert-danger" style="padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.88rem;">
@@ -217,6 +218,8 @@
                         </div>
                     </div>
 
+                    <p style="font-size: 0.78rem; color: var(--secondary-stitch); margin-bottom: 0.85rem;">UPI and card use a simulated checkout for this demo. No real money is charged; do not enter real payment details.</p>
+
                     <!-- Payment Options Grid -->
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem; margin-bottom: 0.85rem;" id="form-payment-grid">
                         <!-- UPI -->
@@ -224,7 +227,7 @@
                             <input type="radio" name="payment_method" value="upi" checked style="display: none;">
                             <span class="material-symbols-outlined" style="font-size: 24px; color: var(--primary);">qr_code_scanner</span>
                             <span style="font-size: 0.78rem; font-weight: 700; color: var(--on-surface);">UPI / QR</span>
-                            <span style="font-size: 0.65rem; color: var(--secondary-stitch);">Instant App</span>
+                            <span style="font-size: 0.65rem; color: var(--secondary-stitch);">Demo Gateway</span>
                         </label>
 
                         <!-- Card -->
@@ -232,7 +235,7 @@
                             <input type="radio" name="payment_method" value="card" style="display: none;">
                             <span class="material-symbols-outlined" style="font-size: 24px; color: var(--secondary-stitch);">credit_card</span>
                             <span style="font-size: 0.78rem; font-weight: 700; color: var(--on-surface);">Card</span>
-                            <span style="font-size: 0.65rem; color: var(--secondary-stitch);">POS Machine</span>
+                            <span style="font-size: 0.65rem; color: var(--secondary-stitch);">Demo Gateway</span>
                         </label>
 
                         <!-- Cash -->
@@ -255,7 +258,7 @@
                     <!-- Payment Instruction Box -->
                     <div id="form-payment-instructions" style="padding: 0.6rem 0.85rem; border-radius: 6px; background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); font-size: 0.78rem; color: var(--secondary-stitch); display: flex; align-items: center; gap: 0.45rem;">
                         <span class="material-symbols-outlined" style="font-size: 17px; color: var(--primary);">info</span>
-                        <span id="form-payment-instruction-text">UPI QR code / Instant mobile transfer (GPay, PhonePe, Paytm, BHIM).</span>
+                        <span id="form-payment-instruction-text">{% if razorpay_test_enabled %}Razorpay Test Mode: continue to test checkout after reserving. No real money charged.{% elif demo_gateway_enabled %}Simulated UPI checkout. Choose a demo outcome after confirming the reservation; no transfer is required.{% else %}Record UPI payment at the club counter.{% endif %}</span>
 
                     </div>
                 </div>
@@ -482,9 +485,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const instText = document.getElementById('form-payment-instruction-text');
         if (instText) {
             if (method === 'upi') {
-                instText.innerText = 'UPI payment: Scan Front Desk QR or transfer to club UPI ID (GPay, PhonePe, Paytm, BHIM).';
+                instText.innerText = '{% if razorpay_test_enabled %}Razorpay Test Mode: continue to test UPI checkout after reserving. No real money charged.{% elif demo_gateway_enabled %}Simulated UPI checkout. Choose a demo outcome after confirming; do not transfer money.{% else %}Record UPI payment at the club counter.{% endif %}';
             } else if (method === 'card') {
-                instText.innerText = 'Card payment: Swipe or tap Visa/Mastercard/RuPay card on Front Desk POS counter terminal.';
+                instText.innerText = '{% if razorpay_test_enabled %}Razorpay Test Mode: use only documented test card details in the hosted checkout.{% elif demo_gateway_enabled %}Simulated card checkout. Choose a demo outcome after confirming; no card number or CVV is required.{% else %}Record card payment at the club counter.{% endif %}';
             } else if (method === 'cash') {
                 instText.innerText = 'Cash payment: Hand physical cash to the receptionist at the club counter upon arrival.';
             } else if (method === 'member_tab') {
@@ -528,6 +531,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
+                    if (data.payment_url) {
+                        window.location.assign(data.payment_url);
+                        return;
+                    }
                     // Show in-web toast
                     if (window.showClubToast) {
                         window.showClubToast('🎉 Court Reserved Successfully!', data.message, 'success', 6000);
