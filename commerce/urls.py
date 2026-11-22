@@ -4,10 +4,13 @@ Commerce App URL Configuration (Owned by Utkarsh)
 
 from django.urls import path
 from . import views
+from . import payment_views
 
 app_name = 'commerce'
 
 urlpatterns = [
+    path('demo-payment/<str:kind>/<int:pk>/', payment_views.demo_payment, name='demo_payment'),
+    path('demo-payment/<str:kind>/<int:pk>/submit/', payment_views.demo_payment_submit, name='demo_payment_submit'),
     path('', views.guest_counter, name='index'),
     path('shop/', views.guest_counter, name='shop'),
     path('counter/', views.guest_counter, name='guest_counter'),

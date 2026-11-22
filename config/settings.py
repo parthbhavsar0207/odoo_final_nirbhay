@@ -111,3 +111,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Local payment simulator; never processes payments. Disabled by default outside DEBUG.
+DEMO_PAYMENT_GATEWAY_ENABLED = os.getenv('DEMO_PAYMENT_GATEWAY_ENABLED', str(DEBUG)).lower() in ('true', '1', 'yes')

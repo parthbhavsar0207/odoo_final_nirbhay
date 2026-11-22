@@ -1,0 +1,33 @@
+/* Demo checkout uses the shared Champions Club design tokens. */
+.demo-payment-page { max-width: 760px; }
+.demo-payment-heading { margin-bottom: 1.5rem; }
+.demo-payment-eyebrow { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--secondary-stitch); margin-bottom: .25rem; }
+.demo-payment-heading h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -.02em; color: var(--on-surface); }
+.demo-payment-heading p, .demo-payment-help { color: var(--secondary-stitch); font-size: .88rem; line-height: 1.6; }
+.demo-payment-heading p { margin-top: .35rem; }
+.demo-payment-card { padding: 1.5rem; background: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, .03); }
+.demo-payment-card-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.25rem; }
+.demo-payment-card h2 { font-size: 1.15rem; font-weight: 600; color: var(--on-surface); }
+.demo-payment-badge { background: var(--primary-container); color: var(--on-primary-fixed); }
+.demo-payment-notice, .demo-payment-error { padding: 1rem; border-radius: 8px; font-size: .88rem; line-height: 1.6; margin-bottom: 1.25rem; }
+.demo-payment-notice { background: var(--surface-container-low); border-left: 4px solid var(--primary-container); color: var(--on-surface); }
+.demo-payment-error { background: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-left: 4px solid var(--error); color: var(--error); }
+.demo-payment-summary { margin: 1.5rem 0; }
+.demo-payment-summary > div { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: .6rem 0; }
+.demo-payment-summary dt { font-size: .85rem; color: var(--secondary-stitch); }
+.demo-payment-summary dd { margin: 0; text-align: right; color: var(--on-surface); font-weight: 600; font-variant-numeric: tabular-nums; }
+.demo-payment-summary .demo-payment-amount { border-top: 1px solid var(--border-stitch); margin-top: .5rem; padding-top: 1rem; }
+.demo-payment-amount dd { font-size: 1.65rem; font-weight: 800; }
+.demo-payment-reference { font-family: 'Geist Mono', monospace; font-size: .8rem; overflow-wrap: anywhere; }
+.demo-payment-actions { display: flex; flex-wrap: wrap; gap: .65rem; margin: 1.25rem 0; }
+.demo-payment-actions button { min-height: 44px; }
+.demo-payment-return { display: inline-block; color: var(--secondary-stitch); font-size: .88rem; font-weight: 600; margin-top: .75rem; }
+.demo-payment-return:focus-visible { outline: 2px solid var(--on-surface-variant); outline-offset: 3px; }
+@media (max-width: 640px) {
+    .demo-payment-card { padding: 1rem; }
+    .demo-payment-heading h1 { font-size: 1.5rem; }
+    .demo-payment-actions { flex-direction: column; }
+    .demo-payment-actions button { width: 100%; justify-content: center; }
+    .demo-payment-summary > div { flex-wrap: wrap; gap: .4rem; }
+    .demo-payment-summary dd { text-align: left; max-width: 100%; }
+}

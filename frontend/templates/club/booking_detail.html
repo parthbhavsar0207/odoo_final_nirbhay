@@ -99,6 +99,13 @@
             </div>
 
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                {% if demo_gateway_enabled %}
+                {% if booking.status == 'confirmed' and booking.payment_status == 'pending' and booking.price > 0 %}
+                {% if booking.payment_method == 'upi' or booking.payment_method == 'card' %}
+                <a href="{% url 'commerce:demo_payment' 'booking' booking.pk %}" class="btn-accent">Open demo checkout</a>
+                {% endif %}
+                {% endif %}
+                {% endif %}
                 <a href="{% url 'club:booking_receipt' booking.id %}" target="_blank" class="btn-secondary-low" style="display: inline-flex; align-items: center; gap: 0.35rem;">
                     <span class="material-symbols-outlined" style="font-size: 16px;">receipt_long</span>
                     <span>View / Print Voucher</span>
@@ -114,6 +121,12 @@
                 {% endif %}
             </div>
         </div>
+        {% if booking.payment_is_simulated %}
+        <div role="note" style="margin-top: 1rem; padding: 1rem; border-radius: 8px; background-color: var(--surface-container-low); font-size: 0.82rem; line-height: 1.6; overflow-wrap: anywhere;">
+            Simulated payment &middot; Demo reference: <strong>{{ booking.demo_payment_reference }}</strong>.
+            No money was charged or transferred.
+        </div>
+        {% endif %}
     </div>
 
     <!-- Social Play Participants Roster -->

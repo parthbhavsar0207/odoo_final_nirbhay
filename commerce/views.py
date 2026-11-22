@@ -2,6 +2,7 @@
 
 import logging
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError
 from django.http import Http404, HttpResponse
@@ -42,6 +43,7 @@ def _counter_response(request, *, form=None, sale=None, error_message=None, stat
         "sale_items": sale.items.select_related("product").all() if sale is not None else [],
         "error_message": error_message,
         "member_mode": member_mode,
+        "demo_gateway_enabled": settings.DEMO_PAYMENT_GATEWAY_ENABLED,
     }
     return render(request, "commerce/index.html", context, status=status)
 
@@ -165,6 +167,10 @@ def _sale_action(request, pk, operation):
 @require_POST
 @csrf_protect
 def sale_complete(request, pk):
+    if settings.DEMO_PAYMENT_GATEWAY_ENABLED and request.POST.get('demo_gateway') == '1':
+        sale = get_object_or_404(Sale, pk=pk)
+        if sale.status == Sale.Status.DRAFT and sale.payment_method in {Sale.PaymentMethod.CARD, Sale.PaymentMethod.UPI}:
+            return redirect('commerce:demo_payment', kind='sale', pk=pk)
     return _sale_action(request, pk, complete_sale)
 
 

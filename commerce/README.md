@@ -1,5 +1,8 @@
 # Commerce Product milestone — Utkarsh
 
+> Current payment demo: [DEMO_PAYMENT_GATEWAY.md](DEMO_PAYMENT_GATEWAY.md)
+> documents the simulated card/UPI checkout for sales and court bookings.
+
 > Repeatable catalogue demo setup: [DEMO_DATA.md](DEMO_DATA.md).
 > Run `python manage.py seed_commerce_data` to add missing shop/bar demonstration
 > products without resetting existing inventory or prices.

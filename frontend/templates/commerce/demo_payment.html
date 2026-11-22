@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static l10n %}
+
+{% block title %}Demo checkout · Champions Club{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/demo_payment.css' %}">
+{% endblock %}
+
+{% block content %}
+{% localize off %}
+<div class="app-container demo-payment-page">
+    <div class="demo-payment-heading">
+        <div class="demo-payment-eyebrow">Champions Club / Payment simulation</div>
+        <h1>Demo checkout</h1>
+        <p>Choose an outcome to demonstrate the payment workflow.</p>
+    </div>
+
+    <section class="demo-payment-card" aria-labelledby="checkout-heading">
+        <div class="demo-payment-card-heading">
+            <h2 id="checkout-heading">{{ target_label }}</h2>
+            <span class="pill-status demo-payment-badge">Simulated payment</span>
+        </div>
+
+        <div class="demo-payment-notice" role="note">
+            This is a demonstration. No money is charged or transferred. Do not enter card details or make a UPI payment.
+        </div>
+
+        {% if error_message %}
+        <div class="demo-payment-error" role="alert">{{ error_message }}</div>
+        {% endif %}
+
+        <dl class="demo-payment-summary">
+            <div><dt>Payment method</dt><dd>{{ payment_method_label }}</dd></div>
+            <div class="demo-payment-amount"><dt>{% if payment_reference %}Simulated amount{% else %}Amount to simulate{% endif %}</dt><dd>&#8377;{{ amount|floatformat:2 }}</dd></div>
+            {% if payment_reference %}
+            <div><dt>Demo reference</dt><dd class="demo-payment-reference">{{ payment_reference }}</dd></div>
+            {% endif %}
+        </dl>
+
+        {% if payable %}
+        <p class="demo-payment-help">
+            {% if target_kind == 'sale' %}
+            Success completes this sale and updates inventory. Failure or cancellation leaves the draft and stock unchanged.
+            {% else %}
+            Success records a simulated payment for this reservation. Failure or cancellation leaves payment pending; the court reservation stays in place.
+            {% endif %}
+        </p>
+        <form method="post" action="{% url 'commerce:demo_payment_submit' target_kind target_id %}" class="demo-payment-actions">
+            {% csrf_token %}
+            <input type="hidden" name="checkout_token" value="{{ checkout_token }}">
+            <button type="submit" name="outcome" value="success" class="btn-accent">Simulate success</button>
+            <button type="submit" name="outcome" value="failure" class="btn-secondary-low">Simulate failure</button>
+            <button type="submit" name="outcome" value="cancel" class="btn-secondary-low">Cancel payment</button>
+        </form>
+        {% elif payment_reference %}
+        <p class="demo-payment-help" role="status">A simulated payment is already recorded. No further payment can be submitted here.</p>
+        {% else %}
+        <p class="demo-payment-help" role="status">This record is not available for demo payment.</p>
+        {% endif %}
+
+        <a href="{{ return_url }}" class="demo-payment-return">&larr; Return to {{ target_label }}</a>
+    </section>
+</div>
+{% endlocalize %}
+{% endblock %}

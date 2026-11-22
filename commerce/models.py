@@ -124,6 +124,8 @@ class Sale(models.Model):
 
     status = models.CharField(max_length=9, choices=Status.choices, default=Status.DRAFT)
     payment_method = models.CharField(max_length=4, choices=PaymentMethod.choices)
+    payment_is_simulated = models.BooleanField(default=False)
+    demo_payment_reference = models.CharField(max_length=40, blank=True)
     subtotal = models.DecimalField(
         max_digits=14, decimal_places=2, default=Decimal("0.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
