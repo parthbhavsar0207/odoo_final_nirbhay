@@ -45,4 +45,5 @@ urlpatterns = [
 
     # Real-time Pricing and Availability API
     path('api/calculate-price/', views.api_calculate_price, name='api_calculate_price'),
+    path('api/members/', views.api_members_list, name='api_members_list'),
 ]

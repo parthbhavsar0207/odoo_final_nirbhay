@@ -941,3 +941,104 @@ function changePageSize(size) {
     window.location.href = url.toString();
 }
 window.changePageSize = changePageSize;
+
+/**
+ * Global In-Web Receipt Slip Modal Pop-up
+ * Prevents opening receipts in separate tabs; renders the receipt directly on-page.
+ */
+function openReceiptModal(url, title = 'Official Receipt Voucher') {
+    if (!url || typeof url !== 'string') return;
+    if (!url.startsWith('/') && !url.startsWith(window.location.origin)) {
+        console.warn('Blocked invalid receipt URL:', url);
+        return;
+    }
+    let modal = document.getElementById('global-receipt-modal');
+
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'global-receipt-modal';
+        modal.className = 'club-modal-backdrop active';
+        modal.style.position = 'fixed';
+        modal.style.inset = '0';
+        modal.style.zIndex = '999999';
+        modal.style.backgroundColor = 'rgba(15, 23, 42, 0.65)';
+        modal.style.backdropFilter = 'blur(6px)';
+        modal.style.webkitBackdropFilter = 'blur(6px)';
+        modal.style.padding = '1rem';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.innerHTML = `
+            <div class="club-modal-dialog" style="max-width: 560px; width: 95%; max-height: 92vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.35); transform: none; background: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1.25rem; background: var(--surface-container-low, #f8fafc); border-bottom: 1px solid var(--border-stitch, #e2e8f0); flex-shrink: 0;">
+                    <div style="font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.45rem; color: var(--on-surface, #0f172a);">
+                        <span class="material-symbols-outlined" style="font-size: 20px; color: #166534;">receipt_long</span>
+                        <span id="global-receipt-modal-title"></span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <button type="button" onclick="printReceiptModal()" class="btn-accent" style="padding: 0.4rem 0.95rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.35rem; border: none; cursor: pointer; border-radius: 6px; font-weight: 600;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">print</span>
+                            <span>Print Slip</span>
+                        </button>
+                        <button type="button" onclick="closeReceiptModal()" style="background: transparent; border: none; cursor: pointer; color: var(--secondary-stitch, #64748b); display: flex; align-items: center; padding: 6px; border-radius: 6px;" title="Close (Esc)">
+                            <span class="material-symbols-outlined" style="font-size: 22px;">close</span>
+                        </button>
+                    </div>
+                </div>
+                <div style="flex: 1; position: relative; overflow-y: auto; background: #f8fafc; padding: 0.75rem; display: flex; justify-content: center; min-height: 520px;">
+                    <div id="global-receipt-loading" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; z-index: 10;">
+                        <span class="material-symbols-outlined" style="font-size: 36px; color: #166534; animation: spin 1s linear infinite;">progress_activity</span>
+                        <span style="font-size: 0.82rem; color: #64748b; margin-top: 0.5rem;">Loading receipt voucher...</span>
+                    </div>
+                    <iframe id="global-receipt-iframe" style="width: 100%; min-height: 540px; border: none; background: white; border-radius: 8px; z-index: 20;" onload="var l = document.getElementById('global-receipt-loading'); if (l) l.style.display='none';"></iframe>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeReceiptModal();
+        });
+    }
+
+    const iframe = document.getElementById('global-receipt-iframe');
+    const titleEl = document.getElementById('global-receipt-modal-title');
+    const loadingEl = document.getElementById('global-receipt-loading');
+    if (loadingEl) loadingEl.style.display = 'flex';
+    if (titleEl) titleEl.textContent = title;
+    if (iframe) iframe.src = url;
+
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.pointerEvents = 'auto';
+    modal.classList.add('active');
+}
+
+function closeReceiptModal() {
+    const modal = document.getElementById('global-receipt-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        const iframe = document.getElementById('global-receipt-iframe');
+        if (iframe) iframe.src = 'about:blank';
+    }
+}
+
+function printReceiptModal() {
+    const iframe = document.getElementById('global-receipt-iframe');
+    if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    }
+}
+
+window.openReceiptModal = openReceiptModal;
+window.closeReceiptModal = closeReceiptModal;
+window.printReceiptModal = printReceiptModal;
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeReceiptModal();
+    }
+});

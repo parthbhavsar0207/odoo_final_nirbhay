@@ -214,8 +214,22 @@
                 padding: 1rem;
             }
             .actions-bar {
-                display: none;
+                display: none !important;
             }
+        }
+        body.in-modal {
+            background-color: transparent;
+            padding: 0.25rem;
+            min-height: auto;
+        }
+        body.in-modal .voucher-container {
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-stitch);
+            max-width: 100%;
+            padding: 1.5rem 1.25rem;
+        }
+        body.in-modal .actions-bar {
+            display: none !important;
         }
     </style>
 </head>
@@ -412,5 +426,11 @@
             <span>Availability Matrix</span>
         </a>
     </div>
+
+    <script>
+        if (window.self !== window.top) {
+            document.body.classList.add('in-modal');
+        }
+    </script>
 </body>
 </html>

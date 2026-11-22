@@ -27,9 +27,19 @@ DEBUG = os.getenv('DJANGO_DEBUG', os.getenv('DEBUG', 'True')).lower() in ('true'
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').split(',')
+    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver,.vercel.app').split(',')
     if host.strip()
 ]
+if os.getenv('VERCEL_URL'):
+    ALLOWED_HOSTS.append(os.getenv('VERCEL_URL'))
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', 'https://*.vercel.app').split(',')
+    if origin.strip()
+]
+if os.getenv('VERCEL_URL'):
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.getenv('VERCEL_URL')}")
 
 # Application definition
 INSTALLED_APPS = [
@@ -56,6 +66,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+X_FRAME_OPTIONS = 'DENY'
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
@@ -78,17 +90,32 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 # Database
-# PostgreSQL 16 configured via environment variables (port 5433 per team stack plan)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'champions_club'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
-        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-        'PORT': os.getenv('DB_PORT', '5433'),
+# Supports DATABASE_URL / POSTGRES_URL for Vercel/Neon/Supabase, or local PostgreSQL (port 5433)
+database_url = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL')
+if database_url:
+    from urllib.parse import urlparse, unquote
+    parsed = urlparse(database_url)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': unquote(parsed.path[1:]) if parsed.path else 'postgres',
+            'USER': unquote(parsed.username) if parsed.username else '',
+            'PASSWORD': unquote(parsed.password) if parsed.password else '',
+            'HOST': parsed.hostname,
+            'PORT': str(parsed.port or 5432),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'champions_club'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
+            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+            'PORT': os.getenv('DB_PORT', '5433'),
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

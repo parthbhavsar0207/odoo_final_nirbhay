@@ -220,12 +220,21 @@
                                 {% endif %}
                             </td>
                             <td style="text-align: right;">
-                                <div x-data="{ open: false }" @click.outside="open = false" style="position: relative; display: inline-block;">
-                                    <button type="button" @click="open = !open" class="btn-secondary-low" style="padding: 0.3rem 0.65rem; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                                <div x-data="{ open: false, isDropup: false }" 
+                                     @click.outside="open = false" 
+                                     @keydown.escape.window="open = false"
+                                     x-init="$watch('open', value => { if (value) { const rect = $el.getBoundingClientRect(); isDropup = (window.innerHeight - rect.bottom) < 260; } })"
+                                     style="position: relative; display: inline-block;"
+                                     :style="open ? 'position: relative; display: inline-block; z-index: 1050;' : 'position: relative; display: inline-block; z-index: 1;'">
+                                    <button type="button" 
+                                            @click="if (!open) { const rect = $el.getBoundingClientRect(); isDropup = (window.innerHeight - rect.bottom) < 260; } open = !open" 
+                                            class="btn-secondary-low" 
+                                            style="padding: 0.3rem 0.65rem; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
                                         <span>Actions</span>
-                                        <span class="material-symbols-outlined" style="font-size: 15px; transition: transform 0.2s ease;" :style="open ? 'transform: rotate(180deg)' : ''">expand_more</span>
+                                        <span class="material-symbols-outlined" style="font-size: 15px; transition: transform 0.2s ease;" :style="open ? (isDropup ? 'transform: rotate(0deg)' : 'transform: rotate(180deg)') : ''" x-text="isDropup && open ? 'expand_less' : 'expand_more'">expand_more</span>
                                     </button>
-                                    <div x-show="open" x-cloak class="club-dropdown-menu" style="position: absolute; right: 0; top: 100%; margin-top: 0.3rem; z-index: 100; min-width: 195px; text-align: left;">
+                                    <div x-show="open" x-cloak class="club-dropdown-menu" 
+                                         :style="isDropup ? 'position: absolute; right: 0; bottom: calc(100% + 0.35rem); z-index: 1050; min-width: 200px; text-align: left; box-shadow: 0 -8px 25px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.06);' : 'position: absolute; right: 0; top: calc(100% + 0.35rem); z-index: 1050; min-width: 200px; text-align: left; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.12), 0 8px 10px -6px rgba(0,0,0,0.06);'">
                                         <a href="{% url 'club:member_edit' member.id %}" class="club-dropdown-item">
                                             <span class="material-symbols-outlined" style="font-size: 16px; color: var(--primary);">edit</span>
                                             <span>Edit Profile</span>
@@ -247,7 +256,6 @@
                                             <span>Booking History</span>
                                         </a>
                                     </div>
-
                                 </div>
                             </td>
                         </tr>

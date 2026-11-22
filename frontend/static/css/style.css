@@ -399,6 +399,8 @@ body {
     flex-direction: column;
     gap: 2px;
     animation: dropdownFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    max-height: 280px;
+    overflow-y: auto;
 }
 
 .club-dropdown-item {
@@ -620,8 +622,18 @@ body {
     background-color: var(--surface-container-lowest);
     border: 1px solid var(--border-stitch);
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.modern-table-container > div:first-child {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.modern-table-container > .table-pagination-toolbar {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
 }
 
 .modern-table {
@@ -845,6 +857,8 @@ body {
     align-items: center;
     justify-content: center;
     gap: 2px;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .matrix-court-name {
@@ -857,6 +871,7 @@ body {
     border: 1px solid var(--border-stitch);
     display: flex;
     align-items: center;
+    box-sizing: border-box;
 }
 
 .matrix-slot-cell {
@@ -937,6 +952,8 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
+    display: block;
     transition: transform 0.25s ease;
 }
 
@@ -2803,9 +2820,9 @@ main > .app-container {
     }
 
     .dashboard-side-panels {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: start;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
     }
 }
 

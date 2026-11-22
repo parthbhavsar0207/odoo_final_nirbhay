@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import DatabaseError
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.views.decorators.http import require_POST, require_safe
 
@@ -72,8 +73,12 @@ def _product_initial(request):
 @require_safe
 @ensure_csrf_cookie
 def member_counter(request):
+    initial_data = _product_initial(request)
+    member_id = request.GET.get("member")
+    if member_id and member_id.isascii() and member_id.isdigit():
+        initial_data["member"] = int(member_id)
     return _counter_response(
-        request, form=MemberSaleForm(initial=_product_initial(request)), member_mode=True,
+        request, form=MemberSaleForm(initial=initial_data), member_mode=True,
     )
 
 
@@ -132,6 +137,7 @@ def sale_detail(request, pk):
 
 
 @require_safe
+@xframe_options_sameorigin
 def sale_receipt(request, pk):
     """Clean printable thermal / standard POS receipt for completed or past counter sales."""
     sale = get_object_or_404(

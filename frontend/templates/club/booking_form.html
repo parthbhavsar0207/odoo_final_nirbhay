@@ -313,10 +313,10 @@
             </div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-            <a id="modal-success-receipt-link" href="#" target="_blank" class="btn-accent" style="justify-content: center; padding: 0.65rem; background-color: var(--on-surface); color: white; border-color: var(--on-surface); text-decoration: none;">
+            <button type="button" id="modal-success-receipt-link" onclick="openSuccessReceiptModal()" class="btn-accent" style="justify-content: center; padding: 0.65rem; background-color: var(--on-surface); color: white; border-color: var(--on-surface); cursor: pointer; width: 100%; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.92rem; border-radius: 8px;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">receipt_long</span>
                 <span>View &amp; Print Booking Voucher</span>
-            </a>
+            </button>
             <a href="{% url 'club:public_availability' %}" class="btn-accent" style="justify-content: center; padding: 0.65rem;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span>
                 <span>View Live Availability Matrix</span>
@@ -334,6 +334,14 @@
 </div>
 
 <script>
+let currentBookingReceiptUrl = '';
+
+function openSuccessReceiptModal() {
+    if (currentBookingReceiptUrl && window.openReceiptModal) {
+        window.openReceiptModal(currentBookingReceiptUrl, 'Court Reservation Voucher');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const courtsData = JSON.parse('{{ courts_json|default:"{}"|escapejs }}');
     const membersData = JSON.parse('{{ members_json|default:"{}"|escapejs }}');
@@ -540,10 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('modal-success-payment').innerText = `${data.payment_method_display || data.payment_method} (${data.payment_status_display || data.payment_status})`;
                     document.getElementById('modal-success-price').innerText = `₹${data.price.toFixed(2)}`;
 
-                    const receiptLink = document.getElementById('modal-success-receipt-link');
-                    if (receiptLink && data.booking_id) {
-                        receiptLink.href = `/club/bookings/${data.booking_id}/receipt/`;
-                    }
+                    currentBookingReceiptUrl = data.booking_id ? `/club/bookings/${data.booking_id}/receipt/` : '';
 
                     const successModal = document.getElementById('booking-success-modal');
                     if (successModal) successModal.classList.add('active');

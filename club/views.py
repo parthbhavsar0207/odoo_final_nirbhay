@@ -19,6 +19,7 @@ from django.http import HttpResponse, JsonResponse, Http404
 from django.db import transaction
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 
@@ -75,10 +76,16 @@ def member_list(request):
     active_count = len(eligible_member_ids)
 
     if tier_filter:
-        tier_member_ids = {
-            member.pk for member in all_members
-            if member.current_plan and member.current_plan.tier == tier_filter
-        }
+        if tier_filter in ('none', 'no_member'):
+            tier_member_ids = {
+                member.pk for member in all_members
+                if not member.current_plan or not member.is_club_member
+            }
+        else:
+            tier_member_ids = {
+                member.pk for member in all_members
+                if member.current_plan and member.current_plan.tier == tier_filter
+            }
         members = members.filter(pk__in=tier_member_ids)
 
     suspended_count = sum(1 for m in all_members if m.is_suspended)
@@ -117,7 +124,12 @@ def member_list(request):
         'form': form,
         'search_query': search_query,
         'tier_filter': tier_filter,
-        'tier_choices': MembershipPlan.TIER_CHOICES,
+        'tier_choices': [
+            ('none', 'No Member'),
+            ('junior', 'Junior'),
+            ('silver', 'Silver'),
+            ('gold', 'Gold'),
+        ],
         'status_filter': status_filter,
         'selected_tier': tier_filter,
         'selected_status': status_filter,
@@ -405,6 +417,14 @@ def booking_create(request):
     - Backend controlled status (auto-confirms valid reservation)
     - Price calculated and snapshotted by backend from member plan or court standard rate
     """
+    # Standalone GET booking page removed in favor of Live Court Availability modal.
+    if request.method == 'GET':
+        query_params = request.GET.urlencode()
+        redirect_url = reverse('club:public_availability')
+        if query_params:
+            redirect_url += f'?{query_params}'
+        return redirect(redirect_url)
+
     is_ajax = (
         request.headers.get('x-requested-with') == 'XMLHttpRequest' or
         request.POST.get('ajax') == '1' or
@@ -528,13 +548,14 @@ def booking_create(request):
                     }, status=400)
                 messages.error(request, "Booking validation failed. See errors below.")
             except Exception as exc:
+                logger.exception("Booking creation unexpected collision or database error: %s", exc)
                 if is_ajax:
                     return JsonResponse({
                         'success': False,
-                        'message': f"Database constraint violation: {exc}",
-                        'errors': [str(exc)],
+                        'message': "This court slot has already been reserved or conflicts with an existing booking. Please pick another available time.",
+                        'errors': ["Court slot is unavailable due to an existing booking."],
                     }, status=400)
-                messages.error(request, f"Database constraint violation: {exc}")
+                messages.error(request, "This court slot has already been reserved or conflicts with an existing booking.")
         else:
             error_list = []
             for field, errors in form.errors.items():
@@ -741,6 +762,7 @@ def booking_detail(request, pk):
     return render(request, 'club/booking_detail.html', context)
 
 
+@xframe_options_sameorigin
 def booking_receipt(request, pk):
     """
     Renders an official print-ready booking confirmation receipt / voucher for court reservations.
@@ -819,6 +841,7 @@ def public_availability(request):
             'label': f"{start} → {slot_end.strftime('%H:%M')}",
         })
     all_sports = get_all_sports_with_facilities()
+    courts_data, _ = _get_courts_and_members_data(selected_date)
     context = {
         'page_title': 'Champions Club Live Court Availability',
         'courts': courts,
@@ -830,12 +853,11 @@ def public_availability(request):
         'plans': plans,
         'tier_rates': tier_rates,
         'total_confirmed_today': total_confirmed,
-        'all_sports': get_all_sports_with_facilities(),
+        'all_sports': all_sports,
         'selected_sport': selected_sport,
         'selected_court': selected_court,
         'selected_time': selected_time,
-        'demo_gateway_enabled': settings.DEMO_PAYMENT_GATEWAY_ENABLED,
-        'razorpay_test_enabled': settings.RAZORPAY_TEST_MODE_ENABLED,
+        'courts_json': json.dumps(courts_data),
     }
     return render(request, 'club/public_availability.html', context)
 
@@ -1180,7 +1202,7 @@ def help_bot_faq_api(request):
             'question': 'Can walk-in guests reserve courts, and how long are sessions?',
             'answer': 'Yes! Both verified members and walk-in guests can book sessions. All sessions last exactly 60 minutes and start every 30 minutes. Prices are snapshotted upon confirmation based on court standard rates or member plan perks.',
             'action_label': 'Reserve Court Slot',
-            'action_url': '/club/bookings/new/',
+            'action_url': '/club/availability/',
         },
         {
             'id': 'plans',
@@ -1227,5 +1249,16 @@ def help_bot_faq_api(request):
             'action_url': '/club/sports/',
         } if not matched else None
     })
+
+
+def api_members_list(request):
+    """
+    Returns active/registered club members for the reservation modal member selector.
+    """
+    today = timezone.localdate()
+    target_date = availability_date(request.GET.get('date'), fallback=today)
+    _, members_data = _get_courts_and_members_data(target_date)
+    return JsonResponse({'members': members_data})
+
 
 

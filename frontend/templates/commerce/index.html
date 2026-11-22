@@ -15,11 +15,6 @@
             <h1>Pro Shop &amp; Clubhouse Bar POS</h1>
             <p class="commerce-copy">Sporting essentials and refreshments. Create and manage counter sales.</p>
         </div>
-        <a class="btn-accent" href="{% url 'commerce:guest_counter' %}#guest-sale-form">
-            <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 18px;">point_of_sale</span>
-            <span>New Sale</span>
-        </a>
-        <a class="btn-secondary-low" href="{% url 'commerce:member_counter' %}#guest-sale-form">Member sale</a>
     </div>
 
     {% if error_message %}
@@ -116,10 +111,10 @@
             {% endif %}
             {% endif %}
             {% if sale.status == 'completed' %}
-            <a href="{% url 'commerce:sale_receipt' sale.pk %}" target="_blank" class="btn-accent" style="display: inline-flex; align-items: center; gap: 0.35rem; text-decoration: none;">
+            <button type="button" onclick="openReceiptModal('{% url 'commerce:sale_receipt' sale.pk %}', 'POS Receipt #{{ sale.pk }}')" class="btn-accent" style="display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">receipt_long</span>
                 <span>Print Receipt Slip</span>
-            </a>
+            </button>
             {% endif %}
             {% if sale.status == 'draft' or sale.status == 'completed' %}
             <form method="post" action="{% url 'commerce:sale_cancel' sale.pk %}">
@@ -163,7 +158,7 @@
         {% for product in products %}
         <article class="catalog-card" data-product-id="{{ product.pk }}">
             <div class="catalog-image-box">
-                <img src="{% static product.image_filename %}" alt="{{ product.name }}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s ease;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <img src="{% static product.image_filename %}?v=4.0" alt="{{ product.name }}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; transition: transform 0.25s ease;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 <div class="catalog-image-fallback" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background-color: var(--surface-container-low);">
                     <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 48px;">{% if product.category == 'bar' %}local_cafe{% else %}sports_tennis{% endif %}</span>
                 </div>

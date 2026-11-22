@@ -1,0 +1,16 @@
+{
+  "name": "champions-club",
+  "version": "1.0.0",
+  "description": "Champions Club & Pro Shop Management System",
+  "scripts": {
+    "dev": "powershell -ExecutionPolicy Bypass -File ./run_dev.ps1",
+    "start": "powershell -ExecutionPolicy Bypass -File ./run_dev.ps1",
+    "test": ".\\.venv\\Scripts\\python.exe manage.py test --noinput"
+  },
+  "keywords": [
+    "django",
+    "champions-club"
+  ],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,8 @@
+.venv
+.git
+.pgdata
+__pycache__
+*.pyc
+.gstack
+.gemini
+run_dev.ps1

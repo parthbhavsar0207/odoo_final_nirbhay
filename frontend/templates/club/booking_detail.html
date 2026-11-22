@@ -99,19 +99,10 @@
             </div>
 
             <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                {% if booking.status == 'confirmed' and booking.payment_status == 'pending' and booking.price > 0 %}
-                {% if booking.payment_method == 'upi' or booking.payment_method == 'card' %}
-                {% if razorpay_test_enabled %}
-                <a href="{% url 'commerce:razorpay_payment' 'booking' booking.pk %}" class="btn-accent">Pay with Razorpay (Test)</a>
-                {% elif demo_gateway_enabled %}
-                <a href="{% url 'commerce:demo_payment' 'booking' booking.pk %}" class="btn-accent">Open demo checkout</a>
-                {% endif %}
-                {% endif %}
-                {% endif %}
-                <a href="{% url 'club:booking_receipt' booking.id %}" target="_blank" class="btn-secondary-low" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+                <button type="button" onclick="openReceiptModal('{% url 'club:booking_receipt' booking.id %}', 'Booking Voucher #{{ booking.id }}')" class="btn-secondary-low" style="display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; border: 1px solid var(--border-stitch); background: white;">
                     <span class="material-symbols-outlined" style="font-size: 16px;">receipt_long</span>
                     <span>View / Print Voucher</span>
-                </a>
+                </button>
                 {% if booking.status != 'cancelled' %}
                     <form method="post" action="{% url 'club:booking_cancel' booking.id %}" onsubmit="return confirm('Cancel this court reservation? This immediately frees the slot on the court grid.');" style="margin: 0;">
                         {% csrf_token %}
