@@ -37,7 +37,12 @@
             <div><dt>Payment method</dt><dd>{{ sale.get_payment_method_display }}</dd></div>
             <div><dt>Created</dt><dd>{{ sale.created_at|date:"d M Y, H:i" }} IST</dd></div>
         </dl>
-        {% if sale.payment_is_simulated %}
+        {% if sale.razorpay_payment_id %}
+        <div class="commerce-feedback" role="note" style="overflow-wrap: anywhere;">
+            Razorpay Test Mode &middot; Payment: <strong>{{ sale.razorpay_payment_id }}</strong>
+            &middot; Order: {{ sale.razorpay_order_id }}. No real money charged.
+        </div>
+        {% elif sale.payment_is_simulated %}
         <div class="commerce-feedback" role="note" style="overflow-wrap: anywhere;">
             Simulated payment &middot; Demo reference: <strong>{{ sale.demo_payment_reference }}</strong>.
             No money was charged or transferred.
@@ -85,7 +90,16 @@
         </dl>
         <div class="commerce-actions">
             {% if sale.status == 'draft' %}
-            {% if demo_gateway_enabled %}
+            {% if razorpay_test_enabled %}
+            {% if sale.payment_method == 'card' or sale.payment_method == 'UPI' %}
+            <a class="btn-accent" href="{% url 'commerce:razorpay_payment' 'sale' sale.pk %}">Pay with Razorpay (Test)</a>
+            {% else %}
+            <form method="post" action="{% url 'commerce:sale_complete' sale.pk %}">
+                {% csrf_token %}
+                <button class="btn-accent" type="submit">Complete sale</button>
+            </form>
+            {% endif %}
+            {% elif demo_gateway_enabled %}
             {% if sale.payment_method == 'card' or sale.payment_method == 'UPI' %}
             <a class="btn-accent" href="{% url 'commerce:demo_payment' 'sale' sale.pk %}">Open demo checkout</a>
             {% else %}

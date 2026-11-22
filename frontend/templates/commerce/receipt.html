@@ -192,7 +192,13 @@
                 <span class="receipt-meta-label">Status:</span>
                 <span class="receipt-meta-value" style="color: #166534;">{{ sale.get_status_display }}</span>
             </div>
-            {% if sale.payment_is_simulated %}
+            {% if sale.razorpay_payment_id %}
+            <div class="receipt-meta-row">
+                <span class="receipt-meta-label">Razorpay Test Payment:</span>
+                <span class="receipt-meta-value tabular" style="max-width: 65%; overflow-wrap: anywhere;">{{ sale.razorpay_payment_id }}</span>
+            </div>
+            <p style="font-size: 0.78rem; line-height: 1.5; overflow-wrap: anywhere;">Order: {{ sale.razorpay_order_id }}. Razorpay Test Mode. No real money charged.</p>
+            {% elif sale.payment_is_simulated %}
             <div class="receipt-meta-row">
                 <span class="receipt-meta-label">Demo Reference:</span>
                 <span class="receipt-meta-value tabular" style="max-width: 65%; min-width: 0; overflow-wrap: anywhere;">{{ sale.demo_payment_reference }}</span>

@@ -260,7 +260,7 @@
 
         <!-- Modal Form Body -->
         <form id="modal-booking-form" onsubmit="handleModalSubmit(event)" style="padding: 1.5rem;">
-            {% if demo_gateway_enabled %}<input type="hidden" name="demo_gateway" value="1">{% endif %}
+            {% if razorpay_test_enabled or demo_gateway_enabled %}<input type="hidden" name="demo_gateway" value="1">{% endif %}
             <!-- Modal In-Web Alert Box -->
             <div id="modal-error-alert" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.85rem; background-color: #fef2f2; border: 1px solid #fca5a5; color: #991b1b;"></div>
 
@@ -458,19 +458,19 @@
                                 </svg>
                             </div>
                             <div style="flex: 1;">
-                                <div style="font-weight: 700; color: var(--on-surface); font-size: 0.8rem;">{% if demo_gateway_enabled %}Simulated UPI Checkout{% else %}UPI Payment Record{% endif %}</div>
+                                <div style="font-weight: 700; color: var(--on-surface); font-size: 0.8rem;">{% if razorpay_test_enabled %}Razorpay Test UPI Checkout{% elif demo_gateway_enabled %}Simulated UPI Checkout{% else %}UPI Payment Record{% endif %}</div>
                                 <div style="color: var(--secondary-stitch); font-size: 0.72rem; margin: 0.15rem 0;">Demo only. Do not scan or transfer money.</div>
                                 <div style="color: #166534; font-size: 0.7rem; display: flex; align-items: center; gap: 0.25rem;">
                                     <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
-                                    <span>{% if demo_gateway_enabled %}Choose success, failure or cancel in the demo gateway.{% else %}Record payment at the club counter.{% endif %}</span>
+                                    <span>{% if razorpay_test_enabled %}Continue to hosted Test Mode checkout after reserving. No real money charged.{% elif demo_gateway_enabled %}Choose success, failure or cancel in the demo gateway.{% else %}Record payment at the club counter.{% endif %}</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Card View -->
                         <div id="pay-view-card" style="display: none;">
-                            <div style="font-weight: 700; color: var(--on-surface); margin-bottom: 0.35rem;">{% if demo_gateway_enabled %}Simulated Card Checkout{% else %}Card Payment Record{% endif %}</div>
-                            <div style="font-size: 0.75rem; color: var(--secondary-stitch); line-height: 1.5;">{% if demo_gateway_enabled %}Choose a demo outcome after reserving the court. No card number, expiry or CVV is collected.{% else %}Record card payment at the club counter.{% endif %}</div>
+                            <div style="font-weight: 700; color: var(--on-surface); margin-bottom: 0.35rem;">{% if razorpay_test_enabled %}Razorpay Test Card Checkout{% elif demo_gateway_enabled %}Simulated Card Checkout{% else %}Card Payment Record{% endif %}</div>
+                            <div style="font-size: 0.75rem; color: var(--secondary-stitch); line-height: 1.5;">{% if razorpay_test_enabled %}Only use documented test details inside Razorpay's hosted checkout. No real money charged.{% elif demo_gateway_enabled %}Choose a demo outcome after reserving the court. No card number, expiry or CVV is collected.{% else %}Record card payment at the club counter.{% endif %}</div>
                         </div>
 
                         <!-- Cash View -->

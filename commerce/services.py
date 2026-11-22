@@ -100,13 +100,18 @@ def _locked_items_and_products(sale):
     return items, products
 
 
-def complete_sale(sale_id):
+def complete_sale(sale_id, *, verified_razorpay_order_id=None):
     """Snapshot prices/benefits and deduct stock once in one transaction."""
     _require_postgresql()
     with transaction.atomic():
         sale = Sale.objects.select_for_update().get(pk=sale_id)
         if not completion_required(sale.status):
             return sale
+        if sale.razorpay_order_id and sale.razorpay_order_id != verified_razorpay_order_id:
+            raise ValidationError(
+                "Verify the saved Razorpay test payment before completing this sale.",
+                code="unverified_provider_payment",
+            )
         if sale.payment_method not in Sale.PaymentMethod.values:
             raise ValidationError("Choose cash, card or UPI.", code="invalid_payment_method")
         plan = _locked_plan(sale)

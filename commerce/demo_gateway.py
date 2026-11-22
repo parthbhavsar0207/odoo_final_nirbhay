@@ -42,6 +42,11 @@ def simulate_payment(*, kind, pk, amount, payment_method, outcome):
         raise ValidationError('Invalid checkout amount.', code='invalid_amount')
     with transaction.atomic():
         target = payment_target(kind, pk, lock=True)
+        if target.razorpay_order_id:
+            raise ValidationError(
+                'This transaction has a Razorpay test order. Use its verified checkout.',
+                code='provider_order_exists',
+            )
         if target.payment_method != payment_method:
             raise ValidationError('Payment method changed. Open checkout again.', code='stale_checkout')
         if kind == 'sale':

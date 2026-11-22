@@ -430,7 +430,7 @@ def booking_create(request):
                 booking.payment_method = Booking.PaymentMethod.UPI
 
             use_demo_gateway = (
-                settings.DEMO_PAYMENT_GATEWAY_ENABLED
+                (settings.DEMO_PAYMENT_GATEWAY_ENABLED or settings.RAZORPAY_TEST_MODE_ENABLED)
                 and request.POST.get('demo_gateway') == '1'
                 and booking.price > Decimal('0.00')
                 and booking.payment_method in (Booking.PaymentMethod.UPI, Booking.PaymentMethod.CARD)
@@ -462,7 +462,10 @@ def booking_create(request):
                 local_start = timezone.localtime(booking.start_datetime)
                 local_end = timezone.localtime(booking.end_datetime)
                 payment_url = (
-                    reverse('commerce:demo_payment', args=['booking', booking.pk])
+                    reverse(
+                        'commerce:razorpay_payment' if settings.RAZORPAY_TEST_MODE_ENABLED
+                        else 'commerce:demo_payment', args=['booking', booking.pk],
+                    )
                     if use_demo_gateway else None
                 )
                 pay_detail = (
@@ -567,6 +570,7 @@ def booking_create(request):
     context = {
         'page_title': 'Reserve Court',
         'demo_gateway_enabled': settings.DEMO_PAYMENT_GATEWAY_ENABLED,
+        'razorpay_test_enabled': settings.RAZORPAY_TEST_MODE_ENABLED,
         'form': form,
         'courts_json': json.dumps(courts_data),
         'members_json': json.dumps(members_data),
@@ -732,6 +736,7 @@ def booking_detail(request, pk):
         'participants': participants,
         'participant_form': participant_form,
         'demo_gateway_enabled': settings.DEMO_PAYMENT_GATEWAY_ENABLED,
+        'razorpay_test_enabled': settings.RAZORPAY_TEST_MODE_ENABLED,
     }
     return render(request, 'club/booking_detail.html', context)
 
@@ -765,6 +770,7 @@ def booking_receipt(request, pk):
         'standard_price': standard_price,
         'discount': discount,
         'demo_gateway_enabled': settings.DEMO_PAYMENT_GATEWAY_ENABLED,
+        'razorpay_test_enabled': settings.RAZORPAY_TEST_MODE_ENABLED,
     }
     return render(request, 'club/booking_receipt.html', context)
 
@@ -829,6 +835,7 @@ def public_availability(request):
         'selected_court': selected_court,
         'selected_time': selected_time,
         'demo_gateway_enabled': settings.DEMO_PAYMENT_GATEWAY_ENABLED,
+        'razorpay_test_enabled': settings.RAZORPAY_TEST_MODE_ENABLED,
     }
     return render(request, 'club/public_availability.html', context)
 

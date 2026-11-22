@@ -276,6 +276,10 @@ class Booking(models.Model):
     )
     payment_is_simulated = models.BooleanField(default=False)
     demo_payment_reference = models.CharField(max_length=40, blank=True)
+    razorpay_order_id = models.CharField(max_length=64, blank=True)
+    razorpay_payment_id = models.CharField(max_length=64, blank=True)
+    razorpay_order_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    razorpay_order_method = models.CharField(max_length=20, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

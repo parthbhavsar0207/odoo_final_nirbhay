@@ -23,7 +23,7 @@
     <div style="background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); border-radius: 12px; padding: 1.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
         <form method="post" novalidate>
             {% csrf_token %}
-            {% if demo_gateway_enabled %}<input type="hidden" name="demo_gateway" value="1">{% endif %}
+            {% if razorpay_test_enabled or demo_gateway_enabled %}<input type="hidden" name="demo_gateway" value="1">{% endif %}
 
             {% if form.non_field_errors %}
                 <div class="alert alert-danger" style="padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.88rem;">
@@ -258,7 +258,7 @@
                     <!-- Payment Instruction Box -->
                     <div id="form-payment-instructions" style="padding: 0.6rem 0.85rem; border-radius: 6px; background-color: var(--surface-container-lowest); border: 1px solid var(--border-stitch); font-size: 0.78rem; color: var(--secondary-stitch); display: flex; align-items: center; gap: 0.45rem;">
                         <span class="material-symbols-outlined" style="font-size: 17px; color: var(--primary);">info</span>
-                        <span id="form-payment-instruction-text">{% if demo_gateway_enabled %}Simulated UPI checkout. Choose a demo outcome after confirming the reservation; no transfer is required.{% else %}Record UPI payment at the club counter.{% endif %}</span>
+                        <span id="form-payment-instruction-text">{% if razorpay_test_enabled %}Razorpay Test Mode: continue to test checkout after reserving. No real money charged.{% elif demo_gateway_enabled %}Simulated UPI checkout. Choose a demo outcome after confirming the reservation; no transfer is required.{% else %}Record UPI payment at the club counter.{% endif %}</span>
 
                     </div>
                 </div>
@@ -477,9 +477,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const instText = document.getElementById('form-payment-instruction-text');
         if (instText) {
             if (method === 'upi') {
-                instText.innerText = '{% if demo_gateway_enabled %}Simulated UPI checkout. Choose a demo outcome after confirming; do not transfer money.{% else %}Record UPI payment at the club counter.{% endif %}';
+                instText.innerText = '{% if razorpay_test_enabled %}Razorpay Test Mode: continue to test UPI checkout after reserving. No real money charged.{% elif demo_gateway_enabled %}Simulated UPI checkout. Choose a demo outcome after confirming; do not transfer money.{% else %}Record UPI payment at the club counter.{% endif %}';
             } else if (method === 'card') {
-                instText.innerText = '{% if demo_gateway_enabled %}Simulated card checkout. Choose a demo outcome after confirming; no card number or CVV is required.{% else %}Record card payment at the club counter.{% endif %}';
+                instText.innerText = '{% if razorpay_test_enabled %}Razorpay Test Mode: use only documented test card details in the hosted checkout.{% elif demo_gateway_enabled %}Simulated card checkout. Choose a demo outcome after confirming; no card number or CVV is required.{% else %}Record card payment at the club counter.{% endif %}';
             } else if (method === 'cash') {
                 instText.innerText = 'Cash payment: Hand physical cash to the receptionist at the club counter upon arrival.';
             } else if (method === 'member_tab') {

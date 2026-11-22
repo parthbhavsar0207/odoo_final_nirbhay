@@ -44,6 +44,7 @@ def _counter_response(request, *, form=None, sale=None, error_message=None, stat
         "error_message": error_message,
         "member_mode": member_mode,
         "demo_gateway_enabled": settings.DEMO_PAYMENT_GATEWAY_ENABLED,
+        "razorpay_test_enabled": settings.RAZORPAY_TEST_MODE_ENABLED,
     }
     return render(request, "commerce/index.html", context, status=status)
 
@@ -167,8 +168,17 @@ def _sale_action(request, pk, operation):
 @require_POST
 @csrf_protect
 def sale_complete(request, pk):
-    if settings.DEMO_PAYMENT_GATEWAY_ENABLED and request.POST.get('demo_gateway') == '1':
+    try:
         sale = get_object_or_404(Sale, pk=pk)
+    except DatabaseError:
+        logger.exception("Sale lookup failed before completion")
+        return HttpResponse("The sale could not be updated. Check its status before trying again.", status=503)
+    if sale.razorpay_order_id and sale.status == Sale.Status.DRAFT:
+        return redirect('commerce:razorpay_payment', kind='sale', pk=pk)
+    if settings.RAZORPAY_TEST_MODE_ENABLED and request.POST.get('demo_gateway') == '1':
+        if sale.status == Sale.Status.DRAFT and sale.payment_method in {Sale.PaymentMethod.CARD, Sale.PaymentMethod.UPI}:
+            return redirect('commerce:razorpay_payment', kind='sale', pk=pk)
+    if settings.DEMO_PAYMENT_GATEWAY_ENABLED and request.POST.get('demo_gateway') == '1':
         if sale.status == Sale.Status.DRAFT and sale.payment_method in {Sale.PaymentMethod.CARD, Sale.PaymentMethod.UPI}:
             return redirect('commerce:demo_payment', kind='sale', pk=pk)
     return _sale_action(request, pk, complete_sale)
