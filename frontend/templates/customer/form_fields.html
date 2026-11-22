@@ -1,0 +1,11 @@
+{% if form.non_field_errors %}<div class="customer-message customer-message-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+{% for field in form %}
+{% if field.is_hidden %}{{ field }}{% else %}
+<div class="customer-field">
+    {{ field.label_tag }}
+    {{ field }}
+    {% if field.help_text %}<div class="customer-help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>{% endif %}
+    {% if field.errors %}<div role="alert">{{ field.errors }}</div>{% endif %}
+</div>
+{% endif %}
+{% endfor %}

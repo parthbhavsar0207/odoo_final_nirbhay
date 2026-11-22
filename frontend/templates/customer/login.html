@@ -1,0 +1,3 @@
+{% extends 'customer/base.html' %}
+{% block title %}Sign in · Champions Club{% endblock %}
+{% block content %}<div class="customer-container customer-auth-wrap"><section class="customer-panel customer-auth-panel"><p class="customer-eyebrow">Good to see you again</p><h1>Welcome back.</h1><p>Sign in to view your bookings and purchases.</p><form method="post" action="{% url 'customer:login' %}" class="customer-form">{% csrf_token %}{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}{% include 'customer/form_fields.html' %}<button class="customer-button" type="submit">Sign in</button></form><p class="customer-auth-footer">New to Champions Club? <a href="{% url 'customer:register' %}">Create an account</a></p></section></div>{% endblock %}

@@ -49,7 +49,9 @@ def _target(kind, pk):
         raise Http404('Payment target does not exist.') from error
 
 
-def _return_url(kind, pk):
+def _return_url(kind, pk, *, customer=False):
+    if customer:
+        return reverse('customer:sale_detail' if kind == 'sale' else 'customer:booking_detail', args=[pk])
     return reverse('commerce:sale_detail' if kind == 'sale' else 'club:booking_detail', args=[pk])
 
 
@@ -82,13 +84,14 @@ def _checkout_response(request, kind, pk, *, error_message=None, status=200):
                 'kind': kind, 'pk': pk, 'amount': str(amount),
                 'method': target.payment_method, 'nonce': _nonce(request),
             }, salt=SALT)
-    return render(request, 'commerce/demo_payment.html', {
+    customer = bool(target.customer_id and request.user.is_authenticated and target.customer_id == request.user.pk)
+    return render(request, 'customer/demo_payment.html' if customer else 'commerce/demo_payment.html', {
         'target_kind': kind, 'target_id': pk,
         'target_label': ('Sale' if kind == 'sale' else 'Court booking') + f' #{pk}',
         'payment_method': target.payment_method,
         'payment_method_label': target.get_payment_method_display(),
         'amount': amount, 'checkout_token': token, 'payable': payable,
-        'return_url': _return_url(kind, pk), 'error_message': error_message,
+        'return_url': _return_url(kind, pk, customer=customer), 'error_message': error_message,
         'payment_reference': target.demo_payment_reference,
         'payment_is_simulated': target.payment_is_simulated,
     }, status=status)
@@ -125,7 +128,7 @@ def _payment_submission(request, kind, pk):
         ):
             raise signing.BadSignature('Checkout does not match this session/transaction.')
         amount = Decimal(payload['amount'])
-        _, result = simulate_payment(
+        target, result = simulate_payment(
             kind=kind, pk=pk, amount=amount, payment_method=payload['method'],
             outcome=form.cleaned_data['outcome'],
         )
@@ -135,11 +138,11 @@ def _payment_submission(request, kind, pk):
         return _checkout_response(request, kind, pk, error_message=' '.join(error.messages), status=409)
     if result in {'success', 'already_successful'}:
         messages.success(request, 'Simulated payment successful. No real money was charged.')
-        return redirect(_return_url(kind, pk))
+        return redirect(_return_url(kind, pk, customer=bool(target.customer_id and target.customer_id == request.user.pk)))
     if result == 'failure':
         return _checkout_response(request, kind, pk, error_message='Simulated payment failed. No money was charged; you can retry.', status=200)
     messages.info(request, 'Simulated payment cancelled. No money was charged; transaction remains unpaid.')
-    return redirect(_return_url(kind, pk))
+    return redirect(_return_url(kind, pk, customer=bool(target.customer_id and target.customer_id == request.user.pk)))
 
 
 @require_POST

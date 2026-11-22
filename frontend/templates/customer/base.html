@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Champions Club{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/customer.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="customer-site">
+    <a class="customer-skip" href="#customer-content">Skip to content</a>
+    <div class="customer-announcement">Your club. Your next game. <span>Champions Club member &amp; guest portal</span></div>
+    <header class="customer-header">
+        <div class="customer-container customer-header-inner">
+            <a href="{% url 'customer:home' %}" class="customer-brand">
+                <span class="customer-brand-mark material-symbols-outlined" aria-hidden="true">sports_tennis</span>
+                <span><strong>CHAMPIONS CLUB</strong><small>PLAY. CONNECT. BELONG.</small></span>
+            </a>
+            <nav class="customer-nav" aria-label="Customer navigation">
+                <a href="{% url 'customer:courts' %}">Find a court</a>
+                <a href="{% url 'customer:shop' %}">Shop &amp; refreshments</a>
+                <a href="{% url 'customer:plans' %}">Membership</a>
+                {% if user.is_authenticated %}
+                <a class="customer-nav-account" href="{% url 'customer:dashboard' %}">My account</a>
+                <form method="post" action="{% url 'customer:logout' %}">{% csrf_token %}<button class="customer-nav-signout" type="submit">Sign out</button></form>
+                {% else %}
+                <a href="{% url 'customer:login' %}">Sign in</a>
+                <a class="customer-button customer-button-small" href="{% url 'customer:register' %}">Create account</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+    <main id="customer-content" class="customer-main">
+        {% if messages %}
+        <div class="customer-container customer-messages">
+            {% for message in messages %}<div class="customer-message {% if 'error' in message.tags %}customer-message-error{% endif %}" role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}">{{ message }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="customer-footer">
+        <div class="customer-container customer-footer-inner">
+            <div><strong>Champions Club</strong><p>Make room for your next great game.</p></div>
+            <nav aria-label="Footer navigation"><a href="{% url 'customer:courts' %}">Courts</a><a href="{% url 'customer:shop' %}">Shop</a><a href="{% url 'customer:plans' %}">Membership</a></nav>
+        </div>
+    </footer>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

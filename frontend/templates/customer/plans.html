@@ -1,0 +1,11 @@
+{% extends 'customer/base.html' %}
+{% block title %}Membership · Champions Club{% endblock %}
+{% block content %}
+<div class="customer-container">
+    <div class="customer-page-heading"><p class="customer-eyebrow">Play more. Belong here.</p><h1>Membership, your way.</h1><p>Explore the club's current plans. Our team will help you choose and activate the right membership.</p></div>
+    <div class="customer-grid customer-plan-grid">
+    {% for plan in plans %}<article class="customer-panel customer-plan"><span class="customer-pill">{{ plan.get_tier_display }}</span><h2>{{ plan.name }}</h2><p class="customer-plan-price">₹{{ plan.membership_fee|floatformat:2 }}<small>Membership fee</small></p><dl class="customer-detail-list"><div><dt>60-minute court session</dt><dd>{% if plan.court_hourly_rate == 0 %}Included{% else %}₹{{ plan.court_hourly_rate|floatformat:2 }}{% endif %}</dd></div><div><dt>Sports shop benefit</dt><dd>{{ plan.shop_discount_percent|floatformat:2 }}%</dd></div><div><dt>Bar &amp; cafeteria benefit</dt><dd>{{ plan.bar_discount_percent|floatformat:2 }}%</dd></div></dl><p>Contact the club team to join or link an existing membership to your account.</p>{% if user.is_authenticated %}<a class="customer-button customer-button-secondary" href="{% url 'customer:dashboard' %}">My membership →</a>{% else %}<a class="customer-button customer-button-secondary" href="{% url 'customer:register' %}">Create your account →</a>{% endif %}</article>{% empty %}<div class="customer-empty">Membership plans are being prepared. Please ask the club team for current options.</div>{% endfor %}
+    </div>
+    <div class="customer-note">Membership benefits apply only while your membership and plan are eligible. Saved booking and purchase prices remain unchanged if a plan changes later.</div>
+</div>
+{% endblock %}
