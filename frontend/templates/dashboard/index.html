@@ -32,14 +32,14 @@
         <!-- Confirmed booking value is kept separate from completed sales. -->
         <div class="metric-card">
             <div class="metric-header">
-                <span>Confirmed Booking Value</span>
+                <span>Court Booking Value</span>
                 <span class="material-symbols-outlined" style="font-size: 18px;">payments</span>
             </div>
             <div>
                 <div class="metric-value">₹{{ confirmed_booking_value }}</div>
                 <div class="metric-footer" style="display: flex; flex-direction: column; gap: 0.2rem; align-items: flex-start;">
                     <span class="metric-positive">{{ total_confirmed_count }} confirmed</span>
-                    <span style="font-size: 0.72rem; color: var(--secondary-stitch);">&middot; payment collection not recorded</span>
+                    <span style="font-size: 0.72rem; color: var(--secondary-stitch);">&middot; snapshot value (payment collection not recorded)</span>
                 </div>
             </div>
         </div>
@@ -185,7 +185,7 @@
                 </div>
                 <div class="inventory-alert-list">
                     {% for product in inventory_alerts %}
-                    <a href="{{ product.get_absolute_url }}" class="inventory-alert-row">
+                    <a href="{% url 'admin:commerce_product_change' product.pk %}" class="inventory-alert-row">
                         <span>{{ product.name }}</span>
                         <span class="inventory-quantity">{{ product.stock_quantity }} left (min: {{ product.low_stock_threshold }})</span>
                     </a>

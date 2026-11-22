@@ -129,11 +129,11 @@
                 </div>
                 <!-- Header: Hour Columns with Difference of Times -->
                 {% for s in operating_slots %}
-                    <div class="matrix-header-cell" style="padding: 0.35rem 0.15rem; overflow: hidden; text-align: center; box-sizing: border-box;">
-                        <div style="font-size: 0.58rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); letter-spacing: 0.02em; line-height: 1;">{{ s.time_band }}</div>
-                        <div style="font-size: 0.72rem; font-weight: 800; color: var(--on-surface); font-family: monospace; line-height: 1.15; margin-top: 2px;">{{ s.start }}</div>
-                        <div style="font-size: 0.60rem; color: var(--secondary-stitch); font-family: monospace; line-height: 1;">&darr; {{ s.end }}</div>
-                        <div style="font-size: 0.54rem; color: var(--secondary-stitch); line-height: 1; margin-top: 1px;">(60m)</div>
+                    <div class="matrix-header-cell" style="padding: 0.35rem 0.15rem; overflow: hidden; text-align: center; box-sizing: border-box; min-width: 0;">
+                        <div style="font-size: 0.58rem; font-weight: 700; text-transform: uppercase; color: var(--secondary-stitch); letter-spacing: 0.02em; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ s.time_band }}</div>
+                        <div style="font-size: 0.72rem; font-weight: 800; color: var(--on-surface); font-family: monospace; line-height: 1.15; margin-top: 2px; white-space: nowrap;">{{ s.start }}</div>
+                        <div style="font-size: 0.60rem; color: var(--secondary-stitch); font-family: monospace; line-height: 1; white-space: nowrap;">&darr; {{ s.end }}</div>
+                        <div style="font-size: 0.54rem; color: var(--secondary-stitch); line-height: 1; margin-top: 1px; white-space: nowrap;">(60m)</div>
                     </div>
                 {% endfor %}
 
@@ -627,19 +627,21 @@ async function populateModalMembers() {
         }
     }
 
-    const currentVal = memberSelect.value;
-    memberSelect.innerHTML = '<option value="">-- Or Walk-in Guest (No Member Plan) --</option>';
+    if (Object.keys(membersData).length > 0) {
+        const currentVal = memberSelect.value;
+        memberSelect.innerHTML = '<option value="">-- Or Walk-in Guest (No Member Plan) --</option>';
 
-    Object.values(membersData).forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = m.id;
-        const statusText = m.is_active ? `Active · ${m.plan_name}` : 'Inactive / Expired';
-        opt.innerText = `${m.name} (${statusText})`;
-        if (String(m.id) === String(currentVal)) {
-            opt.selected = true;
-        }
-        memberSelect.appendChild(opt);
-    });
+        Object.values(membersData).forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            const statusText = m.is_active ? `Active · ${m.plan_name}` : 'Inactive / Expired';
+            opt.innerText = `${m.name} (${statusText})`;
+            if (String(m.id) === String(currentVal)) {
+                opt.selected = true;
+            }
+            memberSelect.appendChild(opt);
+        });
+    }
 }
 
 // Modal Open / Close Handlers

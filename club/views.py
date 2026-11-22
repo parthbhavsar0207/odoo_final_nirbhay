@@ -417,14 +417,6 @@ def booking_create(request):
     - Backend controlled status (auto-confirms valid reservation)
     - Price calculated and snapshotted by backend from member plan or court standard rate
     """
-    # Standalone GET booking page removed in favor of Live Court Availability modal.
-    if request.method == 'GET':
-        query_params = request.GET.urlencode()
-        redirect_url = reverse('club:public_availability')
-        if query_params:
-            redirect_url += f'?{query_params}'
-        return redirect(redirect_url)
-
     is_ajax = (
         request.headers.get('x-requested-with') == 'XMLHttpRequest' or
         request.POST.get('ajax') == '1' or
