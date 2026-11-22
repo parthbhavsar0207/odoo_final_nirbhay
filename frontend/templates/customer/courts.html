@@ -1,0 +1,12 @@
+{% extends 'customer/base.html' %}
+{% block title %}Find a court · Champions Club{% endblock %}
+{% block content %}
+<div class="customer-container">
+    <div class="customer-page-heading"><p class="customer-eyebrow">Make time for your game</p><h1>Find your court.</h1><p>Live availability for 60-minute sessions. Each starting time includes the full hour.</p></div>
+    <form class="customer-date-filter" method="get" action="{% url 'customer:courts' %}">{% if selected_court %}<input type="hidden" name="court" value="{{ selected_court }}">{% endif %}<label for="customer-date">Choose a date</label><input id="customer-date" name="date" type="date" value="{{ selected_date|date:'Y-m-d' }}" min="{{ today|date:'Y-m-d' }}" required><button class="customer-button customer-button-small" type="submit">Find slots</button></form>
+    <div class="customer-section-heading customer-section"><h2>{{ selected_date|date:"l, j F" }}</h2><div class="customer-slot-legend"><span>Available</span><span>Reserved</span></div></div>
+    {% for row in court_grid %}
+    <section class="customer-panel customer-court-row" aria-labelledby="court-{{ row.court.pk }}"><div class="customer-court-heading"><div><p class="customer-eyebrow">{{ row.court.get_sport_display }}</p><h2 id="court-{{ row.court.pk }}">{{ row.court.name }}</h2></div><div class="customer-court-rate"><strong>₹{{ row.court.hourly_rate|floatformat:2 }}</strong><small>Guest rate / 60 minutes<br>Eligible member rate applied when booking</small></div></div><div class="customer-slot-grid">{% for time, slot in row.slots %}{% if slot.status == 'free' %}<a href="{% url 'customer:booking_create' %}?court={{ row.court.pk }}&amp;date={{ selected_date|date:'Y-m-d' }}&amp;time={{ time }}" class="customer-slot" data-customer-slot="free"><strong>{{ time }}</strong><span>Book session</span></a>{% else %}<div class="customer-slot customer-slot-booked"><strong>{{ time }}</strong><span>{% if slot.status == "past" %}Past session{% else %}Reserved{% endif %}</span></div>{% endif %}{% endfor %}</div></section>
+    {% empty %}<div class="customer-panel customer-empty">There are no active courts for this selection.</div>{% endfor %}
+</div>
+{% endblock %}

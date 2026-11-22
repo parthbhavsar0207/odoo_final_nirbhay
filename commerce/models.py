@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
+from django.conf import settings
 from django.urls import reverse
 
 
@@ -130,6 +131,8 @@ class Sale(models.Model):
     razorpay_payment_id = models.CharField(max_length=64, blank=True)
     razorpay_order_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     razorpay_order_method = models.CharField(max_length=20, blank=True)
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                 on_delete=models.PROTECT, related_name='customer_sales')
     subtotal = models.DecimalField(
         max_digits=14, decimal_places=2, default=Decimal("0.00"),
         validators=[MinValueValidator(Decimal("0.00"))],

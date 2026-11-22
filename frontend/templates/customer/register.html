@@ -1,0 +1,3 @@
+{% extends 'customer/base.html' %}
+{% block title %}Create your account · Champions Club{% endblock %}
+{% block content %}<div class="customer-container customer-auth-wrap"><section class="customer-panel customer-auth-panel"><p class="customer-eyebrow">Welcome to the club</p><h1>Your next game starts here.</h1><p>Create an account for your bookings, purchases and membership details.</p><form method="post" action="{% url 'customer:register' %}" class="customer-form">{% csrf_token %}{% include 'customer/form_fields.html' %}<button class="customer-button" type="submit">Create account</button></form><p class="customer-auth-footer">Already have an account? <a href="{% url 'customer:login' %}">Sign in</a></p></section></div>{% endblock %}
