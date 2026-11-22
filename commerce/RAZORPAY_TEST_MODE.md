@@ -5,10 +5,14 @@ shop/bar sales and court bookings. It uses `razorpay==2.0.1`, Razorpay Orders AP
 `https://checkout.razorpay.com/v1/checkout.js` and server-side payment fetching.
 Only `rzp_test_` keys are accepted. Live-mode payments are disabled.
 
-**Current external verification blocker:** the user has no Razorpay test API keys.
-No order or payment has been executed against Razorpay. PostgreSQL tests and
-browser handoff tests use explicitly mocked provider responses; these results
-are not evidence of an actual hosted checkout payment.
+**Current setup:** the user's Test Mode credentials are saved only in the
+Git-ignored local `.env`. A read-only Razorpay Orders API request authenticated
+successfully. Actual test orders were created and official hosted checkout
+opened for both a sale and a booking in a disposable PostgreSQL test database.
+The card authorization attempt did not complete; provider payments remained
+`created`, not captured. No successful payment callback or stock deduction was
+claimed. A manual successful test payment and capture rehearsal remains pending.
+Earlier mocked audits remain distinct from these actual provider checks.
 
 ## Activate the hosted checkout
 
@@ -24,9 +28,9 @@ are not evidence of an actual hosted checkout payment.
    ```
 
    Keep the secret out of chat, source control and frontend JavaScript. The key
-   ID is public; the key secret stays server-side. This worktree's `.env` has
-   the flag enabled with both keys blank, so it shows a setup message instead
-   of claiming a successful payment.
+   ID is public; the key secret stays server-side. This worktree's `.env` now has
+   the flag and supplied test keys configured. New clones must configure their
+   own ignored `.env`; no key is published on GitHub.
 4. Set automatic payment capture in Razorpay's Test Mode dashboard. The server
    accepts only a fetched **captured** payment. An authorized/failed payment is
    rejected without completing a sale or marking a booking paid.
@@ -141,13 +145,29 @@ Python3.13.7 / Django5.2.19 / PostgreSQL16.16:
   missing-key503, order/create, failure/dismissal, verified callback, retries,
   sale cancellation stock10→8→10, booking payment/cancellation and mobile390px
   with no JavaScript/local asset errors.
-- **Actual Razorpay order creation, hosted Test Mode payment and capture have
-  not run because API keys are absent.**
+- Setup continuation: authenticated the actual Test Mode API using a read-only
+  order-list request, created two actual test orders, and opened the official
+  hosted card checkout for sale and booking. Order references are retained in
+  the external audit record, not production business records. Card submission
+  stopped at provider authorization and remained uncaptured (`created`). The
+  local test sale stayed draft with stock10, then sale/booking were cancelled
+  and the disposable database removed. No real money charged.
+- Repeated full suite after correcting payment-method display to Razorpay's
+  documented `config.display`: 314 passed. Two mocked browser audits passed
+  with the corrected method configuration. Successful actual Test Mode payment,
+  capture and end-to-end callback remain unverified; manual rehearsal is needed.
 
 External scripts/artifacts: `%TEMP%\champions-razorpay-browser-audit.py` and the
 session visualizations `razorpay-test-handoff` directory. No browser dependencies
 added to application requirements. The existing external verification Python
 is documented in `POSTGRES_VERIFICATION.md`.
+
+Actual setup probe: `%TEMP%\champions-razorpay-live-browser.py`, with outcomes in
+the session's `razorpay-live-test/actual-results.json`. Its completion is an
+inspection result, not a passing payment-success assertion. The two remote test
+orders remain in the Razorpay dashboard after disposable local records are
+removed. Credential entry used an external masked local Windows dialog and
+never printed credential values.
 
 Tests exercise provider mode using per-test overrides. For the full suite set
 `RAZORPAY_TEST_MODE_ENABLED=False` as the suite baseline (via runtime test settings

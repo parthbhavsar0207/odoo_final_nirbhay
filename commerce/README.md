@@ -1,7 +1,8 @@
 # Commerce Product milestone — Utkarsh
 
 > Actual provider Test Mode: [RAZORPAY_TEST_MODE.md](RAZORPAY_TEST_MODE.md).
-> Implementation and mocked verification are complete; provider keys are missing.
+> Local test credentials and official checkout opening are verified; a captured
+> hosted test payment still needs manual rehearsal.
 
 > Current payment demo: [DEMO_PAYMENT_GATEWAY.md](DEMO_PAYMENT_GATEWAY.md)
 > documents the simulated card/UPI checkout for sales and court bookings.

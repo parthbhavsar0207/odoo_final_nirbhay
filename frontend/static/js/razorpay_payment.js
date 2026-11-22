@@ -54,10 +54,17 @@
                 currency: configuration.currency,
                 name: configuration.name,
                 description: configuration.description,
-                method: {
-                    card: configuration.method === 'card',
-                    upi: configuration.method === 'upi',
-                    netbanking: false, wallet: false, paylater: false, emi: false,
+                config: {
+                    display: {
+                        blocks: {
+                            selected: {
+                                name: configuration.method === 'card' ? 'Pay by card' : 'Pay by UPI',
+                                instruments: [{ method: configuration.method }],
+                            },
+                        },
+                        sequence: ['block.selected'],
+                        preferences: { show_default_blocks: false },
+                    },
                 },
                 theme: { color: '#2563eb' },
                 modal: {
