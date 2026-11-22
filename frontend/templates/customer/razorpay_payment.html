@@ -1,0 +1,83 @@
+{% extends 'customer/base.html' %}
+{% load static l10n %}
+
+{% block title %}Razorpay Test checkout · Champions Club{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/demo_payment.css' %}">
+<link rel="stylesheet" href="{% static 'css/razorpay_payment.css' %}">
+{% endblock %}
+
+{% block content %}
+{% localize off %}
+<div class="app-container demo-payment-page razorpay-payment-page">
+    <div class="demo-payment-heading">
+        <div class="demo-payment-eyebrow">Champions Club / Payment checkout</div>
+        <h1>Razorpay Test checkout</h1>
+        <p>Review your purchase, then continue to Razorpay's test payment window.</p>
+    </div>
+
+    <section class="demo-payment-card" aria-labelledby="checkout-heading">
+        <div class="demo-payment-card-heading">
+            <div class="razorpay-merchant">
+                <span class="razorpay-merchant-mark" aria-hidden="true">CC</span>
+                <div><h2 id="checkout-heading">Champions Club</h2><p>{{ target_label }}</p></div>
+            </div>
+            <span class="pill-status razorpay-test-badge">Test mode</span>
+        </div>
+
+        <div class="demo-payment-notice" role="note">
+            Razorpay Test Mode — no real money charged. Use only Razorpay's documented test payment details in its checkout window.
+        </div>
+
+        {% if error_message %}
+        <div class="demo-payment-error" role="alert">{{ error_message }}</div>
+        {% endif %}
+        <div id="razorpay-feedback" class="demo-payment-help razorpay-feedback" role="status" aria-live="polite" hidden></div>
+
+        <dl class="demo-payment-summary">
+            <div><dt>Purchase</dt><dd>{{ target_label }}</dd></div>
+            <div><dt>Payment method</dt><dd>{{ payment_method_label }}</dd></div>
+            <div class="demo-payment-amount"><dt>{% if provider_reference %}Test payment amount{% else %}Amount due{% endif %}</dt><dd>&#8377;{{ amount|floatformat:2 }}</dd></div>
+            {% if provider_reference %}
+            <div><dt>Test payment reference</dt><dd class="demo-payment-reference">{{ provider_reference }}</dd></div>
+            {% endif %}
+        </dl>
+
+        {% if payable and checkout_config %}
+        <p class="demo-payment-help">Razorpay opens a test payment window. Your transaction completes only after the server verifies its payment result. Closing the window or a failed payment leaves this transaction unpaid.</p>
+        {{ checkout_config|json_script:"razorpay-checkout-config" }}
+        <form id="razorpay-verification-form" method="post" action="{{ checkout_config.verify_url }}" hidden>
+            {% csrf_token %}
+            <input type="hidden" name="razorpay_order_id" value="">
+            <input type="hidden" name="razorpay_payment_id" value="">
+            <input type="hidden" name="razorpay_signature" value="">
+        </form>
+        <div class="demo-payment-actions">
+            <button id="razorpay-pay-button" type="button" class="btn-accent">Pay with Razorpay (Test)</button>
+        </div>
+        <noscript><p class="demo-payment-error">Enable JavaScript to open Razorpay's test checkout. No payment has been submitted.</p></noscript>
+        {% elif payable %}
+        <p class="demo-payment-help">Create a test order to open Razorpay's hosted checkout. Stock is checked again when payment is verified.</p>
+        <form method="post" action="{% url 'commerce:razorpay_order_create' target_kind target_id %}" class="demo-payment-actions">
+            {% csrf_token %}
+            <button type="submit" class="btn-accent">Continue to Razorpay (Test)</button>
+        </form>
+        {% elif provider_reference %}
+        <p class="demo-payment-help" role="status">A test payment is already recorded. No further payment can be submitted here.</p>
+        {% elif not error_message %}
+        <p class="demo-payment-help" role="status">This transaction is not available for Razorpay test checkout.</p>
+        {% endif %}
+
+        <div class="razorpay-provider-note">Razorpay integration · Test environment</div>
+        <a href="{{ return_url }}" class="demo-payment-return">&larr; Return to {{ target_label }}</a>
+    </section>
+</div>
+{% endlocalize %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if payable and checkout_config %}
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+<script src="{% static 'js/razorpay_payment.js' %}" defer></script>
+{% endif %}
+{% endblock %}

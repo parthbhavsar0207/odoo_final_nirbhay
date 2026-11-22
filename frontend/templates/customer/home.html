@@ -1,0 +1,29 @@
+{% extends 'customer/base.html' %}
+{% load static %}
+{% block title %}Your next game starts here · Champions Club{% endblock %}
+{% block content %}
+<div class="customer-container">
+    <section class="customer-hero">
+        <div class="customer-hero-copy">
+            <p class="customer-eyebrow">A club for your kind of play</p>
+            <h1>Your next great game<br><span>starts here.</span></h1>
+            <p>Find a court, stock up for your session, and make the clubhouse your own. Everything for your day at Champions Club, in one place.</p>
+            <div class="customer-actions"><a href="{% url 'customer:courts' %}" class="customer-button">Find a court <span aria-hidden="true">↗</span></a><a href="{% url 'customer:plans' %}" class="customer-button customer-button-secondary">Explore membership</a></div>
+        </div>
+        <div class="customer-hero-image"><img src="{% static 'images/courts/tennis.jpg' %}" alt="Tennis court at the club"><span class="customer-image-caption">Show up. Play your best.</span></div>
+    </section>
+    <section class="customer-section" aria-labelledby="customer-activities">
+        <div class="customer-section-heading"><div><p class="customer-eyebrow">Choose your next session</p><h2 id="customer-activities">Room to play.</h2></div><a class="customer-text-link" href="{% url 'customer:courts' %}">All courts <span aria-hidden="true">→</span></a></div>
+        <div class="customer-grid">
+            {% for court in courts %}<article class="customer-card"><a class="customer-card-image" href="{% url 'customer:courts' %}?court={{ court.pk }}"><img src="{% static court.image_filename %}" alt="{{ court.get_sport_display }} court" loading="lazy"></a><div class="customer-card-body"><p class="customer-eyebrow">{{ court.get_sport_display }}</p><h3>{{ court.name }}</h3><p>60-minute sessions. Start on the hour or half-hour.</p><div class="customer-card-bottom"><strong>₹{{ court.hourly_rate|floatformat:2 }} <small>/ guest session</small></strong><a href="{% url 'customer:courts' %}?court={{ court.pk }}" class="customer-text-link">View slots →</a></div></div></article>{% empty %}<p class="customer-empty">Court availability will appear here when facilities are ready.</p>{% endfor %}
+        </div>
+    </section>
+    <section class="customer-membership-banner"><div><p class="customer-eyebrow">More than a game</p><h2>Find your place at the club.</h2><p>Explore membership plans and their court, shop and refreshment benefits.</p></div><a href="{% url 'customer:plans' %}" class="customer-button">Explore plans →</a></section>
+    <section class="customer-section" aria-labelledby="customer-essentials">
+        <div class="customer-section-heading"><div><p class="customer-eyebrow">Before &amp; after your game</p><h2 id="customer-essentials">Clubhouse essentials.</h2></div><a href="{% url 'customer:shop' %}" class="customer-text-link">Browse the shop →</a></div>
+        <div class="customer-grid">
+            {% for product in products %}<article class="customer-card"><a class="customer-card-image" href="{% url 'customer:shop' %}?product={{ product.pk }}#purchase-form"><img src="{% static product.image_filename %}" alt="{{ product.name }}" loading="lazy"></a><div class="customer-card-body"><span class="customer-pill">{{ product.get_category_display }}</span><h3>{{ product.name }}</h3><div class="customer-card-bottom"><strong>₹{{ product.price|floatformat:2 }}</strong><a href="{% url 'customer:shop' %}?product={{ product.pk }}#purchase-form" class="customer-text-link">View product →</a></div></div></article>{% empty %}<p class="customer-empty">The product catalogue is being prepared.</p>{% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

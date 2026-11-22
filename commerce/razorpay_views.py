@@ -67,10 +67,11 @@ def _response(request, kind, pk, *, error_message=None, status=200):
             payable, error_message, status = False, str(error), 503
         except ValidationError as error:
             payable, error_message, status = False, ' '.join(error.messages), 409
-    return render(request, 'commerce/razorpay_payment.html', {
+    customer = bool(target.customer_id and request.user.is_authenticated and target.customer_id == request.user.pk)
+    return render(request, 'customer/razorpay_payment.html' if customer else 'commerce/razorpay_payment.html', {
         'target_kind': kind, 'target_id': pk, 'target_label': f'{kind.title()} #{pk}',
         'amount': amount, 'payment_method_label': target.get_payment_method_display(),
-        'return_url': _return_url(kind, pk), 'payable': payable,
+        'return_url': _return_url(kind, pk, customer=customer), 'payable': payable,
         'error_message': error_message, 'checkout_config': config,
         'provider_reference': target.razorpay_payment_id,
         'payment_is_simulated': target.payment_is_simulated,
@@ -122,7 +123,7 @@ def razorpay_payment_verify(request, kind, pk):
         if not form.is_valid():
             return _response(request, kind, pk, error_message='Invalid Razorpay checkout response.', status=400)
         try:
-            verify_test_payment(kind=kind, pk=pk,
+            target = verify_test_payment(kind=kind, pk=pk,
                 order_id=form.cleaned_data['razorpay_order_id'],
                 payment_id=form.cleaned_data['razorpay_payment_id'],
                 signature=form.cleaned_data['razorpay_signature'],
@@ -134,4 +135,4 @@ def razorpay_payment_verify(request, kind, pk):
     except DatabaseError:
         return _unavailable()
     messages.success(request, 'Razorpay test payment verified. No real money was charged.')
-    return redirect(_return_url(kind, pk))
+    return redirect(_return_url(kind, pk, customer=bool(target.customer_id and target.customer_id == request.user.pk)))

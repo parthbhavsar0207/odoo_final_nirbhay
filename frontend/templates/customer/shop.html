@@ -1,0 +1,19 @@
+{% extends 'customer/base.html' %}
+{% load static %}
+{% block title %}Shop & refreshments · Champions Club{% endblock %}
+{% block content %}
+<div class="customer-container">
+    <div class="customer-page-heading"><p class="customer-eyebrow">Your day at the clubhouse</p><h1>Gear up. Refuel.</h1><p>Sporting essentials and refreshments from the club's live catalogue.</p></div>
+    <div class="customer-grid">
+        {% for product in products %}<article class="customer-card" data-customer-product="{{ product.pk }}"><a class="customer-card-image" href="{% url 'customer:shop' %}?product={{ product.pk }}#purchase-form"><img src="{% static product.image_filename %}" alt="{{ product.name }}" loading="lazy"></a><div class="customer-card-body"><span class="customer-pill">{{ product.get_category_display }}</span><h2>{{ product.name }}</h2><div class="customer-card-bottom"><strong>₹{{ product.price|floatformat:2 }}</strong>{% if product.stock_quantity %}<a class="customer-text-link" href="{% url 'customer:shop' %}?product={{ product.pk }}#purchase-form">Choose →</a>{% else %}<span class="customer-muted">Out of stock</span>{% endif %}</div></div></article>{% empty %}<p class="customer-empty">No products are available right now.</p>{% endfor %}
+    </div>
+    <section id="purchase-form" class="customer-panel customer-form-panel customer-section" aria-labelledby="purchase-heading">
+        <div><p class="customer-eyebrow">Make it yours</p><h2 id="purchase-heading">Start a purchase.</h2><p>Choose a product and quantity, then review your order before checkout. Eligible benefits use your linked membership.</p></div>
+        {% if user.is_authenticated %}
+        <form method="post" action="{% url 'customer:sale_create' %}" class="customer-form">
+            {% csrf_token %}{% include 'customer/form_fields.html' %}<button type="submit" class="customer-button">Review order →</button>
+        </form>
+        {% else %}<div class="customer-signin-prompt"><p>Sign in to place a purchase and keep your order history together.</p><a class="customer-button" href="{% url 'customer:login' %}?next={% url 'customer:shop' %}">Sign in to purchase</a><a class="customer-text-link" href="{% url 'customer:register' %}">Create an account →</a></div>{% endif %}
+    </section>
+</div>
+{% endblock %}

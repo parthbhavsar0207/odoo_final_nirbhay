@@ -8,6 +8,7 @@ from datetime import timedelta, datetime, time
 import zoneinfo
 
 from django.db import models, transaction
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
@@ -280,6 +281,8 @@ class Booking(models.Model):
     razorpay_payment_id = models.CharField(max_length=64, blank=True)
     razorpay_order_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     razorpay_order_method = models.CharField(max_length=20, blank=True)
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                 on_delete=models.PROTECT, related_name='customer_bookings')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
