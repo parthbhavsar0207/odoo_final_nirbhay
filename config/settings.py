@@ -111,3 +111,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Local payment simulator; never processes payments. Disabled by default outside DEBUG.
+DEMO_PAYMENT_GATEWAY_ENABLED = os.getenv('DEMO_PAYMENT_GATEWAY_ENABLED', str(DEBUG)).lower() in ('true', '1', 'yes')
+
+# Actual provider test mode only. Live keys are explicitly rejected by commerce.
+RAZORPAY_TEST_MODE_ENABLED = os.getenv('RAZORPAY_TEST_MODE_ENABLED', 'False').lower() in ('true', '1', 'yes')
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')

@@ -1,0 +1,10 @@
+/* The hosted Razorpay window provides the actual provider checkout UI. */
+.razorpay-merchant { display: flex; gap: .8rem; align-items: center; min-width: 0; }
+.razorpay-merchant-mark { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; background: var(--primary-container); color: var(--on-primary-fixed); border-radius: 10px; font-size: .8rem; font-weight: 800; }
+.razorpay-merchant p { margin-top: .15rem; font-size: .8rem; color: var(--secondary-stitch); }
+.razorpay-test-badge { background: #e8f0ff; color: #174ea6; }
+.razorpay-provider-note { border-top: 1px solid var(--border-stitch); padding-top: 1rem; margin-top: 1.25rem; font-size: .78rem; color: var(--secondary-stitch); }
+.razorpay-feedback { border: 1px solid var(--border-stitch); border-radius: 8px; padding: .8rem; margin-top: 1rem; }
+.razorpay-feedback[data-error="true"] { color: var(--error); border-left: 4px solid var(--error); }
+.razorpay-payment-page button:disabled { opacity: .65; cursor: wait; }
+.razorpay-payment-page [hidden] { display: none !important; }

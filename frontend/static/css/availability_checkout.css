@@ -1,0 +1,11 @@
+/* Keep the existing availability and checkout layout within narrow screens. */
+.availability-hero-grid > div,
+.availability-booking-grid > div { min-width: 0; }
+.availability-booking-grid input,
+.availability-booking-grid select { min-width: 0; max-width: 100%; }
+@media (max-width: 640px) {
+    .availability-hero-grid[style],
+    .availability-booking-grid[style] { grid-template-columns: minmax(0, 1fr) !important; }
+    .availability-hero-grid > div:last-child { align-items: flex-start !important; }
+    #booking-modal-backdrop .club-modal-dialog { max-width: 100%; }
+}
