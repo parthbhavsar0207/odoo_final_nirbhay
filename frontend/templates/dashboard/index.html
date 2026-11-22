@@ -20,7 +20,7 @@
 
         <!-- Quick Action / Operational Indicators -->
         <div class="dashboard-heading-action">
-            <a href="{% url 'club:booking_create' %}" class="btn-accent">
+            <a href="{% url 'club:public_availability' %}" class="btn-accent">
                 <span class="material-symbols-outlined">calendar_month</span>
                 <span>Reserve Court</span>
             </a>
@@ -32,14 +32,14 @@
         <!-- Confirmed booking value is kept separate from completed sales. -->
         <div class="metric-card">
             <div class="metric-header">
-                <span>Court Booking Value</span>
+                <span>Confirmed Booking Value</span>
                 <span class="material-symbols-outlined" style="font-size: 18px;">payments</span>
             </div>
             <div>
                 <div class="metric-value">₹{{ confirmed_booking_value }}</div>
-                <div class="metric-footer">
+                <div class="metric-footer" style="display: flex; flex-direction: column; gap: 0.2rem; align-items: flex-start;">
                     <span class="metric-positive">{{ total_confirmed_count }} confirmed</span>
-                    <span>&middot; snapshot value</span>
+                    <span style="font-size: 0.72rem; color: var(--secondary-stitch);">&middot; payment collection not recorded</span>
                 </div>
             </div>
         </div>
@@ -52,8 +52,13 @@
             </div>
             <div>
                 <div class="metric-value">₹{{ completed_sales_total }}</div>
-                <div class="metric-footer">
+                <div class="metric-footer" style="display: flex; flex-direction: column; gap: 0.2rem; align-items: flex-start;">
                     <span class="metric-positive">{{ completed_sales_count }} completed transactions</span>
+                    <div style="font-size: 0.70rem; color: var(--secondary-stitch); display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                        <span>Completed Shop Sales: ₹{{ shop_sales_total }}</span>
+                        <span>&middot;</span>
+                        <span>Completed Bar Sales: ₹{{ bar_sales_total }}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -171,32 +176,8 @@
             </table>
         </div>
 
-        <!-- Right: membership tiers and stock alerts -->
+        <!-- Right: stock alerts -->
         <div class="dashboard-side-panels">
-            <section class="dashboard-side-card" aria-labelledby="membership-tiers-title">
-                <div class="dashboard-panel-heading dashboard-side-heading">
-                    <h2 id="membership-tiers-title">Active Membership Tiers</h2>
-                    <a href="{% url 'club:plan_list' %}" class="dashboard-panel-link">Plans &rarr;</a>
-                </div>
-                <div class="tier-list">
-                    {% for plan in plans %}
-                        <div class="tier-row">
-                            <div>
-                                <div class="tier-name">{{ plan.name }}</div>
-                                <div class="tier-details">
-                                    Court: {% if plan.court_hourly_rate == 0 %}Free{% else %}₹{{ plan.court_hourly_rate }}/hr{% endif %} &middot; Shop: {{ plan.shop_discount_percent }}% &middot; Bar: {{ plan.bar_discount_percent }}%
-                                </div>
-                            </div>
-                            <div class="tier-price tabular-nums">
-                                ₹{{ plan.membership_fee }}
-                            </div>
-                        </div>
-                    {% empty %}
-                        <p style="font-size: 0.85rem; color: var(--secondary-stitch);">No plans seeded.</p>
-                    {% endfor %}
-                </div>
-            </section>
-
             <section class="dashboard-side-card inventory-card" id="inventory-alerts" aria-labelledby="inventory-alerts-title">
                 <div class="dashboard-panel-heading dashboard-side-heading">
                     <h2 id="inventory-alerts-title"><span class="material-symbols-outlined">inventory_2</span>Low Inventory Alerts</h2>
@@ -204,7 +185,7 @@
                 </div>
                 <div class="inventory-alert-list">
                     {% for product in inventory_alerts %}
-                    <a href="{% url 'admin:commerce_product_change' product.pk %}" class="inventory-alert-row">
+                    <a href="{{ product.get_absolute_url }}" class="inventory-alert-row">
                         <span>{{ product.name }}</span>
                         <span class="inventory-quantity">{{ product.stock_quantity }} left (min: {{ product.low_stock_threshold }})</span>
                     </a>

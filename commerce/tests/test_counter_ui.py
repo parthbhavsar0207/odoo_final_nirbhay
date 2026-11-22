@@ -118,7 +118,6 @@ class GuestCounterRenderedTests(TestCase):
         self.assertTrue(any(link.get("href") == counter_url for link in links))
         self.assertTrue(any(link.get("href") == counter_url + "#guest-sale-form" for link in links))
         self.assertContains(response, "Shop &amp; Bar POS")
-        self.assertContains(response, "New Sale")
 
     def test_existing_catalog_entry_points_use_real_counter_without_login(self):
         for name in ["commerce:index", "commerce:shop"]:

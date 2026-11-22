@@ -49,7 +49,6 @@
                     </button>
                     <div x-show="open" x-cloak class="club-dropdown-menu staff-nav-menu">
                         <a href="{% url 'club:booking_list' %}" class="club-dropdown-item"><span class="material-symbols-outlined">calendar_view_week</span><span>Bookings Ledger</span></a>
-                        <a href="{% url 'club:booking_create' %}" class="club-dropdown-item"><span class="material-symbols-outlined">event_available</span><span>New Booking</span></a>
                         <a href="{% url 'club:public_availability' %}" class="club-dropdown-item"><span class="material-symbols-outlined">grid_view</span><span>Live Court Availability</span></a>
                         <a href="{% url 'club:sports_directory' %}" class="club-dropdown-item"><span class="material-symbols-outlined">sports_tennis</span><span>Activities &amp; Facilities</span></a>
                         <a href="{% url 'club:booking_export_csv' %}" class="club-dropdown-item"><span class="material-symbols-outlined">download</span><span>Export Bookings CSV</span></a>
@@ -83,7 +82,7 @@
             </nav>
 
             <div class="club-navbar-actions">
-                <a href="{% url 'club:booking_create' %}" class="btn-accent desktop-only"><span class="material-symbols-outlined">calendar_month</span><span>Reserve Court</span></a>
+                <a href="{% url 'club:public_availability' %}" class="btn-accent desktop-only"><span class="material-symbols-outlined">calendar_month</span><span>Reserve Court</span></a>
 
                 <div class="staff-menu desktop-only admin-menu" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
                     <button type="button" class="btn-secondary-low admin-trigger" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true">
@@ -120,7 +119,6 @@
         <nav class="mobile-nav-drawer" x-show="mobileMenuOpen" x-cloak aria-label="Staff and public pages">
             <a href="{% url 'dashboard' %}" class="mobile-nav-link">Dashboard Overview</a>
             <a href="{% url 'club:booking_list' %}" class="mobile-nav-link">Bookings Ledger</a>
-            <a href="{% url 'club:booking_create' %}" class="mobile-nav-link">New Booking</a>
             <a href="{% url 'club:public_availability' %}" class="mobile-nav-link">Live Court Availability</a>
             <a href="{% url 'club:sports_directory' %}" class="mobile-nav-link">Activities &amp; Facilities</a>
             <a href="{% url 'club:booking_export_csv' %}" class="mobile-nav-link">Export Bookings CSV</a>
@@ -133,7 +131,7 @@
             <a href="{% url 'dashboard' %}#commerce-performance" class="mobile-nav-link">Sales Performance</a>
             <a href="{% url 'dashboard' %}#inventory-alerts" class="mobile-nav-link">Low Inventory Alerts</a>
             <a href="{% url 'admin:index' %}" class="mobile-nav-link">Django Admin</a>
-            <a href="{% url 'club:booking_create' %}" class="btn-accent mobile-reserve"><span class="material-symbols-outlined">calendar_month</span>Reserve Court</a>
+            <a href="{% url 'club:public_availability' %}" class="btn-accent mobile-reserve"><span class="material-symbols-outlined">calendar_month</span>Reserve Court</a>
         </nav>
     </header>
 
@@ -263,7 +261,7 @@
     </div>
 
     <!-- Shared Javascript -->
-    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/main.js' %}?v=2.2"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>
